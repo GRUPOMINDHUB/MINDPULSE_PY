@@ -141,10 +141,40 @@
 </head>
 <body class="bg-dark-900 text-white min-h-screen font-sans antialiased">
     {% block body %}
+    <!-- Header Mobile (visível apenas no mobile) -->
+    {% if user.is_authenticated %}
+    <header class="md:hidden fixed top-0 left-0 right-0 h-16 bg-dark-800 border-b border-dark-600 z-50 flex items-center justify-between px-4">
+        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <span class="text-lg font-bold bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
+                Mindpulse
+            </span>
+        </a>
+        <button id="hamburgerBtn" onclick="toggleSidebar()" 
+                class="p-2 text-white hover:bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all duration-200"
+                aria-label="Toggle menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+    </header>
+    {% endif %}
+    
+    <!-- Overlay (Backdrop) -->
+    {% if user.is_authenticated %}
+    <div id="sidebarOverlay" 
+         onclick="toggleSidebar()"
+         class="hidden fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 md:hidden"></div>
+    {% endif %}
+    
     <div class="flex min-h-screen">
         <!-- Sidebar -->
         {% if user.is_authenticated %}
-        <aside class="w-72 bg-dark-800 border-r border-dark-600 flex flex-col fixed h-full z-30">
+        <aside id="sidebar" class="w-72 bg-dark-800 border-r border-dark-600 flex flex-col fixed h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
             <!-- Logo -->
             <div class="p-6 border-b border-dark-600">
                 <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3 mb-4">
@@ -272,7 +302,7 @@
         {% endif %}
         
         <!-- Main Content -->
-        <main class="{% if user.is_authenticated %}ml-72{% endif %} flex-1 min-h-screen">
+        <main class="{% if user.is_authenticated %}md:ml-72{% endif %} flex-1 min-h-screen {% if user.is_authenticated %}pt-16 md:pt-0{% endif %} transition-all duration-300">
             {% if messages %}
             <div class="fixed top-4 right-4 z-50 space-y-2">
                 {% for message in messages %}
@@ -301,6 +331,44 @@
                     setTimeout(() => msg.remove(), 300);
                 }, 4000);
             });
+        });
+        
+        // Toggle Sidebar (Mobile)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const body = document.body;
+            
+            if (sidebar && overlay) {
+                const isOpen = !sidebar.classList.contains('-translate-x-full');
+                
+                if (isOpen) {
+                    // Fechar
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                    body.classList.remove('overflow-hidden');
+                } else {
+                    // Abrir
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                    body.classList.add('overflow-hidden');
+                }
+            }
+        }
+        
+        // Fechar sidebar ao redimensionar para desktop
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                const body = document.body;
+                
+                if (sidebar && overlay) {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.add('hidden');
+                    body.classList.remove('overflow-hidden');
+                }
+            }
         });
     </script>
 </body>
