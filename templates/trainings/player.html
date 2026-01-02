@@ -44,7 +44,7 @@
                 <video id="videoPlayer" 
                        controls 
                        preload="metadata"
-                       poster="{{ video.thumbnail.url|default:'' }}"
+                       {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %}
                        data-video-id="{{ video.id }}"
                        data-duration="{{ video.duration_seconds }}"
                        data-last-position="{{ progress.last_position }}">
