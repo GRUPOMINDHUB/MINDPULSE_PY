@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ training.title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <a href="{% url 'trainings:list' %}" class="hover:text-white transition-colors">Treinamentos</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-white">{{ training.title }}</span>
+    </div>
+    
+    <!-- Header -->
+    <div class="card mb-8">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Cover -->
+            <div class="w-full md:w-64 flex-shrink-0">
+                {% if training.cover_image %}
+                <img src="{{ training.cover_image.url }}" alt="{{ training.title }}" 
+                     class="w-full h-48 md:h-full object-cover rounded-xl">
+                {% else %}
+                <div class="w-full h-48 md:h-full bg-gradient-to-br from-brand-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Info -->
+            <div class="flex-1">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-2">{{ training.title }}</h1>
+                        <div class="flex items-center gap-4 text-sm text-gray-500">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                {{ training.total_videos }} vídeos
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                {{ training.total_duration_formatted }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if total_progress == 100 %}
+                    <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Concluído
+                    </span>
+                    {% endif %}
+                </div>
+                
+                {% if training.description %}
+                <p class="text-gray-400 mb-4">{{ training.description }}</p>
+                {% endif %}
+                
+                {% if training.objective %}
+                <div class="bg-dark-700 rounded-xl p-4 mb-4">
+                    <p class="text-sm text-gray-500 mb-1">🎯 Objetivo</p>
+                    <p class="text-white">{{ training.objective }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Progress -->
+                <div class="flex items-center gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between text-sm mb-2">
+                            <span class="text-gray-500">Progresso</span>
+                            <span class="text-white font-medium">{{ total_progress }}%</span>
+                        </div>
+                        <div class="h-3 bg-dark-600 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 {% if total_progress == 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
+                                 style="width: {{ total_progress }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center px-4 py-2 bg-brand-500/20 rounded-xl">
+                        <p class="text-2xl font-bold text-brand-500">+{{ training.reward_points }}</p>
+                        <p class="text-xs text-gray-500">pontos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Vídeos -->
+    <h2 class="text-xl font-semibold text-white mb-4">📚 Conteúdo do Treinamento</h2>
+    
+    <div class="space-y-3">
+        {% for item in videos %}
+        <a href="{% url 'trainings:player' training.slug item.video.id %}" 
+           class="card-hover flex items-center gap-4 group">
+            <!-- Número/Check -->
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 
+                        {% if item.completed %}bg-green-500/20 text-green-400
+                        {% else %}bg-dark-600 text-gray-500 group-hover:bg-brand-500/20 group-hover:text-brand-400{% endif %} transition-all">
+                {% if item.completed %}
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {% else %}
+                <span class="text-lg font-semibold">{{ forloop.counter }}</span>
+                {% endif %}
+            </div>
+            
+            <!-- Thumbnail -->
+            {% if item.video.thumbnail %}
+            <div class="w-32 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                <img src="{{ item.video.thumbnail.url }}" alt="{{ item.video.title }}" 
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+            </div>
+            {% endif %}
+            
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+                <h3 class="font-semibold text-white group-hover:text-brand-400 transition-colors truncate">
+                    {{ item.video.title }}
+                </h3>
+                {% if item.video.description %}
+                <p class="text-sm text-gray-500 line-clamp-1">{{ item.video.description }}</p>
+                {% endif %}
+                <p class="text-sm text-gray-600 mt-1">{{ item.video.duration_formatted }}</p>
+            </div>
+            
+            <!-- Play Button -->
+            <div class="w-12 h-12 bg-brand-500/20 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-brand-500 transition-all">
+                <svg class="w-5 h-5 text-brand-500 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </div>
+        </a>
+        {% empty %}
+        <div class="card text-center py-12">
+            <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-gray-500">Nenhum vídeo disponível neste treinamento.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

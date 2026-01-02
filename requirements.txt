@@ -1,0 +1,32 @@
+# Django Core
+Django==5.1.4
+django-extensions==3.2.3
+
+# Environment & Security
+python-decouple==3.8
+python-dotenv==1.0.0
+
+# Image & Video Processing
+Pillow==10.2.0
+moviepy==1.0.3
+
+# Forms & Widgets
+django-widget-tweaks==1.5.0
+
+# Development
+django-debug-toolbar==4.2.0
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Utilities
+django-crispy-forms==2.1
+crispy-tailwind==1.0.3
+
+# Google Cloud Storage (instalar quando necessário em produção)
+# django-storages[google]==1.14.2
+# google-cloud-storage==2.14.0
+
+# PostgreSQL (instalar quando necessário em produção)
+# psycopg[binary]==3.2.4

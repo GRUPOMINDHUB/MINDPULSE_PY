@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ checklist.title }} - Gerenciar - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'checklists:manage_list' %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-bold text-white">{{ checklist.title }}</h1>
+            <p class="text-gray-500">Gerencie as tarefas deste checklist</p>
+        </div>
+        <a href="{% url 'checklists:edit' checklist.pk %}" class="flex items-center gap-2 px-4 py-2.5 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/50 rounded-xl font-medium transition-all duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Editar Checklist
+        </a>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2">
+            <div class="card">
+                <h2 class="text-xl font-semibold text-white mb-6">📋 Tarefas ({{ tasks.count }})</h2>
+                
+                <div class="space-y-3">
+                    {% for task in tasks %}
+                    <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl group">
+                        <div class="w-8 h-8 bg-dark-600 rounded-lg flex items-center justify-center text-gray-400 font-medium">
+                            {{ task.order }}
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-white truncate">{{ task.title }}</h4>
+                            {% if task.description %}
+                            <p class="text-sm text-gray-500 truncate">{{ task.description }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        {% if task.is_required %}
+                        <span class="px-2 py-1 bg-brand-500/20 text-brand-400 text-xs font-medium rounded-full">Obrigatório</span>
+                        {% endif %}
+                        {% if task.is_active %}
+                        <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs font-medium rounded-full">Inativo</span>
+                        {% endif %}
+                        
+                        <button onclick="deleteTask({{ task.pk }})" 
+                                class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p>Nenhuma tarefa adicionada ainda.</p>
+                        <p class="text-sm mt-1">Use o formulário ao lado para adicionar tarefas.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div class="card sticky top-8">
+                <h3 class="text-lg font-semibold text-white mb-6">➕ Adicionar Tarefa</h3>
+                
+                {% if messages %}
+                <div class="mb-4 space-y-2">
+                    {% for message in messages %}
+                    <div class="p-3 rounded-xl {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if form.errors %}
+                <div class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl">
+                    <p class="text-red-400 font-medium mb-2 text-sm">Erros no formulário:</p>
+                    <ul class="list-disc list-inside text-sm text-red-300">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                            <li><strong>{{ field|title }}</strong>: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="id_title" class="block text-sm font-medium text-gray-400 mb-2">Título *</label>
+                        <input type="text" name="title" id="id_title" 
+                               class="form-input" 
+                               placeholder="Título da tarefa"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label for="id_description" class="block text-sm font-medium text-gray-400 mb-2">Descrição</label>
+                        <textarea name="description" id="id_description" 
+                                  class="form-input" rows="2"
+                                  placeholder="Descrição opcional"></textarea>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="is_required" checked class="form-checkbox">
+                            <span class="text-gray-300 text-sm">Obrigatório</span>
+                        </label>
+                        
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="is_active" checked class="form-checkbox">
+                            <span class="text-gray-300 text-sm">Ativo</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-full flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Adicionar Tarefa
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteTask(taskId) {
+    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+    
+    fetch(`/checklists/api/task/${taskId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erro ao excluir tarefa');
+        }
+    });
+}
+</script>
+{% endblock %}
+

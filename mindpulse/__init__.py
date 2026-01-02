@@ -1,0 +1,2 @@
+# Mindpulse Django Project
+

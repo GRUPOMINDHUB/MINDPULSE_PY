@@ -1,0 +1,496 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Admin - Mindpulse{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .company-selector {
+        position: relative;
+    }
+    .company-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #1A1A1A;
+        border: 1px solid #3a3a3a;
+        border-radius: 12px;
+        margin-top: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 50;
+        display: none;
+    }
+    .company-dropdown.active {
+        display: block;
+    }
+    .company-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .company-option:hover {
+        background: #242424;
+    }
+    .company-option input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #F83531;
+    }
+    .selected-companies {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .selected-tag {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #F83531;
+        color: white;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+    .selected-tag button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Dashboard Admin Master 🎯</h1>
+        <p class="text-gray-400">Visão global e comparação entre empresas</p>
+    </div>
+    
+    <!-- KPIs Globais -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-brand-500/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <span class="text-3xl font-bold text-white">{{ total_empresas }}</span>
+            </div>
+            <p class="text-gray-400 text-sm">Empresas Ativas</p>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <span class="text-3xl font-bold text-white">{{ total_usuarios }}</span>
+            </div>
+            <p class="text-gray-400 text-sm">Usuários Ativos</p>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="text-3xl font-bold text-white">{{ total_checklists }}</span>
+            </div>
+            <p class="text-gray-400 text-sm">Checklists Ativos</p>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <span class="text-3xl font-bold text-white">{{ total_trainings }}</span>
+            </div>
+            <p class="text-gray-400 text-sm">Treinamentos</p>
+        </div>
+    </div>
+    
+    <!-- Seletor de Empresas -->
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold text-white mb-4">🏢 Selecione as Empresas para Comparar</h2>
+        
+        <div class="company-selector">
+            <button type="button" id="companyToggle" 
+                    class="w-full flex items-center justify-between px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl text-white hover:border-brand-500 transition-all">
+                <span id="toggleText">Clique para selecionar empresas...</span>
+                <svg class="w-5 h-5 text-gray-400 transition-transform" id="toggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            
+            <div class="company-dropdown" id="companyDropdown">
+                <div class="p-3 border-b border-dark-600">
+                    <button type="button" onclick="selectAllCompanies()" class="text-sm text-brand-500 hover:text-brand-400">
+                        Selecionar Todas
+                    </button>
+                    <span class="text-gray-600 mx-2">|</span>
+                    <button type="button" onclick="clearAllCompanies()" class="text-sm text-gray-400 hover:text-white">
+                        Limpar Seleção
+                    </button>
+                </div>
+                {% for company in companies %}
+                <label class="company-option">
+                    <input type="checkbox" 
+                           class="company-checkbox" 
+                           value="{{ company.id }}" 
+                           data-name="{{ company.name }}"
+                           data-checklists="{{ company.total_checklists|default:0 }}"
+                           data-checklists-done="{{ company.checklists_done|default:0 }}"
+                           data-trainings="{{ company.total_trainings|default:0 }}"
+                           data-trainings-done="{{ company.trainings_done|default:0 }}"
+                           data-feedbacks="{{ company.total_feedbacks|default:0 }}"
+                           data-feedbacks-resolved="{{ company.feedbacks_resolved|default:0 }}"
+                           onchange="updateSelection()">
+                    <div class="flex-1">
+                        <span class="text-white font-medium">{{ company.name }}</span>
+                        <span class="text-gray-500 text-sm ml-2">({{ company.total_users|default:0 }} colaboradores)</span>
+                    </div>
+                </label>
+                {% empty %}
+                <div class="p-4 text-center text-gray-500">
+                    Nenhuma empresa cadastrada
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Tags das empresas selecionadas -->
+        <div class="selected-companies" id="selectedTags"></div>
+    </div>
+    
+    <!-- Gráficos de Comparação -->
+    <div id="chartsContainer" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Gráfico Checklists -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-white mb-4">📋 Checklists: Aplicados vs Concluídos</h3>
+                <div class="h-[300px]">
+                    <canvas id="checklistChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Gráfico Treinamentos -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-white mb-4">🎬 Treinamentos: Aplicados vs Concluídos</h3>
+                <div class="h-[300px]">
+                    <canvas id="trainingChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Gráfico Feedbacks -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-white mb-4">💬 Feedbacks: Recebidos vs Resolvidos</h3>
+                <div class="h-[300px]">
+                    <canvas id="feedbackChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Resumo Comparativo -->
+            <div class="card">
+                <h3 class="text-lg font-semibold text-white mb-4">📊 Resumo Comparativo</h3>
+                <div class="h-[300px]">
+                    <canvas id="summaryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mensagem quando nenhuma empresa selecionada -->
+    <div id="emptyState" class="card text-center py-16">
+        <div class="text-6xl mb-4">📊</div>
+        <h3 class="text-xl font-semibold text-white mb-2">Selecione empresas para comparar</h3>
+        <p class="text-gray-400">Escolha uma ou mais empresas acima para visualizar os gráficos de comparação</p>
+    </div>
+</div>
+
+<script>
+// Variáveis globais para os gráficos
+let checklistChart = null;
+let trainingChart = null;
+let feedbackChart = null;
+let summaryChart = null;
+
+// Toggle do dropdown
+document.getElementById('companyToggle').addEventListener('click', function() {
+    const dropdown = document.getElementById('companyDropdown');
+    const icon = document.getElementById('toggleIcon');
+    dropdown.classList.toggle('active');
+    icon.style.transform = dropdown.classList.contains('active') ? 'rotate(180deg)' : '';
+});
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', function(e) {
+    const selector = document.querySelector('.company-selector');
+    if (!selector.contains(e.target)) {
+        document.getElementById('companyDropdown').classList.remove('active');
+        document.getElementById('toggleIcon').style.transform = '';
+    }
+});
+
+// Selecionar todas
+function selectAllCompanies() {
+    document.querySelectorAll('.company-checkbox').forEach(cb => cb.checked = true);
+    updateSelection();
+}
+
+// Limpar seleção
+function clearAllCompanies() {
+    document.querySelectorAll('.company-checkbox').forEach(cb => cb.checked = false);
+    updateSelection();
+}
+
+// Atualizar seleção e gráficos
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('.company-checkbox:checked');
+    const tagsContainer = document.getElementById('selectedTags');
+    const chartsContainer = document.getElementById('chartsContainer');
+    const emptyState = document.getElementById('emptyState');
+    const toggleText = document.getElementById('toggleText');
+    
+    // Atualizar tags
+    tagsContainer.innerHTML = '';
+    const selectedData = [];
+    
+    checkboxes.forEach(cb => {
+        const name = cb.dataset.name;
+        const id = cb.value;
+        
+        // Criar tag
+        const tag = document.createElement('div');
+        tag.className = 'selected-tag';
+        tag.innerHTML = `
+            <span>${name}</span>
+            <button type="button" onclick="removeCompany('${id}')">&times;</button>
+        `;
+        tagsContainer.appendChild(tag);
+        
+        // Coletar dados
+        selectedData.push({
+            name: name,
+            checklists: parseInt(cb.dataset.checklists) || 0,
+            checklistsDone: parseInt(cb.dataset.checklistsDone) || 0,
+            trainings: parseInt(cb.dataset.trainings) || 0,
+            trainingsDone: parseInt(cb.dataset.trainingsDone) || 0,
+            feedbacks: parseInt(cb.dataset.feedbacks) || 0,
+            feedbacksResolved: parseInt(cb.dataset.feedbacksResolved) || 0,
+        });
+    });
+    
+    // Atualizar texto do toggle
+    if (checkboxes.length === 0) {
+        toggleText.textContent = 'Clique para selecionar empresas...';
+        chartsContainer.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+    } else {
+        toggleText.textContent = `${checkboxes.length} empresa(s) selecionada(s)`;
+        chartsContainer.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        updateCharts(selectedData);
+    }
+}
+
+// Remover empresa
+function removeCompany(id) {
+    const checkbox = document.querySelector(`.company-checkbox[value="${id}"]`);
+    if (checkbox) {
+        checkbox.checked = false;
+        updateSelection();
+    }
+}
+
+// Atualizar gráficos
+function updateCharts(data) {
+    const labels = data.map(d => d.name);
+    const colors = [
+        '#F83531', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', 
+        '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+    ];
+    
+    // Destruir gráficos existentes
+    if (checklistChart) checklistChart.destroy();
+    if (trainingChart) trainingChart.destroy();
+    if (feedbackChart) feedbackChart.destroy();
+    if (summaryChart) summaryChart.destroy();
+    
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#9CA3AF',
+                    padding: 15,
+                    font: { family: 'Outfit', size: 12 }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: 'rgba(255,255,255,0.05)' },
+                ticks: { color: '#9CA3AF', font: { family: 'Outfit' } }
+            },
+            y: {
+                grid: { color: 'rgba(255,255,255,0.05)' },
+                ticks: { color: '#9CA3AF', font: { family: 'Outfit' } },
+                beginAtZero: true
+            }
+        }
+    };
+    
+    // Gráfico Checklists
+    checklistChart = new Chart(document.getElementById('checklistChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Aplicados',
+                    data: data.map(d => d.checklists),
+                    backgroundColor: 'rgba(248, 53, 49, 0.3)',
+                    borderColor: '#F83531',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                },
+                {
+                    label: 'Concluídos',
+                    data: data.map(d => d.checklistsDone),
+                    backgroundColor: 'rgba(248, 53, 49, 0.8)',
+                    borderColor: '#F83531',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }
+            ]
+        },
+        options: chartOptions
+    });
+    
+    // Gráfico Treinamentos
+    trainingChart = new Chart(document.getElementById('trainingChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Aplicados',
+                    data: data.map(d => d.trainings),
+                    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+                    borderColor: '#3B82F6',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                },
+                {
+                    label: 'Concluídos',
+                    data: data.map(d => d.trainingsDone),
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: '#3B82F6',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }
+            ]
+        },
+        options: chartOptions
+    });
+    
+    // Gráfico Feedbacks
+    feedbackChart = new Chart(document.getElementById('feedbackChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Recebidos',
+                    data: data.map(d => d.feedbacks),
+                    backgroundColor: 'rgba(16, 185, 129, 0.3)',
+                    borderColor: '#10B981',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                },
+                {
+                    label: 'Resolvidos',
+                    data: data.map(d => d.feedbacksResolved),
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10B981',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }
+            ]
+        },
+        options: chartOptions
+    });
+    
+    // Gráfico Resumo (Taxa de Conclusão)
+    const completionRates = data.map(d => {
+        const totalApplied = d.checklists + d.trainings + d.feedbacks;
+        const totalDone = d.checklistsDone + d.trainingsDone + d.feedbacksResolved;
+        return totalApplied > 0 ? Math.round((totalDone / totalApplied) * 100) : 0;
+    });
+    
+    summaryChart = new Chart(document.getElementById('summaryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: completionRates,
+                backgroundColor: colors.slice(0, data.length),
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#9CA3AF',
+                        padding: 10,
+                        font: { family: 'Outfit', size: 12 },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            return data.labels.map((label, i) => ({
+                                text: `${label}: ${data.datasets[0].data[i]}%`,
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                hidden: false,
+                                index: i
+                            }));
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Taxa de conclusão: ${context.raw}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

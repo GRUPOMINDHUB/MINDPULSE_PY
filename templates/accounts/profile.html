@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Perfil - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">👤 Meu Perfil</h1>
+        <p class="text-gray-400">Gerencie suas informações pessoais e empresas vinculadas.</p>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Formulário de Perfil -->
+        <div class="lg:col-span-2">
+            <div class="card">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-white">Informações Pessoais</h2>
+                    <a href="{% url 'accounts:change_password' %}" 
+                       class="px-4 py-2 bg-dark-700 hover:bg-dark-600 border border-dark-500 text-white text-sm font-medium rounded-lg transition-all duration-200">
+                        🔒 Alterar Senha
+                    </a>
+                </div>
+                
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div class="p-4 rounded-xl {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if form.errors %}
+                <div class="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl">
+                    <p class="text-red-400 font-medium mb-2">Erros no formulário:</p>
+                    <ul class="list-disc list-inside text-sm text-red-300">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                            <li><strong>{{ field|title }}</strong>: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Avatar -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Foto de Perfil</label>
+                        <div class="flex items-center gap-4">
+                            {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}" 
+                                 class="w-20 h-20 rounded-full object-cover border-2 border-dark-600">
+                            {% else %}
+                            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-2xl font-bold">
+                                {{ user.first_name.0 }}{{ user.last_name.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="flex-1">
+                                <input type="file" name="avatar" id="id_avatar" 
+                                       accept="image/*"
+                                       class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer">
+                                <p class="mt-1 text-xs text-gray-500">Formatos: JPG, PNG, GIF (máx. 2MB)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Nome e Sobrenome -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="id_first_name" class="block text-sm font-medium text-gray-400 mb-2">Nome *</label>
+                            <input type="text" name="first_name" id="id_first_name" 
+                                   value="{{ form.first_name.value|default:user.first_name }}"
+                                   class="form-input" 
+                                   placeholder="Nome"
+                                   required>
+                            {% if form.first_name.errors %}
+                            <p class="mt-1 text-sm text-red-400">{{ form.first_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="id_last_name" class="block text-sm font-medium text-gray-400 mb-2">Sobrenome *</label>
+                            <input type="text" name="last_name" id="id_last_name" 
+                                   value="{{ form.last_name.value|default:user.last_name }}"
+                                   class="form-input" 
+                                   placeholder="Sobrenome"
+                                   required>
+                            {% if form.last_name.errors %}
+                            <p class="mt-1 text-sm text-red-400">{{ form.last_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Telefone -->
+                    <div>
+                        <label for="id_phone" class="block text-sm font-medium text-gray-400 mb-2">Telefone</label>
+                        <input type="text" name="phone" id="id_phone" 
+                               value="{{ form.phone.value|default:user.phone }}"
+                               class="form-input" 
+                               placeholder="(00) 00000-0000">
+                        {% if form.phone.errors %}
+                        <p class="mt-1 text-sm text-red-400">{{ form.phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Biografia -->
+                    <div>
+                        <label for="id_bio" class="block text-sm font-medium text-gray-400 mb-2">Biografia</label>
+                        <textarea name="bio" id="id_bio" 
+                                  class="form-input" 
+                                  rows="4"
+                                  placeholder="Conte um pouco sobre você...">{{ form.bio.value|default:user.bio }}</textarea>
+                        {% if form.bio.errors %}
+                        <p class="mt-1 text-sm text-red-400">{{ form.bio.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div class="flex items-center justify-end gap-4 pt-6 border-t border-dark-600">
+                        <button type="submit" class="btn-primary">
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Sidebar - Empresas Vinculadas -->
+        <div>
+            <div class="card">
+                <h3 class="text-lg font-semibold text-white mb-4">🏢 Empresas Vinculadas</h3>
+                
+                {% if user_companies %}
+                <div class="space-y-3">
+                    {% for uc in user_companies %}
+                    <div class="p-4 bg-dark-700 rounded-xl border border-dark-600">
+                        <div class="flex items-start gap-3">
+                            {% if uc.company.logo %}
+                            <img src="{{ uc.company.logo.url }}" alt="{{ uc.company.name }}" 
+                                 class="w-12 h-12 rounded-lg object-cover">
+                            {% else %}
+                            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold text-white"
+                                 style="background-color: {{ uc.company.primary_color }}">
+                                {{ uc.company.name.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-white truncate">{{ uc.company.name }}</p>
+                                {% if uc.role %}
+                                <p class="text-xs text-gray-400 mt-1">{{ uc.role.name }}</p>
+                                {% endif %}
+                                {% if uc.is_active %}
+                                <span class="inline-block mt-2 px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
+                                {% else %}
+                                <span class="inline-block mt-2 px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-medium rounded-full">Inativo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <svg class="w-16 h-16 text-gray-600 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <p class="text-sm text-gray-500">Nenhuma empresa vinculada</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Estatísticas -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-white mb-4">📊 Estatísticas</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Pontos Totais</span>
+                        <span class="text-white font-semibold text-lg">{{ user.total_points }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Empresas</span>
+                        <span class="text-white font-semibold">{{ user_companies.count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Última Atividade</span>
+                        <span class="text-white font-semibold text-sm">
+                            {% if user.last_activity %}
+                            {{ user.last_activity|date:"d/m/Y H:i" }}
+                            {% else %}
+                            Nunca
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

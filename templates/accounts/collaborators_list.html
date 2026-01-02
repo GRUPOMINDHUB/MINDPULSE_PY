@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Colaboradores - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Colaboradores</h1>
+            <p class="text-gray-400">Gerencie os membros da sua equipe.</p>
+        </div>
+        <a href="{% url 'accounts:collaborator_create' %}" class="btn-primary flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Adicionar Colaborador
+        </a>
+    </div>
+    
+    <!-- Lista -->
+    <div class="card overflow-hidden">
+        <table class="w-full">
+            <thead>
+                <tr class="text-left text-gray-500 text-sm border-b border-dark-600">
+                    <th class="pb-4 pl-6 font-medium">Colaborador</th>
+                    <th class="pb-4 font-medium">Cargo</th>
+                    <th class="pb-4 font-medium">Nascimento</th>
+                    <th class="pb-4 font-medium">Matrícula</th>
+                    <th class="pb-4 font-medium">Status</th>
+                    <th class="pb-4 font-medium">Entrada</th>
+                    <th class="pb-4 pr-6 font-medium text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-600">
+                {% for uc in collaborators %}
+                <tr class="hover:bg-dark-700/50 transition-colors">
+                    <td class="py-4 pl-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                {{ uc.user.first_name.0 }}{{ uc.user.last_name.0 }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-white">{{ uc.user.get_full_name }}</p>
+                                <p class="text-sm text-gray-500">{{ uc.user.email }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4">
+                        {% if uc.role %}
+                        <span class="px-2 py-1 bg-dark-600 text-gray-300 text-sm rounded-lg">{{ uc.role.name }}</span>
+                        {% else %}
+                        <span class="text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 text-gray-400 text-sm">
+                        {% if uc.user.birth_date %}
+                        {{ uc.user.birth_date|date:"d/m/Y" }}
+                        {% else %}
+                        <span class="text-gray-600">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 text-gray-400">
+                        {{ uc.employee_id|default:"-" }}
+                    </td>
+                    <td class="py-4">
+                        {% if uc.is_active %}
+                        <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded-full">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 text-gray-500 text-sm">
+                        {{ uc.joined_at|date:"d/m/Y" }}
+                    </td>
+                    <td class="py-4 pr-6 text-right">
+                        <button onclick="toggleStatus({{ uc.pk }})" 
+                                class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-all"
+                                title="{% if uc.is_active %}Desativar{% else %}Ativar{% endif %}">
+                            {% if uc.is_active %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                            </svg>
+                            {% else %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {% endif %}
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="py-12 text-center text-gray-500">
+                        Nenhum colaborador cadastrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleStatus(ucId) {
+    fetch(`/accounts/collaborators/${ucId}/toggle/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erro ao alterar status');
+        }
+    });
+}
+</script>
+{% endblock %}
+
