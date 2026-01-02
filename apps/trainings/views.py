@@ -30,16 +30,16 @@ def training_list(request):
     # Admin Master: se current_company for None, mostra todos os treinamentos (visão global)
     if user.is_superuser:
         if company:
-            # Filtra por empresa selecionada
+            # Filtra por empresa selecionada (Admin Master vê todos, mesmo sem assigned_users)
             trainings = Training.objects.filter(
                 company=company,
                 is_active=True
-            ).prefetch_related('videos')
+            ).prefetch_related('videos', 'assigned_users')
         else:
             # Visão global: mostra todos os treinamentos de todas as empresas
             trainings = Training.objects.filter(
                 is_active=True
-            ).select_related('company').prefetch_related('videos')
+            ).select_related('company').prefetch_related('videos', 'assigned_users')
     else:
         # Usuários normais: precisa ter empresa vinculada
         if not company:
