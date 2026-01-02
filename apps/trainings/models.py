@@ -64,6 +64,15 @@ class Training(CompanyBaseModel):
     )
     order = models.PositiveIntegerField('Ordem', default=0)
     
+    # Atribuição individual
+    assigned_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='assigned_trainings',
+        blank=True,
+        verbose_name='Usuários Atribuídos',
+        help_text='Selecione os colaboradores que devem ter acesso a este treinamento. Deixe vazio para tornar global (todos os colaboradores da empresa).'
+    )
+    
     # Datas
     available_from = models.DateField('Disponível a partir de', null=True, blank=True)
     available_until = models.DateField('Disponível até', null=True, blank=True)
@@ -78,7 +87,11 @@ class Training(CompanyBaseModel):
         return self.title
     
     def save(self, *args, **kwargs):
-        """Gera slug automaticamente a partir do título se não existir."""
+        """
+        Gera slug automaticamente a partir do título.
+        - Se slug não existe: gera automaticamente
+        - Garante unicidade dentro da empresa
+        """
         if not self.slug:
             base_slug = slugify(self.title)
             slug = base_slug

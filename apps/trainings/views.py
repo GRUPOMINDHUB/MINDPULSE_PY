@@ -45,10 +45,14 @@ def training_list(request):
         if not company:
             return render(request, 'core/no_company.html')
         
+        # Filtra treinamentos: assigned_users contém o usuário OU assigned_users está vazio (global)
+        from django.db.models import Q
         trainings = Training.objects.filter(
             company=company,
             is_active=True
-        ).prefetch_related('videos')
+        ).filter(
+            Q(assigned_users=user) | Q(assigned_users__isnull=True)
+        ).distinct().prefetch_related('videos', 'assigned_users')
     
     # Adiciona progresso do usuário a cada treinamento
     training_data = []
@@ -268,7 +272,7 @@ def training_create(request):
         if is_admin:
             form = AdminTrainingForm(request.POST, request.FILES)
         else:
-            form = TrainingForm(request.POST, request.FILES)
+            form = TrainingForm(request.POST, request.FILES, company=request.current_company)
         
         if form.is_valid():
             training = form.save(commit=False)
@@ -299,13 +303,18 @@ def training_create(request):
                 training.order = max_order + 1
             
             training.save()
+            
+            # Salva ManyToMany (assigned_users)
+            if 'assigned_users' in form.cleaned_data:
+                training.assigned_users.set(form.cleaned_data['assigned_users'])
+            
             messages.success(request, 'Treinamento criado com sucesso! Agora você pode adicionar vídeos.')
             return redirect('trainings:manage_detail', pk=training.pk)
     else:
         if is_admin:
             form = AdminTrainingForm()
         else:
-            form = TrainingForm()
+            form = TrainingForm(company=request.current_company)
     
     return render(request, 'trainings/manage/form.html', {
         'form': form,
@@ -332,17 +341,22 @@ def training_edit(request, pk):
         if is_admin:
             form = AdminTrainingForm(request.POST, request.FILES, instance=training)
         else:
-            form = TrainingForm(request.POST, request.FILES, instance=training)
+            form = TrainingForm(request.POST, request.FILES, instance=training, company=request.current_company)
         
         if form.is_valid():
-            form.save()
+            training = form.save()
+            
+            # Salva ManyToMany (assigned_users)
+            if 'assigned_users' in form.cleaned_data:
+                training.assigned_users.set(form.cleaned_data['assigned_users'])
+            
             messages.success(request, 'Treinamento atualizado!')
             return redirect('trainings:manage_detail', pk=training.pk)
     else:
         if is_admin:
             form = AdminTrainingForm(instance=training)
         else:
-            form = TrainingForm(instance=training)
+            form = TrainingForm(instance=training, company=request.current_company)
     
     return render(request, 'trainings/manage/form.html', {
         'form': form,
