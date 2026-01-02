@@ -7,7 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.utils.text import slugify
 from django.db.models import Max
 
 from .models import Training, Video, UserProgress, UserTrainingReward
@@ -292,10 +291,6 @@ def training_create(request):
                     'is_admin_master': is_admin,
                 })
             
-            # Gera slug se não informado
-            if not training.slug:
-                training.slug = slugify(training.title)
-            
             # Atribui order automaticamente se não foi definido
             if not training.order or training.order == 0:
                 max_order = Training.objects.filter(company=training.company).aggregate(
@@ -304,8 +299,8 @@ def training_create(request):
                 training.order = max_order + 1
             
             training.save()
-            messages.success(request, 'Treinamento criado com sucesso!')
-            return redirect('trainings:manage_list')
+            messages.success(request, 'Treinamento criado com sucesso! Agora você pode adicionar vídeos.')
+            return redirect('trainings:manage_detail', pk=training.pk)
     else:
         if is_admin:
             form = AdminTrainingForm()

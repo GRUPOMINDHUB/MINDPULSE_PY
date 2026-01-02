@@ -10,7 +10,6 @@ from apps.core.models import Company
 # Widgets reutilizáveis para consistência
 TRAINING_WIDGETS = {
     'title': forms.TextInput(attrs={'class': 'form-input'}),
-    'slug': forms.TextInput(attrs={'class': 'form-input'}),
     'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
     'objective': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
     'reward_points': forms.NumberInput(attrs={'class': 'form-input'}),
@@ -20,7 +19,7 @@ TRAINING_WIDGETS = {
 }
 
 TRAINING_FIELDS = [
-    'title', 'slug', 'description', 'objective',
+    'title', 'description', 'objective',
     'cover_image', 'reward_points', 'reward_badge',
     'is_active', 'is_mandatory',
     'available_from', 'available_until'
