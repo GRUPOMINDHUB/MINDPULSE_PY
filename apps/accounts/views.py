@@ -83,18 +83,27 @@ def profile_view(request):
 
 
 @login_required
-def change_password(request):
-    """Alterar senha do usuário."""
+def settings_view(request):
+    """Hub de Configurações - Segurança e Aparência."""
+    password_changed = False
+    
     if request.method == 'POST':
         form = ChangePasswordForm(request.user, request.POST)
         if form.is_valid():
             form.save()
+            # Mantém o usuário logado após trocar a senha
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, request.user)
             messages.success(request, 'Senha alterada com sucesso!')
-            return redirect('accounts:profile')
+            password_changed = True
+            form = ChangePasswordForm(request.user)  # Limpa o formulário
     else:
         form = ChangePasswordForm(request.user)
     
-    return render(request, 'accounts/change_password.html', {'form': form})
+    return render(request, 'accounts/settings.html', {
+        'form': form,
+        'password_changed': password_changed,
+    })
 
 
 @login_required

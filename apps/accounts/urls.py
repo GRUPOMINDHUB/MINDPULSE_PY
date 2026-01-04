@@ -11,7 +11,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),
-    path('profile/change-password/', views.change_password, name='change_password'),
+    path('configuracoes/', views.settings_view, name='settings'),
     
     # Gestão de colaboradores (gestores)
     path('collaborators/', views.collaborators_list, name='collaborators_list'),
