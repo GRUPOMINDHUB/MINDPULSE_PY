@@ -1461,7 +1461,13 @@ def quiz_take(request, training_slug, quiz_id):
         logger.info(f'Aprovado: {attempt.is_passed}')
         
         # Redireciona para content_player com resultado
-        return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id) + f'?result={attempt.id}'
+        from django.urls import reverse
+        result_url = reverse('trainings:content_player', kwargs={
+            'training_slug': training.slug,
+            'content_type': 'quiz',
+            'content_id': quiz_id
+        }) + f'?result={attempt.id}'
+        return redirect(result_url)
     
     # Se GET, redireciona para content_player
     return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id)
