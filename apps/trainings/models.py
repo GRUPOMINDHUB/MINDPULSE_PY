@@ -579,8 +579,14 @@ class UserQuizAttempt(TimeStampedModel):
         correct_choices_map = {}
         for question in questions:
             question_id_str = str(question.id)
-            # Busca todas as escolhas corretas desta pergunta
-            correct_choices = list(Choice.objects.filter(question=question, is_correct=True))
+            # Busca todas as escolhas desta pergunta (força nova query)
+            all_choices = list(Choice.objects.filter(question=question))
+            correct_choices = [c for c in all_choices if c.is_correct]
+            
+            # DEBUG: Log todas as escolhas e quais são corretas
+            logger.info(f'Pergunta {question.id} - Todas as escolhas: {[(c.id, c.text[:30], c.is_correct) for c in all_choices]}')
+            logger.info(f'Pergunta {question.id} - Escolhas CORRETAS: {[c.id for c in correct_choices]}')
+            
             if correct_choices:
                 correct_choices_map[question_id_str] = [c.id for c in correct_choices]
             else:
