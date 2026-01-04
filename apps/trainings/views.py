@@ -1312,16 +1312,21 @@ def quiz_edit(request, quiz_id):
                 quiz_form = QuizForm(request.POST, instance=quiz)
                 question_formset = QuestionFormSet(request.POST, instance=quiz, prefix='questions')
                 # IMPORTANTE: Recria os formsets de opções para manter os dados do POST
+                # E força refresh ANTES de criar formsets para pegar opções dinâmicas salvas
+                quiz.refresh_from_db()
                 choice_formsets = {}
                 for question in quiz.questions.all():
+                    question.refresh_from_db()  # Força refresh da pergunta também
                     choice_prefix = f'choices_{question.id}'
+                    # DEBUG: Log quantas opções existem no banco
+                    logger.info(f'Recarregando formset - Pergunta {question.id} tem {question.choices.count()} opções no banco')
                     choice_formsets[question.id] = ChoiceFormSet(
                         request.POST,  # Passa POST para manter dados
                         instance=question,
                         prefix=choice_prefix
                     )
-                # Força refresh antes de renderizar
-                quiz.refresh_from_db()
+                    # DEBUG: Log quantas opções o formset tem
+                    logger.info(f'Formset criado - Pergunta {question.id} tem {len(choice_formsets[question.id].forms)} forms no formset')
                 context = {
                     'training': training,
                     'quiz': quiz,
