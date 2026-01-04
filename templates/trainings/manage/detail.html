@@ -113,7 +113,7 @@
                 {% for item in content_items %}
                 <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl group" 
                      data-content-type="{{ item.type }}" 
-                     data-content-id="{{ item.id }}">
+                     data-content-id="{{ item.item.id }}">
                     <!-- Drag Handle -->
                     <div class="cursor-move text-gray-500 hover:text-gray-300">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,24 +143,18 @@
                     
                     <!-- Info -->
                     <div class="flex-1 min-w-0">
-                        <h4 class="font-medium text-white truncate">
-                            {% if item.type == 'video' %}
-                                {{ item.object.title }}
-                            {% else %}
-                                {{ item.object.title }}
-                            {% endif %}
-                        </h4>
+                        <h4 class="font-medium text-white truncate">{{ item.item.title }}</h4>
                         <p class="text-sm text-gray-500">
                             {% if item.type == 'video' %}
-                                📹 {{ item.object.duration_formatted }}
+                                📹 {{ item.item.duration_formatted|default:"--:--" }}
                             {% else %}
-                                🧠 {{ item.object.total_questions }} pergunta{{ item.object.total_questions|pluralize }} • Nota mínima: {{ item.object.passing_score }}%
+                                🧠 {{ item.item.questions.count }} pergunta{{ item.item.questions.count|pluralize }} • Nota mínima: {{ item.item.passing_score }}%
                             {% endif %}
                         </p>
                     </div>
                     
                     <!-- Status -->
-                    {% if item.object.is_active %}
+                    {% if item.item.is_active %}
                     <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
                     {% else %}
                     <span class="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs font-medium rounded-full">Inativo</span>
@@ -169,14 +163,14 @@
                     <!-- Actions -->
                     <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         {% if item.type == 'video' %}
-                        <a href="{% url 'trainings:video_edit' item.id %}" 
+                        <a href="{% url 'trainings:video_edit' item.item.id %}" 
                            class="p-2 text-gray-500 hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition-all"
                            title="Editar vídeo">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </a>
-                        <button onclick="deleteVideo({{ item.id }})" 
+                        <button onclick="deleteVideo({{ item.item.id }})" 
                                 class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                                 title="Excluir vídeo">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,14 +178,14 @@
                             </svg>
                         </button>
                         {% else %}
-                        <a href="{% url 'trainings:quiz_edit' item.id %}" 
+                        <a href="{% url 'trainings:quiz_edit' item.item.id %}" 
                            class="p-2 text-gray-500 hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition-all"
                            title="Editar quiz">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </a>
-                        <form method="post" action="{% url 'trainings:quiz_delete' item.id %}" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este quiz?');">
+                        <form method="post" action="{% url 'trainings:quiz_delete' item.item.id %}" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este quiz?');">
                             {% csrf_token %}
                             <button type="submit" 
                                     class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
@@ -351,19 +345,22 @@ function toggleQuizForm() {
 function deleteVideo(videoId) {
     if (!confirm('Tem certeza que deseja excluir este vídeo?')) return;
     
-    fetch(`/trainings/api/video/${videoId}/delete/`, {
+    fetch(`/trainings/manage/video/${videoId}/delete/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    .then(response => {
+        if (response.ok) {
             location.reload();
         } else {
-            alert(data.error || 'Erro ao excluir vídeo');
+            alert('Erro ao excluir vídeo');
         }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir vídeo');
     });
 }
 
@@ -412,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 // Envia para o servidor
-                fetch('{% url "trainings:content_reorder" %}', {
+                fetch('{% url "trainings:update_content_order" training.pk %}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
