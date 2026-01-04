@@ -1127,9 +1127,9 @@ def quiz_edit(request, quiz_id):
                     logger.info(f'=== PROCESSANDO PERGUNTA {idx} (ID: {question.pk}) ===')
                     logger.info(f'Texto: {question_text[:50]}')
                     
-                    # REGRA SIMPLES: Se a pergunta já existe (tem pk), usa formset. Senão, usa opções dinâmicas.
+                    # REGRA: Se a pergunta já existe, processa formset E opções dinâmicas (novas adicionadas via JS)
                     if question.pk:
-                        # PERGUNTA EXISTENTE: Processa via formset
+                        # PERGUNTA EXISTENTE: Processa formset primeiro (opções já existentes)
                         choice_prefix = f'choices_{question.id}'
                         logger.info(f'Pergunta existente - Prefixo do formset: {choice_prefix}')
                         
@@ -1147,47 +1147,85 @@ def quiz_edit(request, quiz_id):
                         if not choice_formset.is_valid():
                             logger.error(f'Erros do formset: {choice_formset.errors}')
                         
+                        # Processa opções do formset (já existentes)
+                        formset_choices = []
+                        has_correct_formset = False
+                        
                         if choice_formset.is_valid():
-                            valid_choices = []
-                            has_correct = False
-                            
                             for choice_idx, choice_form in enumerate(choice_formset.forms):
                                 if choice_form.cleaned_data and not choice_form.cleaned_data.get('DELETE', False):
                                     choice_text = choice_form.cleaned_data.get('text', '').strip()
                                     is_correct = choice_form.cleaned_data.get('is_correct', False)
                                     
-                                    logger.info(f'  Opção {choice_idx}: Texto="{choice_text[:30]}", is_correct={is_correct}')
+                                    logger.info(f'  Opção formset {choice_idx}: Texto="{choice_text[:30]}", is_correct={is_correct}')
                                     
                                     if not choice_text:
                                         validation_errors.append(f'Pergunta "{question_text[:50]}": Todas as opções devem ter texto preenchido.')
                                         break
                                     
                                     if is_correct:
-                                        has_correct = True
-                                        logger.info(f'  ✓ Opção {choice_idx} marcada como CORRETA')
+                                        has_correct_formset = True
+                                        logger.info(f'  ✓ Opção formset {choice_idx} marcada como CORRETA')
                                     
-                                    valid_choices.append(choice_form)
+                                    formset_choices.append(choice_form)
                             
-                            logger.info(f'Total de opções válidas: {len(valid_choices)}, Tem correta: {has_correct}')
-                            
-                            if not has_correct and valid_choices:
-                                validation_errors.append(f'Pergunta "{question_text[:50]}": Deve ter pelo menos uma resposta correta marcada.')
-                            
+                            # Salva opções do formset
                             if not validation_errors:
-                                for choice_form in valid_choices:
+                                for choice_form in formset_choices:
                                     choice = choice_form.save(commit=False)
                                     choice.question = question
                                     choice.save()
-                                    logger.info(f'  ✅ Opção salva: ID={choice.id}, is_correct={choice.is_correct}')
+                                    logger.info(f'  ✅ Opção formset salva: ID={choice.id}, is_correct={choice.is_correct}')
                             
                             # Deleta opções marcadas
                             for del_form in choice_formset.deleted_forms:
                                 if del_form.instance.pk:
                                     del_form.instance.delete()
                                     logger.info(f'  🗑️ Opção deletada: ID={del_form.instance.id}')
-                        else:
-                            logger.error(f'Formset inválido para pergunta {question.id}')
-                            validation_errors.append(f'Pergunta "{question_text[:50]}": Erro ao processar opções.')
+                        
+                        # AGORA: Processa opções dinâmicas (novas adicionadas via JavaScript)
+                        logger.info(f'Processando opções dinâmicas para pergunta {question.id}')
+                        dynamic_choices = []
+                        choice_index = 0
+                        while True:
+                            choice_text_key = f'choice_{idx}_{choice_index}_text'
+                            choice_correct_key = f'choice_{idx}_{choice_index}_is_correct'
+                            
+                            if choice_text_key not in request.POST:
+                                break
+                            
+                            choice_text = request.POST.get(choice_text_key, '').strip()
+                            if choice_text:
+                                is_correct = choice_correct_key in request.POST and request.POST.get(choice_correct_key) == 'on'
+                                logger.info(f'  Opção dinâmica {choice_index}: Texto="{choice_text[:30]}", is_correct={is_correct}')
+                                dynamic_choices.append({
+                                    'text': choice_text,
+                                    'is_correct': is_correct
+                                })
+                            choice_index += 1
+                        
+                        # Salva opções dinâmicas (novas)
+                        if dynamic_choices:
+                            logger.info(f'Encontradas {len(dynamic_choices)} opções dinâmicas')
+                            for order, choice_data in enumerate(dynamic_choices):
+                                choice = Choice.objects.create(
+                                    question=question,
+                                    text=choice_data['text'],
+                                    is_correct=choice_data['is_correct'],
+                                    order=question.choices.count() + order  # Adiciona no final
+                                )
+                                logger.info(f'  ✅ Opção dinâmica criada: ID={choice.id}, is_correct={choice.is_correct}')
+                        
+                        # Valida se tem pelo menos uma correta (formset OU dinâmica)
+                        has_correct = has_correct_formset or any(c['is_correct'] for c in dynamic_choices)
+                        total_choices = len(formset_choices) + len(dynamic_choices)
+                        
+                        logger.info(f'Total de opções: {total_choices} (formset: {len(formset_choices)}, dinâmicas: {len(dynamic_choices)}), Tem correta: {has_correct}')
+                        
+                        if not has_correct and total_choices > 0:
+                            validation_errors.append(f'Pergunta "{question_text[:50]}": Deve ter pelo menos uma resposta correta marcada.')
+                        elif total_choices < 2:
+                            validation_errors.append(f'Pergunta "{question_text[:50]}": Adicione pelo menos 2 opções de resposta.')
                     
                     else:
                         # PERGUNTA NOVA: Processa opções dinâmicas do JavaScript
