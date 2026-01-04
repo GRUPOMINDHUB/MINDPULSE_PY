@@ -556,9 +556,18 @@ class UserQuizAttempt(TimeStampedModel):
             return 0
         
         correct = 0
-        # Debug: vamos garantir que estamos comparando corretamente
+        # Busca todas as escolhas corretas de uma vez para otimizar
+        all_choices = Choice.objects.filter(question__in=questions).select_related('question')
+        correct_choices_map = {}
+        for choice in all_choices:
+            if choice.is_correct:
+                question_id = str(choice.question.id)
+                if question_id not in correct_choices_map:
+                    correct_choices_map[question_id] = []
+                correct_choices_map[question_id].append(choice.id)
+        
+        # Processa cada pergunta
         for question in questions:
-            # Normaliza o ID da pergunta para string
             question_id_str = str(question.id)
             
             # Tenta pegar a resposta de várias formas
@@ -567,25 +576,30 @@ class UserQuizAttempt(TimeStampedModel):
                 selected_choice_id = self.answers[question_id_str]
             elif question.id in self.answers:
                 selected_choice_id = self.answers[question.id]
+            elif f'question_{question.id}' in self.answers:
+                selected_choice_id = self.answers[f'question_{question.id}']
             
             if selected_choice_id:
-                # Converte para int para buscar no banco
+                # Converte para int para comparar
                 try:
                     selected_choice_id = int(selected_choice_id)
                 except (ValueError, TypeError):
                     # Se não conseguir converter, pula esta pergunta
                     continue
                 
-                # Busca a escolha selecionada
-                try:
-                    selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
-                    # Verifica se é a resposta correta
-                    if selected_choice.is_correct:
+                # Verifica se a escolha selecionada está na lista de corretas
+                if question_id_str in correct_choices_map:
+                    if selected_choice_id in correct_choices_map[question_id_str]:
                         correct += 1
-                except Choice.DoesNotExist:
-                    # Se a escolha não existe, pode ter sido deletada ou alterada
-                    # Não conta como correta
-                    pass
+                else:
+                    # Se não tem escolhas corretas cadastradas, verifica diretamente
+                    try:
+                        selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+                        if selected_choice.is_correct:
+                            correct += 1
+                    except Choice.DoesNotExist:
+                        # Se a escolha não existe, não conta como correta
+                        pass
             # Se não tem resposta, não conta como correta (já está implícito)
         
         self.correct_answers = correct
