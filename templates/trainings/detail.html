@@ -100,7 +100,7 @@
     <div class="space-y-3">
         {% for item in content_items %}
         {% if item.type == 'video' %}
-        <a href="{% url 'trainings:player' training.slug item.object.id %}" 
+        <a href="{% url 'trainings:content_player' training.slug item.type item.id %}" 
            class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl border border-dark-600 hover:border-brand-500/50 group transition-all"
            data-content-id="{{ item.id }}"
            data-content-type="{{ item.type }}">
@@ -142,7 +142,7 @@
             </div>
         </a>
         {% else %}
-        <a href="{% url 'trainings:quiz_take' training.slug item.object.id %}" 
+        <a href="{% url 'trainings:content_player' training.slug item.type item.id %}" 
            class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl border border-dark-600 hover:border-brand-500/50 group transition-all"
            data-content-id="{{ item.id }}"
            data-content-type="{{ item.type }}">

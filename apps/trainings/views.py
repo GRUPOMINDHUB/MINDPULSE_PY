@@ -200,6 +200,15 @@ def training_detail(request, slug):
 @login_required
 def video_player(request, training_slug, video_id):
     """Player de vídeo com tracking de progresso."""
+    return content_player(request, training_slug, 'video', video_id)
+
+
+@login_required
+def content_player(request, training_slug, content_type, content_id):
+    """
+    Player unificado para vídeos e quizzes.
+    Aceita content_type: 'video' ou 'quiz'
+    """
     company = request.current_company
     user = request.user
     
@@ -223,66 +232,101 @@ def video_player(request, training_slug, video_id):
             is_active=True
         )
     
-    video = get_object_or_404(
-        Video,
-        id=video_id,
-        training=training,
-        is_active=True
-    )
+    # Busca todos os conteúdos ordenados
+    videos = list(training.videos.filter(is_active=True).order_by('order'))
+    quizzes = list(training.quizzes.filter(is_active=True).order_by('order'))
     
-    # Busca ou cria progresso do usuário
-    progress, created = UserProgress.objects.get_or_create(
-        user=request.user,
-        video=video
-    )
+    # Combina em lista unificada
+    all_content = []
+    for video in videos:
+        all_content.append({'type': 'video', 'id': video.id, 'order': video.order, 'object': video})
+    for quiz in quizzes:
+        all_content.append({'type': 'quiz', 'id': quiz.id, 'order': quiz.order, 'object': quiz})
+    all_content.sort(key=lambda x: x['order'])
     
-    # Verifica se pode acessar este vídeo (deve ter completado o anterior)
-    # Pega o vídeo anterior na ordem
-    prev_video_in_order = Video.objects.filter(
-        training=training,
-        is_active=True,
-        order__lt=video.order
-    ).order_by('-order').first()
+    # Busca o conteúdo atual
+    current_content = None
+    current_index = -1
+    for idx, item in enumerate(all_content):
+        if item['type'] == content_type and item['id'] == content_id:
+            current_content = item
+            current_index = idx
+            break
     
-    # Se existe vídeo anterior, verifica se foi completado
-    if prev_video_in_order and not user.is_superuser:
-        prev_progress = UserProgress.objects.filter(
-            user=user,
-            video=prev_video_in_order,
-            completed=True
-        ).exists()
+    if not current_content:
+        messages.error(request, 'Conteúdo não encontrado.')
+        return redirect('trainings:detail', slug=training_slug)
+    
+    # Verifica se pode acessar (deve ter completado o anterior)
+    if current_index > 0 and not user.is_superuser:
+        prev_content = all_content[current_index - 1]
+        can_access = False
         
-        if not prev_progress:
-            messages.warning(request, f'Você precisa assistir 90% do vídeo anterior "{prev_video_in_order.title}" antes de acessar este vídeo.')
-            return redirect('trainings:player', training_slug=training.slug, video_id=prev_video_in_order.id)
+        if prev_content['type'] == 'video':
+            prev_progress = UserProgress.objects.filter(
+                user=user,
+                video_id=prev_content['id'],
+                completed=True
+            ).exists()
+            can_access = prev_progress
+        elif prev_content['type'] == 'quiz':
+            prev_attempt = UserQuizAttempt.objects.filter(
+                user=user,
+                quiz_id=prev_content['id'],
+                is_passed=True
+            ).exists()
+            can_access = prev_attempt
+        
+        if not can_access:
+            prev_obj = prev_content['object']
+            messages.warning(request, f'Você precisa completar o conteúdo anterior "{prev_obj.title}" antes de acessar este.')
+            if prev_content['type'] == 'video':
+                return redirect('trainings:content_player', training_slug=training.slug, content_type='video', content_id=prev_content['id'])
+            else:
+                return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=prev_content['id'])
     
-    # Próximo vídeo
-    next_video = Video.objects.filter(
-        training=training,
-        is_active=True,
-        order__gt=video.order
-    ).order_by('order').first()
-    
-    # Próximo quiz (se não há próximo vídeo, verifica se há quiz após este vídeo)
-    next_quiz = None
-    if not next_video:
-        next_quiz = Quiz.objects.filter(
-            training=training,
-            is_active=True,
-            order__gt=video.order
-        ).order_by('order').first()
-    
-    # Vídeo anterior (para navegação)
-    prev_video = prev_video_in_order
+    # Próximo e anterior
+    next_content = all_content[current_index + 1] if current_index + 1 < len(all_content) else None
+    prev_content = all_content[current_index - 1] if current_index > 0 else None
     
     context = {
         'training': training,
-        'video': video,
-        'progress': progress,
-        'next_video': next_video,
-        'next_quiz': next_quiz,
-        'prev_video': prev_video,
+        'content_type': content_type,
+        'all_content': all_content,
+        'current_index': current_index,
+        'next_content': next_content,
+        'prev_content': prev_content,
     }
+    
+    # Adiciona dados específicos do tipo
+    if content_type == 'video':
+        video = current_content['object']
+        progress, created = UserProgress.objects.get_or_create(user=user, video=video)
+        context.update({
+            'video': video,
+            'progress': progress,
+        })
+    elif content_type == 'quiz':
+        quiz = current_content['object']
+        # Busca a primeira pergunta não respondida ou a primeira pergunta
+        questions = list(quiz.questions.filter(is_active=True).order_by('order'))
+        current_question_index = request.GET.get('question', 0)
+        try:
+            current_question_index = int(current_question_index)
+        except:
+            current_question_index = 0
+        
+        if current_question_index >= len(questions):
+            current_question_index = 0
+        
+        current_question = questions[current_question_index] if questions else None
+        context.update({
+            'quiz': quiz,
+            'questions': questions,
+            'current_question': current_question,
+            'current_question_index': current_question_index,
+            'total_questions': len(questions),
+        })
     
     return render(request, 'trainings/player.html', context)
 
@@ -1168,7 +1212,7 @@ def quiz_delete(request, quiz_id):
 @login_required
 def quiz_take(request, training_slug, quiz_id):
     """
-    Colaborador responde o quiz.
+    Colaborador responde o quiz (processa todas as respostas e finaliza).
     ACCESS: ADMIN MASTER | GESTOR | COLABORADOR (se atribuído)
     """
     training = get_object_or_404(Training, slug=training_slug, is_active=True)
@@ -1201,12 +1245,31 @@ def quiz_take(request, training_slug, quiz_id):
     # O status de "Aprovado" será mantido, mas o usuário pode refazer quantas vezes quiser
     
     if request.method == 'POST':
-        # Processa respostas
+        # Processa respostas (pode vir do localStorage via JavaScript ou do form)
         answers = {}
+        
+        # Tenta pegar do POST primeiro
         for key, value in request.POST.items():
             if key.startswith('question_'):
                 question_id = key.replace('question_', '')
                 answers[question_id] = value
+        
+        # Se não tem respostas no POST, tenta pegar do body JSON (se vier via AJAX)
+        if not answers:
+            import json
+            try:
+                body_data = json.loads(request.body)
+                answers = body_data.get('answers', {})
+            except:
+                pass
+        
+        # Se ainda não tem, tenta pegar do localStorage via parâmetro
+        if not answers:
+            answers_str = request.POST.get('answers_json', '{}')
+            try:
+                answers = json.loads(answers_str)
+            except:
+                pass
         
         # Cria tentativa
         attempt = UserQuizAttempt.objects.create(
@@ -1221,15 +1284,8 @@ def quiz_take(request, training_slug, quiz_id):
         # Redireciona para resultado
         return redirect('trainings:quiz_result', training_slug=training.slug, attempt_id=attempt.id)
     
-    # Carrega perguntas com opções
-    questions = quiz.questions.all().prefetch_related('choices').order_by('order')
-    
-    context = {
-        'training': training,
-        'quiz': quiz,
-        'questions': questions,
-    }
-    return render(request, 'trainings/quiz_take.html', context)
+    # Se GET, redireciona para content_player
+    return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id)
 
 
 @login_required

@@ -38,6 +38,7 @@ urlpatterns = [
     
     # Rotas genéricas (slug) - DEVEM VIR POR ÚLTIMO
     path('<slug:slug>/', views.training_detail, name='detail'),
-    path('<slug:training_slug>/video/<int:video_id>/', views.video_player, name='player'),
+    path('<slug:training_slug>/video/<int:video_id>/', views.video_player, name='player'),  # Mantido para compatibilidade
+    path('<slug:training_slug>/content/<str:content_type>/<int:content_id>/', views.content_player, name='content_player'),
 ]
 
