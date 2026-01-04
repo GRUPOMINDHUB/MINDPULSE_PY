@@ -133,16 +133,24 @@ def training_detail(request, slug):
                 messages.error(request, 'Você não tem acesso a este treinamento.')
                 return redirect('trainings:list')
     
-    videos = training.videos.filter(is_active=True).order_by('order')
-    quizzes = training.quizzes.filter(is_active=True).order_by('order')
+    # Força refresh do objeto training para pegar dados atualizados do banco
+    training.refresh_from_db()
+    
+    # Busca todos os vídeos e quizzes ativos, forçando nova query e convertendo para lista
+    videos = list(training.videos.filter(is_active=True).order_by('order'))
+    quizzes = list(training.quizzes.filter(is_active=True).order_by('order'))
     
     # Busca progresso do usuário em cada vídeo
-    user_progress = UserProgress.objects.filter(
-        user=request.user,
-        video__in=videos
-    ).values('video_id', 'completed', 'last_position')
-    
-    progress_map = {p['video_id']: p for p in user_progress}
+    if videos:
+        video_ids = [v.id for v in videos]
+        user_progress = UserProgress.objects.filter(
+            user=request.user,
+            video_id__in=video_ids
+        ).values('video_id', 'completed', 'last_position')
+        
+        progress_map = {p['video_id']: p for p in user_progress}
+    else:
+        progress_map = {}
     
     # Busca tentativas de quiz do usuário (pega a última tentativa de cada quiz)
     quiz_passed_map = {}
