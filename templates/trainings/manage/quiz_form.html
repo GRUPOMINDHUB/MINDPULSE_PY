@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if quiz %}Editar{% else %}Novo{% endif %} Quiz - {{ training.title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'trainings:manage_detail' training.pk %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-bold text-white">{% if quiz %}Editar{% else %}Novo{% endif %} Quiz</h1>
+            <p class="text-gray-500">{{ training.title }}</p>
+        </div>
+    </div>
+    
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <form method="post" id="quizForm">
+        {% csrf_token %}
+        
+        <!-- Informações do Quiz -->
+        <div class="card mb-6">
+            <h2 class="text-xl font-semibold text-white mb-6">Informações do Quiz</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="id_title" class="block text-sm font-medium text-gray-400 mb-2">Título *</label>
+                    {{ quiz_form.title }}
+                    {% if quiz_form.title.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ quiz_form.title.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_description" class="block text-sm font-medium text-gray-400 mb-2">Descrição</label>
+                    {{ quiz_form.description }}
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="id_order" class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
+                        {{ quiz_form.order }}
+                    </div>
+                    
+                    <div>
+                        <label for="id_passing_score" class="block text-sm font-medium text-gray-400 mb-2">Nota Mínima (%)</label>
+                        {{ quiz_form.passing_score }}
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            {{ quiz_form.is_active }}
+                            <span class="text-gray-300">Ativo</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        {{ quiz_form.allow_multiple_attempts }}
+                        <span class="text-gray-300">Permitir múltiplas tentativas</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Perguntas -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-white">Perguntas</h2>
+                <button type="button" onclick="addQuestion()" class="btn-secondary flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Adicionar Pergunta
+                </button>
+            </div>
+            
+            <div id="questionsContainer" class="space-y-6">
+                {{ question_formset.management_form }}
+                {% for question_form in question_formset %}
+                <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="{{ forloop.counter0 }}">
+                    <div class="flex items-start justify-between mb-4">
+                        <h3 class="text-lg font-medium text-white">Pergunta {{ forloop.counter }}</h3>
+                        <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Texto da Pergunta *</label>
+                            {{ question_form.text }}
+                            {{ question_form.id }}
+                            {{ question_form.DELETE }}
+                            {% if question_form.text.errors %}
+                            <p class="mt-1 text-sm text-red-400">{{ question_form.text.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
+                            {{ question_form.order }}
+                        </div>
+                        
+                        <!-- Opções de Resposta -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="block text-sm font-medium text-gray-400">Opções de Resposta *</label>
+                                <button type="button" onclick="addChoice(this)" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+                                    + Adicionar Opção
+                                </button>
+                            </div>
+                            
+                            <div class="choices-container space-y-2" data-question-id="{{ question_form.instance.id|default:'' }}" data-question-index="{{ forloop.counter0 }}">
+                                {% if question_form.instance.pk and choice_formsets %}
+                                    {% for q_id, choice_formset in choice_formsets.items %}
+                                        {% if q_id == question_form.instance.id %}
+                                            {{ choice_formset.management_form }}
+                                            {% for choice_form in choice_formset %}
+                                            <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600">
+                                                <input type="radio" name="question_{{ question_form.instance.id }}_correct" 
+                                                       value="{{ choice_form.instance.id|default:'' }}" 
+                                                       {% if choice_form.is_correct.value %}checked{% endif %}
+                                                       class="form-radio" required>
+                                                {{ choice_form.text }}
+                                                {{ choice_form.id }}
+                                                {{ choice_form.DELETE }}
+                                                {{ choice_form.order }}
+                                                <button type="button" onclick="removeChoice(this)" class="ml-auto p-1 text-gray-500 hover:text-red-400 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- Placeholder para novas perguntas -->
+                                    <div class="text-sm text-gray-500 italic">Adicione opções após salvar a pergunta</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12 text-gray-500">
+                    <p>Nenhuma pergunta adicionada ainda.</p>
+                    <p class="text-sm mt-1">Clique em "Adicionar Pergunta" para começar.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-4 mt-8">
+            <a href="{% url 'trainings:manage_detail' training.pk %}" class="px-6 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-dark-900 transition-all duration-200">
+                Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                {% if quiz %}Salvar Alterações{% else %}Criar Quiz{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+let questionIndex = {{ question_formset.total_form_count|default:0 }};
+
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const totalForms = document.getElementById('id_questions-TOTAL_FORMS');
+    const questionHtml = `
+        <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="${questionIndex}">
+            <div class="flex items-start justify-between mb-4">
+                <h3 class="text-lg font-medium text-white">Pergunta ${questionIndex + 1}</h3>
+                <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Texto da Pergunta *</label>
+                    <textarea name="questions-${questionIndex}-text" 
+                              class="form-input" 
+                              rows="2" 
+                              placeholder="Digite a pergunta..."
+                              required></textarea>
+                    <input type="hidden" name="questions-${questionIndex}-id" value="">
+                    <input type="hidden" name="questions-${questionIndex}-DELETE" value="false">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
+                    <input type="number" name="questions-${questionIndex}-order" 
+                           class="form-input" 
+                           value="${questionIndex + 1}" 
+                           min="0">
+                </div>
+                
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-sm font-medium text-gray-400">Opções de Resposta *</label>
+                        <button type="button" onclick="addChoice(this)" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+                            + Adicionar Opção
+                        </button>
+                    </div>
+                    
+                    <div class="choices-container space-y-2" data-question-index="${questionIndex}">
+                        <!-- Opções serão adicionadas aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    totalForms.value = parseInt(totalForms.value) + 1;
+    questionIndex++;
+    updateQuestionNumbers();
+}
+
+function removeQuestion(button) {
+    const questionItem = button.closest('.question-item');
+    const deleteInput = questionItem.querySelector('input[name*="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'on';
+        questionItem.style.display = 'none';
+    } else {
+        questionItem.remove();
+        updateQuestionNumbers();
+    }
+}
+
+function addChoice(button) {
+    const choicesContainer = button.parentElement.nextElementSibling;
+    const questionIndex = choicesContainer.getAttribute('data-question-index') || 
+                         choicesContainer.getAttribute('data-question-id');
+    const choiceCount = choicesContainer.querySelectorAll('.choice-item').length;
+    
+    const choiceHtml = `
+        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600">
+            <input type="radio" name="question_${questionIndex}_correct" 
+                   value="choice_${choiceCount}" 
+                   class="form-radio" required>
+            <input type="text" 
+                   name="choice_${questionIndex}_${choiceCount}_text" 
+                   class="form-input flex-1" 
+                   placeholder="Digite a opção de resposta..."
+                   required>
+            <input type="hidden" name="choice_${questionIndex}_${choiceCount}_order" value="${choiceCount}">
+            <button type="button" onclick="removeChoice(this)" class="ml-auto p-1 text-gray-500 hover:text-red-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    choicesContainer.insertAdjacentHTML('beforeend', choiceHtml);
+}
+
+function removeChoice(button) {
+    const choiceItem = button.closest('.choice-item');
+    choiceItem.remove();
+}
+
+function updateQuestionNumbers() {
+    const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
+    questions.forEach((question, index) => {
+        const title = question.querySelector('h3');
+        if (title) {
+            title.textContent = `Pergunta ${index + 1}`;
+        }
+    });
+}
+</script>
+{% endblock %}
+

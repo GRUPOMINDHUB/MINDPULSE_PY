@@ -129,22 +129,58 @@ class Training(CompanyBaseModel):
         return f'{minutes:02d}:{seconds:02d}'
     
     def get_user_progress(self, user):
-        """Retorna progresso do usuário neste treinamento."""
-        total = self.total_videos
-        if total == 0:
+        """
+        Retorna progresso do usuário neste treinamento.
+        Considera vídeos assistidos E quizzes aprovados.
+        """
+        total_videos = self.videos.filter(is_active=True).count()
+        total_quizzes = self.quizzes.filter(is_active=True).count()
+        total_items = total_videos + total_quizzes
+        
+        if total_items == 0:
             return 0
         
-        completed = UserProgress.objects.filter(
+        # Vídeos completados
+        completed_videos = UserProgress.objects.filter(
             user=user,
             video__training=self,
+            video__is_active=True,
             completed=True
         ).count()
         
-        return round((completed / total) * 100, 1)
+        # Quizzes aprovados
+        completed_quizzes = 0
+        for quiz in self.quizzes.filter(is_active=True):
+            if quiz.is_passed_by(user):
+                completed_quizzes += 1
+        
+        completed_items = completed_videos + completed_quizzes
+        
+        return round((completed_items / total_items) * 100, 1)
     
     def is_completed_by(self, user):
-        """Verifica se usuário completou o treinamento."""
-        return self.get_user_progress(user) == 100
+        """
+        Verifica se usuário completou o treinamento.
+        Requer: todos os vídeos assistidos E todos os quizzes aprovados.
+        """
+        # Verifica vídeos
+        total_videos = self.videos.filter(is_active=True).count()
+        completed_videos = UserProgress.objects.filter(
+            user=user,
+            video__training=self,
+            video__is_active=True,
+            completed=True
+        ).count()
+        
+        if total_videos > 0 and completed_videos < total_videos:
+            return False
+        
+        # Verifica quizzes
+        for quiz in self.quizzes.filter(is_active=True):
+            if not quiz.is_passed_by(user):
+                return False
+        
+        return True
 
 
 class Video(TimeStampedModel):
@@ -334,3 +370,195 @@ class UserTrainingReward(TimeStampedModel):
     def __str__(self):
         return f'{self.user} - {self.training.title} ({self.points_earned} pts)'
 
+
+class Quiz(TimeStampedModel):
+    """
+    Quiz de treinamento - Avaliação com perguntas de múltipla escolha.
+    """
+    training = models.ForeignKey(
+        Training,
+        on_delete=models.CASCADE,
+        related_name='quizzes',
+        verbose_name='Treinamento'
+    )
+    
+    title = models.CharField('Título', max_length=255)
+    description = models.TextField('Descrição', blank=True)
+    order = models.PositiveIntegerField('Ordem', default=0)
+    is_active = models.BooleanField('Ativo', default=True)
+    
+    # Configurações
+    passing_score = models.PositiveIntegerField(
+        'Nota Mínima para Aprovação',
+        default=70,
+        help_text='Nota mínima (0-100) para aprovação no quiz'
+    )
+    allow_multiple_attempts = models.BooleanField(
+        'Permitir Múltiplas Tentativas',
+        default=True,
+        help_text='Permite que o colaborador refaça o quiz caso não seja aprovado'
+    )
+    
+    class Meta:
+        verbose_name = 'Quiz'
+        verbose_name_plural = 'Quizzes'
+        ordering = ['training', 'order']
+    
+    def __str__(self):
+        return f'{self.training.title} - {self.title}'
+    
+    @property
+    def total_questions(self):
+        """Retorna o total de perguntas do quiz."""
+        return self.questions.count()
+    
+    def is_passed_by(self, user):
+        """Verifica se o usuário foi aprovado no quiz."""
+        best_attempt = UserQuizAttempt.objects.filter(
+            user=user,
+            quiz=self
+        ).order_by('-score').first()
+        
+        if not best_attempt:
+            return False
+        
+        return best_attempt.score >= self.passing_score
+    
+    def get_best_score(self, user):
+        """Retorna a melhor nota do usuário neste quiz."""
+        best_attempt = UserQuizAttempt.objects.filter(
+            user=user,
+            quiz=self
+        ).order_by('-score').first()
+        
+        return best_attempt.score if best_attempt else None
+
+
+class Question(TimeStampedModel):
+    """
+    Pergunta do quiz.
+    """
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='questions',
+        verbose_name='Quiz'
+    )
+    
+    text = models.TextField('Texto da Pergunta')
+    order = models.PositiveIntegerField('Ordem', default=0)
+    
+    class Meta:
+        verbose_name = 'Pergunta'
+        verbose_name_plural = 'Perguntas'
+        ordering = ['quiz', 'order']
+    
+    def __str__(self):
+        return f'{self.quiz.title} - {self.text[:50]}...'
+    
+    @property
+    def correct_choice(self):
+        """Retorna a escolha correta desta pergunta."""
+        return self.choices.filter(is_correct=True).first()
+    
+    @property
+    def total_choices(self):
+        """Retorna o total de opções desta pergunta."""
+        return self.choices.count()
+
+
+class Choice(TimeStampedModel):
+    """
+    Opção de resposta de uma pergunta.
+    """
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name='choices',
+        verbose_name='Pergunta'
+    )
+    
+    text = models.CharField('Texto da Opção', max_length=500)
+    is_correct = models.BooleanField('Resposta Correta', default=False)
+    order = models.PositiveIntegerField('Ordem', default=0)
+    
+    class Meta:
+        verbose_name = 'Opção'
+        verbose_name_plural = 'Opções'
+        ordering = ['question', 'order']
+    
+    def __str__(self):
+        status = '✓' if self.is_correct else '○'
+        return f'{status} {self.text[:50]}...'
+
+
+class UserQuizAttempt(TimeStampedModel):
+    """
+    Tentativa do usuário em um quiz.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='quiz_attempts',
+        verbose_name='Usuário'
+    )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='attempts',
+        verbose_name='Quiz'
+    )
+    
+    # Resultado
+    score = models.PositiveIntegerField(
+        'Nota',
+        default=0,
+        help_text='Nota de 0 a 100'
+    )
+    total_questions = models.PositiveIntegerField('Total de Perguntas', default=0)
+    correct_answers = models.PositiveIntegerField('Respostas Corretas', default=0)
+    
+    # Respostas selecionadas (JSON)
+    answers = models.JSONField(
+        'Respostas',
+        default=dict,
+        help_text='Dicionário com question_id: choice_id das respostas'
+    )
+    
+    # Controle
+    completed_at = models.DateTimeField('Concluído em', auto_now_add=True)
+    is_passed = models.BooleanField('Aprovado', default=False)
+    
+    class Meta:
+        verbose_name = 'Tentativa de Quiz'
+        verbose_name_plural = 'Tentativas de Quizzes'
+        ordering = ['-completed_at']
+    
+    def __str__(self):
+        status = 'Aprovado' if self.is_passed else 'Reprovado'
+        return f'{self.user} - {self.quiz.title} ({self.score}% - {status})'
+    
+    def calculate_score(self):
+        """Calcula a nota baseada nas respostas."""
+        total = self.quiz.total_questions
+        if total == 0:
+            return 0
+        
+        correct = 0
+        for question in self.quiz.questions.all():
+            selected_choice_id = self.answers.get(str(question.id))
+            if selected_choice_id:
+                try:
+                    choice = Choice.objects.get(id=selected_choice_id, question=question)
+                    if choice.is_correct:
+                        correct += 1
+                except Choice.DoesNotExist:
+                    pass
+        
+        self.correct_answers = correct
+        self.total_questions = total
+        self.score = round((correct / total) * 100) if total > 0 else 0
+        self.is_passed = self.score >= self.quiz.passing_score
+        self.save()
+        
+        return self.score

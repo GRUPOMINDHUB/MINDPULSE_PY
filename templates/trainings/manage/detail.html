@@ -24,10 +24,13 @@
     </div>
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Lista de Vídeos -->
-        <div class="lg:col-span-2">
+        <!-- Lista de Vídeos e Quizzes -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Vídeos -->
             <div class="card">
-                <h2 class="text-xl font-semibold text-white mb-6">📚 Vídeos ({{ videos.count }})</h2>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-white">📚 Vídeos ({{ videos.count }})</h2>
+                </div>
                 
                 <div class="space-y-3" id="videoList">
                     {% for video in videos %}
@@ -72,6 +75,75 @@
                         </svg>
                         <p>Nenhum vídeo adicionado ainda.</p>
                         <p class="text-sm mt-1">Use o formulário ao lado para adicionar vídeos.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Quizzes -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-white">🧠 Quizzes ({{ quizzes.count }})</h2>
+                    <a href="{% url 'trainings:quiz_create' training.pk %}" class="btn-primary flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Adicionar Quiz
+                    </a>
+                </div>
+                
+                <div class="space-y-3">
+                    {% for quiz in quizzes %}
+                    <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl group">
+                        <!-- Order Number -->
+                        <div class="w-8 h-8 bg-dark-600 rounded-lg flex items-center justify-center text-gray-400 font-medium">
+                            {{ quiz.order }}
+                        </div>
+                        
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-white truncate">{{ quiz.title }}</h4>
+                            <p class="text-sm text-gray-500">
+                                {{ quiz.total_questions }} pergunta{{ quiz.total_questions|pluralize }} • 
+                                Nota mínima: {{ quiz.passing_score }}%
+                            </p>
+                        </div>
+                        
+                        <!-- Status -->
+                        {% if quiz.is_active %}
+                        <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs font-medium rounded-full">Inativo</span>
+                        {% endif %}
+                        
+                        <!-- Actions -->
+                        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{% url 'trainings:quiz_edit' quiz.pk %}" 
+                               class="p-2 text-gray-500 hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </a>
+                            <form method="post" action="{% url 'trainings:quiz_delete' quiz.pk %}" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este quiz?');">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>Nenhum quiz adicionado ainda.</p>
+                        <a href="{% url 'trainings:quiz_create' training.pk %}" class="btn-primary mt-4 inline-block">
+                            ➕ Adicionar Quiz
+                        </a>
                     </div>
                     {% endfor %}
                 </div>

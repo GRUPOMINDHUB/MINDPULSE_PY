@@ -95,7 +95,7 @@
                 <a href="{% url 'trainings:player' training.slug next_video.id %}" 
                    class="btn-primary flex items-center gap-2"
                    id="nextVideoBtn">
-                    Próximo
+                    Próximo Vídeo
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
@@ -107,7 +107,29 @@
                         disabled
                         data-next-url="{% url 'trainings:player' training.slug next_video.id %}"
                         title="Assista 90% do vídeo para desbloquear o próximo">
-                    Próximo
+                    Próximo Vídeo
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                {% endif %}
+                {% elif next_quiz %}
+                {% if progress.completed %}
+                <a href="{% url 'trainings:quiz_take' training.slug next_quiz.id %}" 
+                   class="btn-primary flex items-center gap-2"
+                   id="nextQuizBtn">
+                    Próximo Quiz
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                {% else %}
+                <button type="button" 
+                        class="btn-secondary flex items-center gap-2 cursor-not-allowed opacity-50"
+                        id="nextQuizBtn"
+                        disabled
+                        title="Assista 90% do vídeo para desbloquear o quiz">
+                    Próximo Quiz
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
@@ -144,14 +166,37 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                         {% else %}
-                        {{ forloop.counter }}
+                        {{ v.order }}
                         {% endif %}
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium truncate {% if v.id == video.id %}text-brand-400{% else %}text-white{% endif %}">
-                            {{ v.title }}
+                            📹 {{ v.title }}
                         </p>
                         <p class="text-xs text-gray-500">{{ v.duration_formatted }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+                
+                {% for quiz in training.quizzes.all %}
+                <a href="{% url 'trainings:quiz_take' training.slug quiz.id %}" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:bg-dark-700">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 
+                                {% if quiz.is_passed_by %}bg-green-500/20 text-green-400
+                                {% else %}bg-dark-600 text-gray-500{% endif %}">
+                        {% if quiz.is_passed_by %}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {% else %}
+                        {{ quiz.order }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate text-white">
+                            🧠 {{ quiz.title }}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ quiz.total_questions }} pergunta{{ quiz.total_questions|pluralize }}</p>
                     </div>
                 </a>
                 {% endfor %}

@@ -10,8 +10,8 @@ from django.views.decorators.http import require_POST
 from django.db.models import Max, Q, Count
 import json
 
-from .models import Training, Video, UserProgress, UserTrainingReward
-from .forms import TrainingForm, VideoUploadForm, AdminTrainingForm
+from .models import Training, Video, UserProgress, UserTrainingReward, Quiz, Question, Choice, UserQuizAttempt
+from .forms import TrainingForm, VideoUploadForm, AdminTrainingForm, QuizForm, QuestionFormSet, ChoiceFormSet
 from apps.core.models import Company
 from apps.core.decorators import gestor_required, gestor_required_ajax
 
@@ -230,6 +230,15 @@ def video_player(request, training_slug, video_id):
         order__gt=video.order
     ).order_by('order').first()
     
+    # Próximo quiz (se não há próximo vídeo, verifica se há quiz após este vídeo)
+    next_quiz = None
+    if not next_video:
+        next_quiz = Quiz.objects.filter(
+            training=training,
+            is_active=True,
+            order__gt=video.order
+        ).order_by('order').first()
+    
     # Vídeo anterior (para navegação)
     prev_video = prev_video_in_order
     
@@ -238,6 +247,7 @@ def video_player(request, training_slug, video_id):
         'video': video,
         'progress': progress,
         'next_video': next_video,
+        'next_quiz': next_quiz,
         'prev_video': prev_video,
     }
     
@@ -458,6 +468,7 @@ def training_manage_detail(request, pk):
         training = get_object_or_404(Training, pk=pk, company=request.current_company)
     
     videos = training.videos.all().order_by('order')
+    quizzes = training.quizzes.all().order_by('order')
     
     # Form para adicionar vídeo
     if request.method == 'POST':
@@ -478,6 +489,7 @@ def training_manage_detail(request, pk):
     context = {
         'training': training,
         'videos': videos,
+        'quizzes': quizzes,
         'form': form,
         'is_admin_master': is_admin,
     }
@@ -603,4 +615,282 @@ def get_company_users(request):
         'users': users_data,
         'count': len(users_data)
     })
+
+
+@login_required
+@gestor_required
+def quiz_create(request, training_id):
+    """
+    Criar novo quiz para um treinamento.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    training = get_object_or_404(Training, pk=training_id)
+    
+    # Verifica permissão
+    is_admin = request.user.is_superuser
+    if not is_admin and training.company != request.current_company:
+        messages.error(request, 'Você não tem permissão para criar quiz neste treinamento.')
+        return redirect('trainings:manage_list')
+    
+    if request.method == 'POST':
+        quiz_form = QuizForm(request.POST)
+        question_formset = QuestionFormSet(request.POST, prefix='questions')
+        
+        if quiz_form.is_valid() and question_formset.is_valid():
+            quiz = quiz_form.save(commit=False)
+            quiz.training = training
+            quiz.save()
+            
+            # Salva perguntas
+            questions = question_formset.save(commit=False)
+            for question in questions:
+                question.quiz = quiz
+                question.save()
+            
+            # Para cada pergunta, salva as opções
+            for form in question_formset.forms:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                    question = form.instance
+                    if question.pk:
+                        # Remove opções antigas se necessário
+                        choice_prefix = f'choices_{question.id}'
+                        choice_formset = ChoiceFormSet(
+                            request.POST,
+                            instance=question,
+                            prefix=choice_prefix
+                        )
+                        
+                        if choice_formset.is_valid():
+                            choices = choice_formset.save(commit=False)
+                            for choice in choices:
+                                choice.question = question
+                                choice.save()
+                            choice_formset.save_m2m()
+                            
+                            # Deleta opções marcadas para deletar
+                            for form in choice_formset.deleted_forms:
+                                if form.instance.pk:
+                                    form.instance.delete()
+            
+            messages.success(request, 'Quiz criado com sucesso!')
+            return redirect('trainings:manage_detail', pk=training.pk)
+    else:
+        quiz_form = QuizForm()
+        question_formset = QuestionFormSet(prefix='questions')
+    
+    context = {
+        'training': training,
+        'quiz_form': quiz_form,
+        'question_formset': question_formset,
+    }
+    return render(request, 'trainings/manage/quiz_form.html', context)
+
+
+@login_required
+@gestor_required
+def quiz_edit(request, quiz_id):
+    """
+    Editar quiz existente.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    training = quiz.training
+    
+    # Verifica permissão
+    is_admin = request.user.is_superuser
+    if not is_admin and training.company != request.current_company:
+        messages.error(request, 'Você não tem permissão para editar este quiz.')
+        return redirect('trainings:manage_list')
+    
+    if request.method == 'POST':
+        quiz_form = QuizForm(request.POST, instance=quiz)
+        question_formset = QuestionFormSet(request.POST, instance=quiz, prefix='questions')
+        
+        if quiz_form.is_valid() and question_formset.is_valid():
+            quiz_form.save()
+            
+            # Salva perguntas
+            questions = question_formset.save(commit=False)
+            for question in questions:
+                question.quiz = quiz
+                question.save()
+            
+            # Deleta perguntas marcadas
+            for form in question_formset.deleted_forms:
+                if form.instance.pk:
+                    form.instance.delete()
+            
+            # Processa opções de cada pergunta
+            for form in question_formset.forms:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                    question = form.instance
+                    if question.pk:
+                        choice_prefix = f'choices_{question.id}'
+                        choice_formset = ChoiceFormSet(
+                            request.POST,
+                            instance=question,
+                            prefix=choice_prefix
+                        )
+                        
+                        if choice_formset.is_valid():
+                            choices = choice_formset.save(commit=False)
+                            for choice in choices:
+                                choice.question = question
+                                choice.save()
+                            
+                            # Deleta opções marcadas
+                            for del_form in choice_formset.deleted_forms:
+                                if del_form.instance.pk:
+                                    del_form.instance.delete()
+            
+            messages.success(request, 'Quiz atualizado com sucesso!')
+            return redirect('trainings:manage_detail', pk=training.pk)
+    else:
+        quiz_form = QuizForm(instance=quiz)
+        question_formset = QuestionFormSet(instance=quiz, prefix='questions')
+    
+    # Prepara formsets de opções para cada pergunta existente
+    choice_formsets = {}
+    for question in quiz.questions.all():
+        choice_formsets[question.id] = ChoiceFormSet(
+            instance=question,
+            prefix=f'choices_{question.id}'
+        )
+    
+    context = {
+        'training': training,
+        'quiz': quiz,
+        'quiz_form': quiz_form,
+        'question_formset': question_formset,
+        'choice_formsets': choice_formsets,
+    }
+    return render(request, 'trainings/manage/quiz_form.html', context)
+
+
+@login_required
+@gestor_required
+def quiz_delete(request, quiz_id):
+    """
+    Deletar quiz.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    quiz = get_object_or_404(Quiz, pk=quiz_id)
+    training = quiz.training
+    
+    # Verifica permissão
+    is_admin = request.user.is_superuser
+    if not is_admin and training.company != request.current_company:
+        messages.error(request, 'Você não tem permissão para deletar este quiz.')
+        return redirect('trainings:manage_list')
+    
+    if request.method == 'POST':
+        quiz.delete()
+        messages.success(request, 'Quiz deletado com sucesso!')
+        return redirect('trainings:manage_detail', pk=training.pk)
+    
+    return redirect('trainings:manage_detail', pk=training.pk)
+
+
+@login_required
+def quiz_take(request, training_slug, quiz_id):
+    """
+    Colaborador responde o quiz.
+    ACCESS: ADMIN MASTER | GESTOR | COLABORADOR (se atribuído)
+    """
+    training = get_object_or_404(Training, slug=training_slug, is_active=True)
+    quiz = get_object_or_404(Quiz, pk=quiz_id, training=training, is_active=True)
+    user = request.user
+    company = request.current_company
+    
+    # Verifica acesso ao treinamento
+    if not user.is_superuser:
+        if not company or training.company != company:
+            messages.error(request, 'Você não tem acesso a este treinamento.')
+            return redirect('trainings:list')
+        
+        # Gestor vê tudo, colaborador só se atribuído ou global
+        if not request.is_gestor:
+            from django.db.models import Count
+            has_access = Training.objects.filter(
+                pk=training.pk
+            ).annotate(
+                assigned_count=Count('assigned_users')
+            ).filter(
+                Q(assigned_users=user) | Q(assigned_count=0)
+            ).exists()
+            
+            if not has_access:
+                messages.error(request, 'Você não tem acesso a este treinamento.')
+                return redirect('trainings:list')
+    
+    # Verifica se já foi aprovado e não permite múltiplas tentativas
+    if not quiz.allow_multiple_attempts and quiz.is_passed_by(user):
+        messages.info(request, 'Você já foi aprovado neste quiz.')
+        return redirect('trainings:detail', slug=training.slug)
+    
+    if request.method == 'POST':
+        # Processa respostas
+        answers = {}
+        for key, value in request.POST.items():
+            if key.startswith('question_'):
+                question_id = key.replace('question_', '')
+                answers[question_id] = value
+        
+        # Cria tentativa
+        attempt = UserQuizAttempt.objects.create(
+            user=user,
+            quiz=quiz,
+            answers=answers
+        )
+        
+        # Calcula nota
+        score = attempt.calculate_score()
+        
+        # Redireciona para resultado
+        return redirect('trainings:quiz_result', training_slug=training.slug, attempt_id=attempt.id)
+    
+    # Carrega perguntas com opções
+    questions = quiz.questions.all().prefetch_related('choices').order_by('order')
+    
+    context = {
+        'training': training,
+        'quiz': quiz,
+        'questions': questions,
+    }
+    return render(request, 'trainings/quiz_take.html', context)
+
+
+@login_required
+def quiz_result(request, training_slug, attempt_id):
+    """
+    Mostra resultado da tentativa do quiz.
+    """
+    training = get_object_or_404(Training, slug=training_slug, is_active=True)
+    attempt = get_object_or_404(UserQuizAttempt, pk=attempt_id, user=request.user)
+    quiz = attempt.quiz
+    
+    # Carrega perguntas com opções e respostas corretas
+    questions = []
+    for question in quiz.questions.all().prefetch_related('choices').order_by('order'):
+        selected_choice_id = attempt.answers.get(str(question.id))
+        selected_choice = None
+        if selected_choice_id:
+            try:
+                selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+            except Choice.DoesNotExist:
+                pass
+        
+        questions.append({
+            'question': question,
+            'selected_choice': selected_choice,
+            'is_correct': selected_choice.is_correct if selected_choice else False,
+        })
+    
+    context = {
+        'training': training,
+        'quiz': quiz,
+        'attempt': attempt,
+        'questions': questions,
+    }
+    return render(request, 'trainings/quiz_result.html', context)
 

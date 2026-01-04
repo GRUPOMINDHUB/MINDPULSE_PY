@@ -3,7 +3,8 @@ Forms para gestão de treinamentos.
 """
 
 from django import forms
-from .models import Training, Video
+from django.forms import inlineformset_factory
+from .models import Training, Video, Quiz, Question, Choice
 from apps.core.models import Company
 from apps.accounts.models import UserCompany
 from django.contrib.auth import get_user_model
@@ -175,4 +176,79 @@ class VideoUploadForm(forms.Form):
             'placeholder': 'Descrição opcional'
         })
     )
+
+
+class QuizForm(forms.ModelForm):
+    """Form para criar/editar quiz."""
+    
+    class Meta:
+        model = Quiz
+        fields = ['title', 'description', 'order', 'is_active', 'passing_score', 'allow_multiple_attempts']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-input'}),
+            'description': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
+            'order': forms.NumberInput(attrs={'class': 'form-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'passing_score': forms.NumberInput(attrs={
+                'class': 'form-input',
+                'min': 0,
+                'max': 100,
+                'value': 70
+            }),
+            'allow_multiple_attempts': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }
+
+
+class QuestionForm(forms.ModelForm):
+    """Form para criar/editar pergunta."""
+    
+    class Meta:
+        model = Question
+        fields = ['text', 'order']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'class': 'form-input',
+                'rows': 2,
+                'placeholder': 'Digite a pergunta...'
+            }),
+            'order': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
+        }
+
+
+class ChoiceForm(forms.ModelForm):
+    """Form para criar/editar opção de resposta."""
+    
+    class Meta:
+        model = Choice
+        fields = ['text', 'is_correct', 'order']
+        widgets = {
+            'text': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Digite a opção de resposta...'
+            }),
+            'is_correct': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+            'order': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
+        }
+
+
+# Inline formsets para gerenciar perguntas e opções
+QuestionFormSet = inlineformset_factory(
+    Quiz,
+    Question,
+    form=QuestionForm,
+    extra=1,
+    can_delete=True,
+    min_num=1,
+    validate_min=True
+)
+
+ChoiceFormSet = inlineformset_factory(
+    Question,
+    Choice,
+    form=ChoiceForm,
+    extra=2,
+    can_delete=True,
+    min_num=2,
+    validate_min=True
+)
 

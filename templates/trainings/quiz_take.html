@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Responder Quiz - {{ quiz.title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'trainings:detail' training.slug %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-bold text-white">{{ quiz.title }}</h1>
+            <p class="text-gray-500">{{ training.title }}</p>
+        </div>
+    </div>
+    
+    {% if quiz.description %}
+    <div class="card mb-6">
+        <p class="text-gray-300">{{ quiz.description }}</p>
+        <div class="mt-4 flex items-center gap-4 text-sm text-gray-400">
+            <span>📝 {{ quiz.total_questions }} pergunta{{ quiz.total_questions|pluralize }}</span>
+            <span>✓ Nota mínima: {{ quiz.passing_score }}%</span>
+        </div>
+    </div>
+    {% endif %}
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        {% for question in questions %}
+        <div class="card">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">
+                    Pergunta {{ forloop.counter }}
+                </h3>
+                <p class="text-gray-300">{{ question.text }}</p>
+            </div>
+            
+            <div class="space-y-3">
+                {% for choice in question.choices.all %}
+                <label class="flex items-start gap-3 p-4 bg-dark-700 rounded-lg border border-dark-600 hover:border-brand-500/50 cursor-pointer transition-all">
+                    <input type="radio" 
+                           name="question_{{ question.id }}" 
+                           value="{{ choice.id }}" 
+                           class="mt-1 form-radio" 
+                           required>
+                    <span class="text-gray-300 flex-1">{{ choice.text }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="flex items-center justify-end gap-4">
+            <a href="{% url 'trainings:detail' training.slug %}" class="px-6 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-dark-900 transition-all duration-200">
+                Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                Finalizar Quiz
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
