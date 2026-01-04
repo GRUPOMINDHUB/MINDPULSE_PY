@@ -424,11 +424,14 @@ def training_edit(request, pk):
         else:
             form = TrainingForm(instance=training, company=request.current_company)
     
+    companies = Company.objects.filter(is_active=True) if is_admin else None
+    
     return render(request, 'trainings/manage/form.html', {
         'form': form,
         'training': training,
         'title': 'Editar Treinamento',
         'is_admin_master': is_admin,
+        'companies': companies,
     })
 
 
