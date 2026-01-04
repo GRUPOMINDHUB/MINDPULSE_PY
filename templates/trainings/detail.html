@@ -101,16 +101,25 @@
         {% for item in content_items %}
         {% if item.type == 'video' %}
         <a href="{% url 'trainings:content_player' training.slug item.type item.id %}" 
-           class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl border border-dark-600 hover:border-brand-500/50 group transition-all"
+           class="flex items-center gap-4 p-4 rounded-xl border group transition-all
+                  {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 hover:border-brand-500/50{% endif %}"
            data-content-id="{{ item.id }}"
            data-content-type="{{ item.type }}">
             <!-- Order Number -->
-            <div class="w-8 h-8 bg-dark-600 rounded-lg flex items-center justify-center text-gray-400 font-medium">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium
+                        {% if item.completed %}bg-green-500 text-white{% else %}bg-dark-600 text-gray-400{% endif %}">
+                {% if item.completed %}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {% else %}
                 {{ item.order }}
+                {% endif %}
             </div>
             
             <!-- Icon -->
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-500/20 text-blue-400">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 
+                        {% if item.completed %}bg-green-500/20 text-green-400{% else %}bg-blue-500/20 text-blue-400{% endif %}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
@@ -118,10 +127,11 @@
             
             <!-- Info -->
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium text-white group-hover:text-brand-400 transition-colors truncate">
+                <h3 class="font-medium transition-colors truncate
+                           {% if item.completed %}text-green-400{% else %}text-white group-hover:text-brand-400{% endif %}">
                     {{ item.object.title }}
                 </h3>
-                <p class="text-sm text-gray-500">📹 {{ item.object.duration_formatted }}</p>
+                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">📹 {{ item.object.duration_formatted }}</p>
             </div>
             
             <!-- Status -->
@@ -135,24 +145,36 @@
             {% endif %}
             
             <!-- Play Button -->
-            <div class="w-10 h-10 bg-brand-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-brand-500 transition-all">
-                <svg class="w-5 h-5 text-brand-500 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
+                        {% if item.completed %}bg-green-500/20 group-hover:bg-green-500/30{% else %}bg-brand-500/20 group-hover:bg-brand-500{% endif %}">
+                <svg class="w-5 h-5 transition-colors
+                           {% if item.completed %}text-green-400 group-hover:text-green-300{% else %}text-brand-500 group-hover:text-white{% endif %}" 
+                     fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                 </svg>
             </div>
         </a>
         {% else %}
         <a href="{% url 'trainings:content_player' training.slug item.type item.id %}" 
-           class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl border border-dark-600 hover:border-brand-500/50 group transition-all"
+           class="flex items-center gap-4 p-4 rounded-xl border group transition-all
+                  {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 hover:border-brand-500/50{% endif %}"
            data-content-id="{{ item.id }}"
            data-content-type="{{ item.type }}">
             <!-- Order Number -->
-            <div class="w-8 h-8 bg-dark-600 rounded-lg flex items-center justify-center text-gray-400 font-medium">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium
+                        {% if item.completed %}bg-green-500 text-white{% else %}bg-dark-600 text-gray-400{% endif %}">
+                {% if item.completed %}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {% else %}
                 {{ item.order }}
+                {% endif %}
             </div>
             
             <!-- Icon -->
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-purple-500/20 text-purple-400">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 
+                        {% if item.completed %}bg-green-500/20 text-green-400{% else %}bg-purple-500/20 text-purple-400{% endif %}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
@@ -160,10 +182,11 @@
             
             <!-- Info -->
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium text-white group-hover:text-brand-400 transition-colors truncate">
+                <h3 class="font-medium transition-colors truncate
+                           {% if item.completed %}text-green-400{% else %}text-white group-hover:text-brand-400{% endif %}">
                     {{ item.object.title }}
                 </h3>
-                <p class="text-sm text-gray-500">🧠 {{ item.object.total_questions }} pergunta{{ item.object.total_questions|pluralize }} • Nota mínima: {{ item.object.passing_score }}%</p>
+                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">🧠 {{ item.object.total_questions }} pergunta{{ item.object.total_questions|pluralize }} • Nota mínima: {{ item.object.passing_score }}%</p>
             </div>
             
             <!-- Status -->
@@ -177,8 +200,11 @@
             {% endif %}
             
             <!-- Start Button -->
-            <div class="w-10 h-10 bg-brand-500/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-brand-500 transition-all">
-                <svg class="w-5 h-5 text-brand-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
+                        {% if item.completed %}bg-green-500/20 group-hover:bg-green-500/30{% else %}bg-brand-500/20 group-hover:bg-brand-500{% endif %}">
+                <svg class="w-5 h-5 transition-colors
+                           {% if item.completed %}text-green-400 group-hover:text-green-300{% else %}text-brand-500 group-hover:text-white{% endif %}" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                 </svg>
             </div>
