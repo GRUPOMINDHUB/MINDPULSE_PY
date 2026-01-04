@@ -1182,6 +1182,10 @@ def quiz_edit(request, quiz_id):
                                 if del_form.instance.pk:
                                     del_form.instance.delete()
                                     logger.info(f'  🗑️ Opção deletada: ID={del_form.instance.id}')
+                            
+                            # IMPORTANTE: Força refresh da pergunta após salvar formset para pegar contagem atualizada
+                            question.refresh_from_db()
+                            logger.info(f'Após salvar formset - Pergunta {question.id} tem {question.choices.count()} opções no banco')
                         
                         # AGORA: Processa opções dinâmicas (novas adicionadas via JavaScript)
                         # IMPORTANTE: JavaScript usa ID da pergunta para perguntas existentes, então tenta primeiro com ID
