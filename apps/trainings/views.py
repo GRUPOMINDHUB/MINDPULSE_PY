@@ -145,7 +145,6 @@ def training_detail(request, slug):
     progress_map = {p['video_id']: p for p in user_progress}
     
     # Busca tentativas de quiz do usuário
-    from .models import UserQuizAttempt
     quiz_attempts = UserQuizAttempt.objects.filter(
         user=request.user,
         quiz__in=quizzes
