@@ -135,11 +135,9 @@
         <a href="{% url 'trainings:detail' training.slug %}" class="btn-primary" id="backToTraining">
             Voltar ao Treinamento
         </a>
-        {% if not attempt.is_passed and quiz.allow_multiple_attempts %}
         <a href="{% url 'trainings:quiz_take' training.slug quiz.id %}" class="btn-secondary">
-            Tentar Novamente
+            {% if attempt.is_passed %}Refazer Quiz{% else %}Tentar Novamente{% endif %}
         </a>
-        {% endif %}
     </div>
 </div>
 

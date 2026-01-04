@@ -1100,10 +1100,8 @@ def quiz_take(request, training_slug, quiz_id):
                 messages.error(request, 'Você não tem acesso a este treinamento.')
                 return redirect('trainings:list')
     
-    # Verifica se já foi aprovado e não permite múltiplas tentativas
-    if not quiz.allow_multiple_attempts and quiz.is_passed_by(user):
-        messages.info(request, 'Você já foi aprovado neste quiz.')
-        return redirect('trainings:detail', slug=training.slug)
+    # Permite acesso perpétuo ao quiz, mesmo após aprovação
+    # O status de "Aprovado" será mantido, mas o usuário pode refazer quantas vezes quiser
     
     if request.method == 'POST':
         # Processa respostas
