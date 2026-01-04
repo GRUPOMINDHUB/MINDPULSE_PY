@@ -954,7 +954,8 @@ def quiz_create(request, training_id):
                         
                         choice_text = request.POST.get(choice_text_key, '').strip()
                         if choice_text:  # Só adiciona se tiver texto
-                            is_correct = request.POST.get(choice_correct_key) == 'on'
+                            # Checkbox marcado envia 'on', não marcado não envia nada
+                            is_correct = choice_correct_key in request.POST and request.POST.get(choice_correct_key) == 'on'
                             dynamic_choices.append({
                                 'text': choice_text,
                                 'is_correct': is_correct
@@ -974,12 +975,16 @@ def quiz_create(request, training_id):
                         
                         # Salva as opções dinâmicas
                         for order, choice_data in enumerate(dynamic_choices):
-                            Choice.objects.create(
+                            choice = Choice.objects.create(
                                 question=question,
                                 text=choice_data['text'],
                                 is_correct=choice_data['is_correct'],
                                 order=order
                             )
+                            # DEBUG: Log para verificar se está salvando corretamente
+                            import logging
+                            logger = logging.getLogger(__name__)
+                            logger.info(f'✅ Escolha criada: ID={choice.id}, Texto="{choice.text}", is_correct={choice.is_correct}')
                     
                     # Processa opções via formset (para perguntas existentes)
                     elif question.pk:
