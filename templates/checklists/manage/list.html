@@ -86,14 +86,14 @@
                 
                 <div class="flex items-center gap-2">
                     <a href="{% url 'checklists:manage_detail' checklist.pk %}" 
-                       class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-all"
+                       class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-600 rounded-lg transition-all"
                        title="Gerenciar Tarefas">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                         </svg>
                     </a>
                     <a href="{% url 'checklists:edit' checklist.pk %}" 
-                       class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-all"
+                       class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-600 rounded-lg transition-all"
                        title="Editar">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -116,10 +116,10 @@
         {% endwith %}
         {% empty %}
         <div class="card text-center py-16">
-            <svg class="w-20 h-20 text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-20 h-20 text-gray-400 dark:text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
             </svg>
-            <h3 class="text-xl font-semibold text-white mb-2">Nenhum checklist criado</h3>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum checklist criado</h3>
             <p class="text-gray-500 mb-6">Comece criando seu primeiro checklist para a equipe.</p>
             <a href="{% url 'checklists:create' %}" class="btn-primary inline-flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

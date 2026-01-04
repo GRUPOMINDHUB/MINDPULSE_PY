@@ -93,7 +93,7 @@
             </div>
             
             <!-- Progress Bar -->
-            <div class="relative h-2 bg-dark-600 rounded-full overflow-hidden">
+            <div class="relative h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
                 <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500 {% if item.is_completed %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
                      style="width: {{ item.progress }}%"></div>
             </div>
@@ -102,10 +102,10 @@
         {% empty %}
         <div class="col-span-full">
             <div class="card text-center py-16">
-                <svg class="w-20 h-20 text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-20 h-20 text-gray-400 dark:text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
-                <h3 class="text-xl font-semibold text-white mb-2">Nenhum treinamento disponível</h3>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum treinamento disponível</h3>
                 <p class="text-gray-500">Os treinamentos serão exibidos aqui quando estiverem disponíveis.</p>
             </div>
         </div>

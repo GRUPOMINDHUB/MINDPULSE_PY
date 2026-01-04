@@ -6,14 +6,14 @@
 <div class="p-8">
     <!-- Header -->
     <div class="flex items-center gap-4 mb-8">
-        <a href="{% url 'core:company_list' %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+        <a href="{% url 'core:company_list' %}" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-all">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </a>
         <div class="flex-1">
-            <h1 class="text-3xl font-bold text-white mb-2">👥 Usuários - {{ company.name }}</h1>
-            <p class="text-gray-400">Gerencie os usuários desta empresa.</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">👥 Usuários - {{ company.name }}</h1>
+            <p class="text-gray-600 dark:text-gray-400">Gerencie os usuários desta empresa.</p>
         </div>
         <a href="{% url 'core:company_add_user' company.pk %}" class="btn-primary flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,8 +28,8 @@
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b border-dark-600">
-                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Usuário</th>
+                    <tr class="border-b border-gray-200 dark:border-dark-600">
+                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Usuário</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Email</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Nascimento</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Cargo</th>
@@ -40,19 +40,19 @@
                 </thead>
                 <tbody>
                     {% for uc in users %}
-                    <tr class="border-b border-dark-700 hover:bg-dark-700 transition-colors">
+                    <tr class="border-b border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
                         <td class="py-4 px-4">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                                     {{ uc.user.first_name.0 }}{{ uc.user.last_name.0 }}
                                 </div>
                                 <div>
-                                    <p class="font-medium text-white">{{ uc.user.get_full_name }}</p>
+                                    <p class="font-medium text-gray-900 dark:text-white">{{ uc.user.get_full_name }}</p>
                                     <p class="text-xs text-gray-500">{{ uc.user.phone|default:"Sem telefone" }}</p>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-4 px-4 text-gray-300">{{ uc.user.email }}</td>
+                        <td class="py-4 px-4 text-gray-700 dark:text-gray-300">{{ uc.user.email }}</td>
                         <td class="py-4 px-4 text-gray-400 text-sm">
                             {% if uc.user.birth_date %}
                             {{ uc.user.birth_date|date:"d/m/Y" }}
@@ -75,7 +75,7 @@
                             {% endif %}
                         </td>
                         <td class="py-4 px-4">
-                            <span class="text-white font-medium">{{ uc.user.total_points }}</span>
+                            <span class="text-gray-900 dark:text-white font-medium">{{ uc.user.total_points }}</span>
                             <span class="text-gray-500 text-xs">pts</span>
                         </td>
                         <td class="py-4 px-4 text-right">

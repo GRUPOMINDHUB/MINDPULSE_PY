@@ -7,14 +7,14 @@
     <!-- Header -->
     <div class="mb-8">
         <div class="flex items-center gap-4 mb-4">
-            <a href="{% url 'accounts:warning_list' %}" class="text-gray-400 hover:text-white transition-colors">
+            <a href="{% url 'accounts:warning_list' %}" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
             </a>
-            <h1 class="text-3xl font-bold text-white">⚠️ Nova Advertência Disciplinar</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">⚠️ Nova Advertência Disciplinar</h1>
         </div>
-        <p class="text-gray-400">Registre uma advertência disciplinar para um colaborador</p>
+        <p class="text-gray-600 dark:text-gray-400">Registre uma advertência disciplinar para um colaborador</p>
     </div>
     
     {% if messages %}
@@ -47,7 +47,7 @@
             
             <!-- Colaborador -->
             <div>
-                <label for="id_user" class="block text-sm font-medium text-gray-400 mb-2">
+                <label for="id_user" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                     Colaborador <span class="text-red-400">*</span>
                 </label>
                 {{ form.user }}
@@ -59,7 +59,7 @@
             
             <!-- Tipo de Advertência -->
             <div>
-                <label for="id_warning_type" class="block text-sm font-medium text-gray-400 mb-2">
+                <label for="id_warning_type" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                     Tipo de Advertência <span class="text-red-400">*</span>
                 </label>
                 {{ form.warning_type }}
@@ -71,7 +71,7 @@
             
             <!-- Motivo -->
             <div>
-                <label for="id_reason" class="block text-sm font-medium text-gray-400 mb-2">
+                <label for="id_reason" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                     Motivo <span class="text-red-400">*</span>
                 </label>
                 {{ form.reason }}
@@ -82,8 +82,8 @@
             </div>
             
             <!-- Botões -->
-            <div class="flex items-center justify-end gap-4 pt-6 border-t border-dark-600">
-                <a href="{% url 'accounts:warning_list' %}" class="px-6 py-3 bg-dark-700 hover:bg-dark-600 border border-dark-500 text-white font-medium rounded-lg transition-all duration-200">
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-dark-600">
+                <a href="{% url 'accounts:warning_list' %}" class="px-6 py-3 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 border border-gray-300 dark:border-dark-500 text-gray-700 dark:text-white font-medium rounded-lg transition-all duration-200">
                     Cancelar
                 </a>
                 <button type="submit" class="btn-primary">

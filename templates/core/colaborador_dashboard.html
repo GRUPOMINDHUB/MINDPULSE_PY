@@ -7,7 +7,7 @@
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Olá, {{ user.first_name }}! 👋</h1>
-        <p class="text-gray-600 dark:text-gray-400">Acompanhe seu progresso e conquistas</p>
+        <p class="text-gray-600 dark:text-gray-600 dark:text-gray-400">Acompanhe seu progresso e conquistas</p>
     </div>
     
     <!-- KPIs Cards -->
@@ -22,7 +22,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ overall_training_progress }}%</span>
             </div>
-            <p class="text-gray-400 text-sm">Progresso em Treinamentos</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Progresso em Treinamentos</p>
             <div class="mt-3 h-2 bg-dark-600 rounded-full overflow-hidden">
                 <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ overall_training_progress }}%"></div>
             </div>
@@ -38,7 +38,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ completed_tasks_today }}/{{ total_tasks_today }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Tarefas de Hoje</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Tarefas de Hoje</p>
             <div class="mt-3 h-2 bg-dark-600 rounded-full overflow-hidden">
                 <div class="h-full bg-green-500 rounded-full transition-all duration-500" style="width: {{ tasks_completion_rate }}%"></div>
             </div>
@@ -54,7 +54,7 @@
                 </div>
                 <span class="text-3xl font-bold text-[#F83531]">{{ overdue_count }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Em Atraso</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Em Atraso</p>
         </div>
         
         <!-- Medalhas -->
@@ -67,7 +67,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_rewards }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Medalhas Conquistadas</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Medalhas Conquistadas</p>
         </div>
         
         <!-- Pontos Totais -->
@@ -80,7 +80,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_points }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Pontos Totais</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Pontos Totais</p>
         </div>
     </div>
     
@@ -187,7 +187,7 @@
                 </div>
                 <p class="text-xs text-gray-500 mb-3">{{ item.period_display }} • {{ item.checklist.get_frequency_display }}</p>
                 <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-400">{{ item.done_tasks }}/{{ item.total_tasks }} tarefas</span>
+                    <span class="text-gray-600 dark:text-gray-400">{{ item.done_tasks }}/{{ item.total_tasks }} tarefas</span>
                     <span class="{% if item.progress == 100 %}text-green-500{% else %}text-brand-500{% endif %} font-semibold">
                         {{ item.progress|floatformat:0 }}%
                     </span>

@@ -73,7 +73,7 @@
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard Admin Master 🎯</h1>
-        <p class="text-gray-600 dark:text-gray-400">Visão global e comparação entre empresas</p>
+        <p class="text-gray-600 dark:text-gray-600 dark:text-gray-400">Visão global e comparação entre empresas</p>
     </div>
     
     <!-- KPIs Globais -->
@@ -87,7 +87,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_empresas }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Empresas Ativas</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Empresas Ativas</p>
         </div>
         
         <div class="card">
@@ -99,7 +99,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_usuarios }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Usuários Ativos</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Usuários Ativos</p>
         </div>
         
         <div class="card">
@@ -111,7 +111,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_checklists }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Checklists Ativos</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Checklists Ativos</p>
         </div>
         
         <div class="card">
@@ -123,7 +123,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_trainings }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Treinamentos</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Treinamentos</p>
         </div>
     </div>
     
@@ -135,7 +135,7 @@
             <button type="button" id="companyToggle" 
                     class="w-full flex items-center justify-between px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl text-white hover:border-brand-500 transition-all">
                 <span id="toggleText">Clique para selecionar empresas...</span>
-                <svg class="w-5 h-5 text-gray-400 transition-transform" id="toggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform" id="toggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
@@ -146,7 +146,7 @@
                         Selecionar Todas
                     </button>
                     <span class="text-gray-600 mx-2">|</span>
-                    <button type="button" onclick="clearAllCompanies()" class="text-sm text-gray-400 hover:text-white">
+                    <button type="button" onclick="clearAllCompanies()" class="text-sm text-gray-600 dark:text-gray-400 hover:text-white">
                         Limpar Seleção
                     </button>
                 </div>
@@ -223,7 +223,7 @@
     <div id="emptyState" class="card text-center py-16">
         <div class="text-6xl mb-4">📊</div>
         <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Selecione empresas para comparar</h3>
-        <p class="text-gray-400">Escolha uma ou mais empresas acima para visualizar os gráficos de comparação</p>
+        <p class="text-gray-600 dark:text-gray-400">Escolha uma ou mais empresas acima para visualizar os gráficos de comparação</p>
     </div>
 </div>
 

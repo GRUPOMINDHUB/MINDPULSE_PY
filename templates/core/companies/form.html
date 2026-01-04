@@ -6,12 +6,12 @@
 <div class="p-8 max-w-2xl mx-auto">
     <!-- Header -->
     <div class="flex items-center gap-4 mb-8">
-        <a href="{% url 'core:company_list' %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+        <a href="{% url 'core:company_list' %}" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-all">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </a>
-        <h1 class="text-3xl font-bold text-white">{{ title }}</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
     </div>
     
     <!-- Form -->
@@ -21,7 +21,7 @@
         <div class="space-y-6">
             <!-- Nome -->
             <div>
-                <label for="id_name" class="block text-sm font-medium text-gray-400 mb-2">Nome da Empresa *</label>
+                <label for="id_name" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Nome da Empresa *</label>
                 <input type="text" name="name" id="id_name" 
                        value="{{ form.name.value|default:'' }}"
                        class="form-input" 
@@ -34,7 +34,7 @@
             
             <!-- Logo -->
             <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">Logo</label>
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Logo</label>
                 {% if company.logo %}
                 <div class="mb-3">
                     <img src="{{ company.logo.url }}" alt="Logo atual" class="w-24 h-24 object-cover rounded-xl">
@@ -47,7 +47,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Cor Primária -->
                 <div>
-                    <label for="id_primary_color" class="block text-sm font-medium text-gray-400 mb-2">Cor da Marca</label>
+                    <label for="id_primary_color" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Cor da Marca</label>
                     <div class="flex items-center gap-3">
                         <input type="color" name="primary_color" id="id_primary_color" 
                                value="{{ form.primary_color.value|default:'#ff6a00' }}"
@@ -61,7 +61,7 @@
                 
                 <!-- Máximo de Usuários -->
                 <div>
-                    <label for="id_max_users" class="block text-sm font-medium text-gray-400 mb-2">Limite de Usuários</label>
+                    <label for="id_max_users" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Limite de Usuários</label>
                     <input type="number" name="max_users" id="id_max_users" 
                            value="{{ form.max_users.value|default:50 }}"
                            class="form-input" min="1">
@@ -74,13 +74,13 @@
                     <input type="checkbox" name="is_active" 
                            {% if form.is_active.value or not company %}checked{% endif %}
                            class="form-checkbox">
-                    <span class="text-gray-300">Empresa Ativa</span>
+                    <span class="text-gray-700 dark:text-gray-300">Empresa Ativa</span>
                 </label>
             </div>
         </div>
         
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-dark-600">
+        <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-dark-600">
             <a href="{% url 'core:company_list' %}" class="btn-secondary">Cancelar</a>
             <button type="submit" class="btn-primary">
                 {% if company %}Salvar Alterações{% else %}Criar Empresa{% endif %}

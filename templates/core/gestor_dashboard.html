@@ -11,7 +11,7 @@
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard Gestor 📊</h1>
-        <p class="text-gray-600 dark:text-gray-400">Gestão da equipe: {{ current_company.name }}</p>
+        <p class="text-gray-600 dark:text-gray-600 dark:text-gray-400">Gestão da equipe: {{ current_company.name }}</p>
     </div>
     
     <!-- KPIs Cards -->
@@ -26,7 +26,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_users }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Colaboradores</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Colaboradores</p>
         </div>
         
         <!-- Progresso Médio Treinamentos -->
@@ -39,7 +39,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_training_progress }}%</span>
             </div>
-            <p class="text-gray-400 text-sm">Progresso Médio Treinamentos</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Progresso Médio Treinamentos</p>
             <div class="mt-3 h-2 bg-dark-600 rounded-full overflow-hidden">
                 <div class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width: {{ avg_training_progress }}%"></div>
             </div>
@@ -55,7 +55,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ checklist_completion_rate }}%</span>
             </div>
-            <p class="text-gray-400 text-sm">Checklists de Hoje</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Checklists de Hoje</p>
             <div class="mt-3 h-2 bg-dark-600 rounded-full overflow-hidden">
                 <div class="h-full bg-green-500 rounded-full transition-all duration-500" style="width: {{ checklist_completion_rate }}%"></div>
             </div>
@@ -71,7 +71,7 @@
                 </div>
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ pending_feedback }}</span>
             </div>
-            <p class="text-gray-400 text-sm">Feedbacks Pendentes</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">Feedbacks Pendentes</p>
         </div>
     </div>
     
@@ -148,7 +148,7 @@
                 <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl">
                     <div class="w-10 h-10 flex items-center justify-center rounded-full 
                                 {% if forloop.counter == 1 %}bg-yellow-500/20 text-yellow-500
-                                {% elif forloop.counter == 2 %}bg-gray-400/20 text-gray-400
+                                {% elif forloop.counter == 2 %}bg-gray-400/20 text-gray-600 dark:text-gray-400
                                 {% elif forloop.counter == 3 %}bg-orange-500/20 text-orange-500
                                 {% else %}bg-dark-500 text-gray-500{% endif %} 
                                 font-bold text-sm">
@@ -203,7 +203,7 @@
                     {% if alert.overdue_checklists %}
                     <div class="mt-2 space-y-1">
                         {% for checklist_title in alert.overdue_checklists %}
-                        <p class="text-xs text-gray-400 truncate">• {{ checklist_title }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 truncate">• {{ checklist_title }}</p>
                         {% endfor %}
                         {% if alert.overdue_count > 3 %}
                         <p class="text-xs text-gray-500">+{{ alert.overdue_count|add:"-3" }} mais</p>
