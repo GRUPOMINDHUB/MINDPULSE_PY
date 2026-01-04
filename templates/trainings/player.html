@@ -468,7 +468,7 @@ video.addEventListener('ended', function() {
 function updateProgress() {
     const currentTime = Math.floor(video.currentTime);
     
-    fetch(`{% url 'trainings:update_progress' video.id %}`, {
+    fetch(`{% url 'trainings:video_complete' video.id %}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',

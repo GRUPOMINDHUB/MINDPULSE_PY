@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/video/<int:video_id>/complete/', views.video_complete, name='video_complete'),
     path('api/content/reorder/<int:training_id>/', views.update_content_order, name='update_content_order'),
     path('api/training/<int:training_id>/status/', views.get_training_status, name='get_training_status'),
+    path('api/company-users/', views.get_company_users, name='get_company_users'),
     
     # Quiz take
     path('<slug:slug>/quiz/<int:quiz_id>/take/', views.quiz_take, name='quiz_take'),

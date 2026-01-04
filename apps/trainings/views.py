@@ -428,6 +428,58 @@ def get_training_status(request, training_id):
     })
 
 
+@login_required
+@gestor_required
+def get_company_users(request):
+    """
+    API para obter usuários de uma empresa.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    from apps.accounts.models import User
+    from apps.core.models import Company
+    
+    company_id = request.GET.get('company_id')
+    
+    if not company_id:
+        # Se não especificou empresa, usa a empresa atual
+        company = request.current_company
+    else:
+        try:
+            company = Company.objects.get(pk=company_id)
+            # Verifica permissão
+            if not request.user.is_superuser and company != request.current_company:
+                return JsonResponse({'success': False, 'error': 'Sem permissão'}, status=403)
+        except Company.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Empresa não encontrada'}, status=404)
+    
+    if not company:
+        return JsonResponse({'success': False, 'error': 'Nenhuma empresa selecionada'}, status=400)
+    
+    # Busca usuários ativos da empresa
+    users = User.objects.filter(
+        company=company,
+        is_active=True
+    ).exclude(
+        is_superuser=True  # Exclui admin master
+    ).order_by('first_name', 'last_name', 'email')
+    
+    users_data = []
+    for user in users:
+        users_data.append({
+            'id': user.id,
+            'email': user.email,
+            'full_name': user.get_full_name() or user.email,
+            'is_gestor': getattr(user, 'is_gestor', False)
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'users': users_data,
+        'company_id': company.id,
+        'company_name': company.name
+    })
+
+
 def get_user_progress(user, training):
     """
     Calcula o progresso do usuário em um treinamento.
