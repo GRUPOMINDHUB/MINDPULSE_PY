@@ -179,7 +179,7 @@
             <a href="{% url 'trainings:manage_detail' training.pk %}" class="px-6 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-dark-900 transition-all duration-200">
                 Cancelar
             </a>
-            <button type="submit" class="btn-primary">
+            <button type="submit" class="btn-primary" onclick="return validateQuizForm(event)">
                 {% if quiz %}Salvar Alterações{% else %}Criar Quiz{% endif %}
             </button>
         </div>
@@ -348,6 +348,78 @@ function updateQuestionNumbers() {
             title.textContent = `Pergunta ${index + 1}`;
         }
     });
+}
+
+function validateQuizForm(event) {
+    const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
+    
+    if (questions.length === 0) {
+        alert('Adicione pelo menos uma pergunta ao quiz.');
+        event.preventDefault();
+        return false;
+    }
+    
+    let hasErrors = false;
+    let errorMessages = [];
+    
+    questions.forEach((question, qIndex) => {
+        // Valida texto da pergunta
+        const questionText = question.querySelector('textarea[name*="-text"], input[name*="-text"]');
+        if (!questionText || !questionText.value.trim()) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${qIndex + 1}: O texto da pergunta é obrigatório.`);
+            return;
+        }
+        
+        // Valida opções de resposta
+        const choicesContainer = question.querySelector('.choices-container');
+        if (!choicesContainer) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${qIndex + 1}: Adicione pelo menos 2 opções de resposta.`);
+            return;
+        }
+        
+        const choices = choicesContainer.querySelectorAll('.choice-item');
+        if (choices.length < 2) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${qIndex + 1}: Adicione pelo menos 2 opções de resposta.`);
+            return;
+        }
+        
+        let hasCorrect = false;
+        let emptyChoices = [];
+        
+        choices.forEach((choice, cIndex) => {
+            const choiceInput = choice.querySelector('input[type="text"]');
+            const choiceCheckbox = choice.querySelector('input[type="checkbox"]');
+            
+            if (!choiceInput || !choiceInput.value.trim()) {
+                emptyChoices.push(cIndex + 1);
+            }
+            
+            if (choiceCheckbox && choiceCheckbox.checked) {
+                hasCorrect = true;
+            }
+        });
+        
+        if (emptyChoices.length > 0) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${qIndex + 1}: Todas as opções devem ter texto preenchido. Opções vazias: ${emptyChoices.join(', ')}`);
+        }
+        
+        if (!hasCorrect) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${qIndex + 1}: Marque pelo menos uma opção como correta.`);
+        }
+    });
+    
+    if (hasErrors) {
+        event.preventDefault();
+        alert('Erros encontrados:\n\n' + errorMessages.join('\n'));
+        return false;
+    }
+    
+    return true;
 }
 </script>
 {% endblock %}

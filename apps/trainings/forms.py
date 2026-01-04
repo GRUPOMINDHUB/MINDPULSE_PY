@@ -277,7 +277,7 @@ ChoiceFormSet = inlineformset_factory(
     Question,
     Choice,
     form=ChoiceForm,
-    extra=2,
+    extra=0,  # Não criar opções vazias por padrão
     can_delete=True,
     min_num=2,
     validate_min=True
