@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ video.title }} - {{ training.title }} - Mindpulse{% endblock %}
+
+{% block extra_css %}
+<style>
+    .video-container {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+        background: #000;
+        border-radius: 1rem;
+    }
+    .video-container video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <a href="{% url 'trainings:list' %}" class="hover:text-white transition-colors">Treinamentos</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <a href="{% url 'trainings:detail' training.slug %}" class="hover:text-white transition-colors">{{ training.title }}</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-white">{{ video.title }}</span>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Player -->
+        <div class="lg:col-span-2">
+            <div class="video-container mb-6" id="videoContainer">
+                <video id="videoPlayer" 
+                       controls 
+                       preload="metadata"
+                       {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %}
+                       data-video-id="{{ video.id }}"
+                       data-duration="{{ video.duration_seconds }}"
+                       data-last-position="{{ progress.last_position }}">
+                    <source src="{{ video.video_file.url }}" type="video/mp4">
+                    Seu navegador não suporta vídeo HTML5.
+                </video>
+            </div>
+            
+            <!-- Video Info -->
+            <div class="card">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white mb-2">{{ video.title }}</h1>
+                        <p class="text-gray-500">{{ video.duration_formatted }} • {{ training.title }}</p>
+                    </div>
+                    
+                    <div id="completionBadge" class="{% if not progress.completed %}hidden{% endif %}">
+                        <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Concluído
+                        </span>
+                    </div>
+                </div>
+                
+                {% if video.description %}
+                <p class="text-gray-400">{{ video.description }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Navigation -->
+            <div class="flex items-center justify-between mt-6">
+                {% if prev_video %}
+                <a href="{% url 'trainings:player' training.slug prev_video.id %}" 
+                   class="btn-secondary flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Anterior
+                </a>
+                {% else %}
+                <div></div>
+                {% endif %}
+                
+                {% if next_video %}
+                {% if progress.completed %}
+                <a href="{% url 'trainings:player' training.slug next_video.id %}" 
+                   class="btn-primary flex items-center gap-2"
+                   id="nextVideoBtn">
+                    Próximo
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                {% else %}
+                <button type="button" 
+                        class="btn-secondary flex items-center gap-2 cursor-not-allowed opacity-50"
+                        id="nextVideoBtn"
+                        disabled
+                        data-next-url="{% url 'trainings:player' training.slug next_video.id %}"
+                        title="Assista 90% do vídeo para desbloquear o próximo">
+                    Próximo
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                {% endif %}
+                {% else %}
+                <a href="{% url 'trainings:detail' training.slug %}" 
+                   class="btn-primary flex items-center gap-2">
+                    Finalizar
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sidebar - Lista de Vídeos -->
+        <div class="card h-fit max-h-[calc(100vh-200px)] overflow-y-auto">
+            <h3 class="text-lg font-semibold text-white mb-4 sticky top-0 bg-dark-800 pb-4">
+                📚 Conteúdo do Treinamento
+            </h3>
+            
+            <div class="space-y-2">
+                {% for v in training.videos.all %}
+                <a href="{% url 'trainings:player' training.slug v.id %}" 
+                   class="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 {% if v.id == video.id %}bg-brand-500/20 border border-brand-500/50{% else %}hover:bg-dark-700{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 
+                                {% if v.id == video.id %}bg-brand-500 text-white
+                                {% elif v.is_watched_by %}bg-green-500/20 text-green-400
+                                {% else %}bg-dark-600 text-gray-500{% endif %}">
+                        {% if v.is_watched_by %}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {% else %}
+                        {{ forloop.counter }}
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate {% if v.id == video.id %}text-brand-400{% else %}text-white{% endif %}">
+                            {{ v.title }}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ v.duration_formatted }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Recompensa -->
+<div id="rewardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-dark-800 border border-dark-600 rounded-3xl p-8 max-w-md w-full text-center animate-fade-in">
+        <div class="w-24 h-24 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6 pulse-glow">
+            <span class="text-5xl">🏆</span>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Parabéns!</h2>
+        <p id="rewardMessage" class="text-gray-400 mb-6">Você completou o treinamento!</p>
+        <button onclick="closeRewardModal()" class="btn-primary w-full">
+            Continuar
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const video = document.getElementById('videoPlayer');
+const videoId = video.dataset.videoId;
+const duration = parseInt(video.dataset.duration);
+const lastPosition = parseInt(video.dataset.lastPosition) || 0;
+let updateInterval;
+let hasCompleted = {{ progress.completed|yesno:"true,false" }};
+
+// Resume from last position
+if (lastPosition > 0 && lastPosition < duration * 0.9) {
+    video.currentTime = lastPosition;
+}
+
+// Update progress every 10 seconds
+video.addEventListener('play', function() {
+    updateInterval = setInterval(updateProgress, 10000);
+});
+
+video.addEventListener('pause', function() {
+    clearInterval(updateInterval);
+    updateProgress();
+});
+
+video.addEventListener('ended', function() {
+    clearInterval(updateInterval);
+    updateProgress();
+});
+
+function updateProgress() {
+    const currentTime = Math.floor(video.currentTime);
+    
+    fetch(`{% url 'trainings:update_progress' video.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `current_time=${currentTime}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.completed && !hasCompleted) {
+            hasCompleted = true;
+            document.getElementById('completionBadge').classList.remove('hidden');
+            
+            // Desbloqueia o botão "Próximo" quando completa
+            const nextBtn = document.getElementById('nextVideoBtn');
+            if (nextBtn && nextBtn.disabled) {
+                const nextVideoUrl = nextBtn.getAttribute('data-next-url');
+                if (nextVideoUrl) {
+                    nextBtn.outerHTML = `<a href="${nextVideoUrl}" class="btn-primary flex items-center gap-2" id="nextVideoBtn">
+                        Próximo
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>`;
+                }
+            }
+            
+            if (data.training_completed) {
+                showRewardModal(data.message);
+            }
+        }
+    });
+}
+
+function showRewardModal(message) {
+    document.getElementById('rewardMessage').textContent = message;
+    document.getElementById('rewardModal').classList.remove('hidden');
+}
+
+function closeRewardModal() {
+    document.getElementById('rewardModal').classList.add('hidden');
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ checklist.title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-3xl mx-auto">
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <a href="{% url 'checklists:list' %}" class="hover:text-white transition-colors">Checklists</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-white">{{ checklist.title }}</span>
+    </div>
+    
+    <div class="card mb-6">
+        <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold text-white mb-2">{{ checklist.title }}</h1>
+                <div class="flex items-center gap-3 flex-wrap">
+                    {% if checklist.is_active %}
+                    <span class="px-2.5 py-1 bg-green-500/20 border border-green-500/50 text-green-400 text-xs font-medium rounded-full flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Ativo
+                    </span>
+                    {% else %}
+                    <span class="px-2.5 py-1 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-xs font-medium rounded-full">
+                        Inativo
+                    </span>
+                    {% endif %}
+                    
+                    {% for user in checklist.assigned_users.all %}
+                    <span class="bg-gray-700 text-white text-[10px] px-2 py-0.5 rounded-full mr-1">
+                        {{ user.get_full_name|default:user.email|upper }}
+                    </span>
+                    {% endfor %}
+                    
+                    <span class="px-2.5 py-1 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full">
+                        {{ checklist.get_frequency_display }}
+                    </span>
+                    
+                    <span class="flex items-center gap-1 text-sm text-gray-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        {{ period_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                {% if is_completed %}
+                <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Completo!
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if checklist.description %}
+        <p class="text-gray-400 mb-4">{{ checklist.description }}</p>
+        {% endif %}
+        
+        <div class="flex items-center gap-4">
+            <div class="flex-1">
+                <div class="flex items-center justify-between text-sm mb-2">
+                    <span class="text-gray-500">Progresso</span>
+                    <span class="text-white font-medium" id="progressText">{{ progress }}%</span>
+                </div>
+                <div class="h-3 bg-dark-600 rounded-full overflow-hidden">
+                    <div id="progressBar" 
+                         class="h-full rounded-full transition-all duration-500 {% if is_completed %}bg-green-500{% else %}bg-gradient-to-r from-blue-500 to-blue-400{% endif %}"
+                         style="width: {{ progress }}%"></div>
+                </div>
+            </div>
+            
+            <div class="text-center px-4 py-2 bg-brand-500/20 rounded-xl">
+                <p class="text-2xl font-bold text-brand-500">+{{ checklist.points_per_completion }}</p>
+                <p class="text-xs text-gray-500">pontos</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="space-y-3">
+        {% if tasks %}
+        {% for item in tasks %}
+        <div class="card-hover flex items-center gap-4 task-item group" 
+             data-task-id="{{ item.task.id }}">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer
+                        {% if item.is_done %}bg-green-500 text-white{% else %}bg-dark-600 border-2 border-dark-500 hover:border-blue-500{% endif %}"
+                 id="checkbox-{{ item.task.id }}"
+                 onclick="toggleTask({{ item.task.id }})">
+                {% if item.is_done %}
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {% endif %}
+            </div>
+            
+            <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleTask({{ item.task.id }})">
+                <h4 class="font-medium transition-all duration-200 {% if item.is_done %}text-gray-500 line-through{% else %}text-white{% endif %}"
+                    id="title-{{ item.task.id }}">
+                    {{ item.task.title }}
+                </h4>
+                {% if item.task.description %}
+                <p class="text-sm text-gray-500 line-clamp-1" id="description-{{ item.task.id }}">{{ item.task.description }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center gap-2">
+                {% if item.task.is_required %}
+                <span class="px-2 py-1 bg-brand-500/20 text-brand-400 text-xs font-medium rounded-full">
+                    Obrigatório
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="card text-center py-12">
+            <svg class="w-16 h-16 text-gray-600 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="text-gray-500 mb-2">Nenhuma tarefa adicionada ainda</p>
+            <p class="text-sm text-gray-600">As tarefas serão exibidas aqui quando forem adicionadas.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="rewardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-dark-800 border border-dark-600 rounded-3xl p-8 max-w-md w-full text-center animate-fade-in">
+        <div class="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="text-5xl">✅</span>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Checklist Completo!</h2>
+        <p id="rewardMessage" class="text-gray-400 mb-6">Você ganhou pontos!</p>
+        <button onclick="closeRewardModal()" class="btn-primary w-full">
+            Continuar
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+const checklistId = {{ checklist.pk }};
+
+function toggleTask(taskId) {
+    fetch(`/checklists/api/task/${taskId}/toggle/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const checkbox = document.getElementById(`checkbox-${taskId}`);
+            const title = document.getElementById(`title-${taskId}`);
+            
+            if (data.is_done) {
+                checkbox.className = 'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-green-500 text-white cursor-pointer';
+                checkbox.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                title.classList.add('text-gray-500', 'line-through');
+                title.classList.remove('text-white');
+            } else {
+                checkbox.className = 'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-dark-600 border-2 border-dark-500 hover:border-blue-500 cursor-pointer';
+                checkbox.innerHTML = '';
+                title.classList.remove('text-gray-500', 'line-through');
+                title.classList.add('text-white');
+            }
+            
+            // Update progress
+            document.getElementById('progressText').textContent = data.progress + '%';
+            document.getElementById('progressBar').style.width = data.progress + '%';
+            
+            // Atualiza cor da barra de progresso
+            const progressBar = document.getElementById('progressBar');
+            if (data.is_checklist_completed && data.is_done) {
+                progressBar.classList.remove('from-blue-500', 'to-blue-400');
+                progressBar.classList.add('bg-green-500');
+                
+                if (data.reward_message) {
+                    showRewardModal(data.reward_message);
+                }
+            } else {
+                // Se não está completo, volta para azul
+                progressBar.classList.remove('bg-green-500');
+                progressBar.classList.add('from-blue-500', 'to-blue-400');
+            }
+        } else {
+            alert(data.error || 'Erro ao processar tarefa');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao processar tarefa. Tente novamente.');
+    });
+}
+
+function showRewardModal(message) {
+    document.getElementById('rewardMessage').textContent = message;
+    document.getElementById('rewardModal').classList.remove('hidden');
+}
+
+function closeRewardModal() {
+    document.getElementById('rewardModal').classList.add('hidden');
+}
+
+</script>
+{% endblock %}
+

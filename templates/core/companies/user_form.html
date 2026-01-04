@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'core:company_users' company.pk %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-bold text-white mb-2">{{ title }}</h1>
+            <p class="text-gray-400">Empresa: {{ company.name }}</p>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <div class="card">
+        {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="p-4 rounded-xl {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% if form.errors %}
+        <div class="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl">
+            <p class="text-red-400 font-medium mb-2">Erros no formulário:</p>
+            <ul class="list-disc list-inside text-sm text-red-300">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li><strong>{{ field|title }}</strong>: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Email -->
+            <div>
+                <label for="id_email" class="block text-sm font-medium text-gray-400 mb-2">Email *</label>
+                <input type="email" name="email" id="id_email" 
+                       value="{{ form.email.value|default:'' }}"
+                       class="form-input" 
+                       placeholder="usuario@empresa.com"
+                       required>
+                {% if form.email.errors %}
+                <p class="mt-1 text-sm text-red-400">{{ form.email.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Nome e Sobrenome -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="id_first_name" class="block text-sm font-medium text-gray-400 mb-2">Nome *</label>
+                    <input type="text" name="first_name" id="id_first_name" 
+                           value="{{ form.first_name.value|default:'' }}"
+                           class="form-input" 
+                           placeholder="Nome"
+                           required>
+                    {% if form.first_name.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_last_name" class="block text-sm font-medium text-gray-400 mb-2">Sobrenome *</label>
+                    <input type="text" name="last_name" id="id_last_name" 
+                           value="{{ form.last_name.value|default:'' }}"
+                           class="form-input" 
+                           placeholder="Sobrenome"
+                           required>
+                    {% if form.last_name.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Senha com Toggle -->
+            <div>
+                <label for="id_password" class="block text-sm font-medium text-gray-400 mb-2">Senha *</label>
+                <div class="relative">
+                    <input type="password" name="password" id="id_password" 
+                           class="form-input pr-12" 
+                           placeholder="••••••••"
+                           required>
+                    <button type="button" 
+                            onclick="togglePassword('id_password')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors">
+                        <svg id="eye-icon-id_password" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                </div>
+                {% if form.password.help_text %}
+                <p class="mt-1 text-xs text-gray-500">{{ form.password.help_text }}</p>
+                {% endif %}
+                {% if form.password.errors %}
+                <p class="mt-1 text-sm text-red-400">{{ form.password.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Cargo -->
+            <div>
+                <label for="id_role" class="block text-sm font-medium text-gray-400 mb-2">Cargo</label>
+                <select name="role" id="id_role" class="form-select">
+                    <option value="">Sem cargo</option>
+                    {% for role in form.role.field.queryset %}
+                    <option value="{{ role.pk }}" {% if form.role.value == role.pk %}selected{% endif %}>
+                        {{ role.name }} ({{ role.get_level_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.role.help_text %}
+                <p class="mt-1 text-xs text-gray-500">{{ form.role.help_text }}</p>
+                {% endif %}
+                {% if form.role.errors %}
+                <p class="mt-1 text-sm text-red-400">{{ form.role.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Botões -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-dark-600">
+                <a href="{% url 'core:company_users' company.pk %}" 
+                   class="px-4 py-2 border border-white text-white rounded-lg hover:bg-white hover:text-dark-900 transition-all duration-200">
+                    ← Voltar
+                </a>
+                <button type="submit" class="btn-primary">
+                    Criar Usuário
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById('eye-icon-' + inputId);
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.29 3.29m0 0L3 3m3.29 3.29L12 12m-5.71-5.71L12 12"/>
+        `;
+        icon.classList.add('text-brand-500');
+    } else {
+        input.type = 'password';
+        icon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        `;
+        icon.classList.remove('text-brand-500');
+    }
+}
+</script>
+{% endblock %}
+

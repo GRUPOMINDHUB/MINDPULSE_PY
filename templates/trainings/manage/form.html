@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'trainings:manage_list' %}" class="p-2 text-gray-400 hover:text-white hover:bg-dark-700 rounded-lg transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <h1 class="text-3xl font-bold text-white">{{ title }}</h1>
+        </div>
+        <a href="{% url 'trainings:manage_list' %}" class="px-4 py-2 border border-white text-white rounded-lg hover:bg-white hover:text-dark-900 transition-all duration-200">
+            ← Voltar
+        </a>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="card">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl">
+            <h3 class="text-red-400 font-semibold mb-2">Erros no formulário:</h3>
+            <ul class="text-red-300 text-sm space-y-1">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>• {{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if form.non_field_errors %}
+        <div class="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl">
+            <ul class="text-red-300 text-sm space-y-1">
+                {% for error in form.non_field_errors %}
+                <li>• {{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="space-y-6">
+            {% if user.is_superuser %}
+            <!-- Empresa (Admin Master) -->
+            <div>
+                <label for="id_company" class="block text-sm font-medium text-gray-400 mb-2">Empresa *</label>
+                <select name="company" id="id_company" class="form-select" required>
+                    <option value="">Selecione a empresa</option>
+                    {% for company in form.company.field.queryset %}
+                    <option value="{{ company.id }}" {% if form.company.value == company.id %}selected{% endif %}>
+                        {{ company.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.company.errors %}
+                <p class="mt-1 text-sm text-red-400">{{ form.company.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Título -->
+            <div>
+                <label for="id_title" class="block text-sm font-medium text-gray-400 mb-2">Título *</label>
+                <input type="text" name="title" id="id_title" 
+                       value="{{ form.title.value|default:'' }}"
+                       class="form-input" 
+                       placeholder="Nome do treinamento"
+                       required>
+                {% if form.title.errors %}
+                <p class="mt-1 text-sm text-red-400">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Descrição -->
+            <div>
+                <label for="id_description" class="block text-sm font-medium text-gray-400 mb-2">Descrição</label>
+                <textarea name="description" id="id_description" 
+                          class="form-input" rows="3"
+                          placeholder="Descrição breve do treinamento">{{ form.description.value|default:'' }}</textarea>
+            </div>
+            
+            <!-- Objetivo -->
+            <div>
+                <label for="id_objective" class="block text-sm font-medium text-gray-400 mb-2">Objetivo</label>
+                <textarea name="objective" id="id_objective" 
+                          class="form-input" rows="3"
+                          placeholder="O que o colaborador aprenderá com este treinamento">{{ form.objective.value|default:'' }}</textarea>
+            </div>
+            
+            <!-- Usuários Atribuídos -->
+            {% if 'assigned_users' in form.fields %}
+            <div>
+                <label for="id_assigned_users" class="block text-sm font-medium text-gray-400 mb-2">
+                    Usuários Atribuídos
+                    <span class="text-xs text-gray-500 font-normal">(opcional)</span>
+                </label>
+                <div class="relative">
+                    <select name="assigned_users" id="id_assigned_users" 
+                            class="form-select bg-[#1A1A1A] border border-[#333333] text-white rounded-lg" 
+                            multiple 
+                            size="6">
+                        {% for user in form.assigned_users.field.queryset %}
+                        <option value="{{ user.id }}" 
+                                {% if user.id in form.assigned_users.value or user.id|stringformat:"s" in form.assigned_users.value %}selected{% endif %}>
+                            {{ user.get_full_name }} ({{ user.email }})
+                        </option>
+                        {% empty %}
+                        <option disabled>Nenhum usuário disponível nesta empresa</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mt-2 flex items-start gap-2">
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-500">
+                            <strong>Dica:</strong> Segure <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Ctrl</kbd> (Windows) ou <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Cmd</kbd> (Mac) para selecionar múltiplos usuários. Deixe vazio para tornar o treinamento global.
+                        </p>
+                    </div>
+                </div>
+                <div id="selected-users-badges" class="mt-3 flex flex-wrap gap-2">
+                    {% for user in form.assigned_users.field.queryset %}
+                        {% if user.id in form.assigned_users.value or user.id|stringformat:"s" in form.assigned_users.value %}
+                        <span class="px-3 py-1 bg-brand-500/20 border border-brand-500/50 text-brand-400 rounded-lg text-xs font-medium">
+                            {{ user.get_full_name }}
+                        </span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% if form.assigned_users.errors %}
+                <p class="mt-1 text-sm text-red-400">{{ form.assigned_users.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Imagem de Capa -->
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Imagem de Capa</label>
+                {% if training.cover_image %}
+                <div class="mb-3">
+                    <img src="{{ training.cover_image.url }}" alt="Capa atual" class="w-48 h-32 object-cover rounded-xl">
+                </div>
+                {% endif %}
+                <input type="file" name="cover_image" accept="image/*"
+                       class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Pontos de Recompensa -->
+                <div>
+                    <label for="id_reward_points" class="block text-sm font-medium text-gray-400 mb-2">Pontos de Recompensa</label>
+                    <input type="number" name="reward_points" id="id_reward_points" 
+                           value="{{ form.reward_points.value|default:100 }}"
+                           class="form-input" min="0">
+                </div>
+                
+                <!-- Badge -->
+                <div>
+                    <label for="id_reward_badge" class="block text-sm font-medium text-gray-400 mb-2">Badge/Medalha</label>
+                    <input type="text" name="reward_badge" id="id_reward_badge" 
+                           value="{{ form.reward_badge.value|default:'' }}"
+                           class="form-input" 
+                           placeholder="Nome do badge">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Disponível a partir de -->
+                <div>
+                    <label for="id_available_from" class="block text-sm font-medium text-gray-400 mb-2">Disponível a partir de</label>
+                    <input type="date" name="available_from" id="id_available_from" 
+                           value="{{ form.available_from.value|default:'' }}"
+                           class="form-input">
+                </div>
+                
+                <!-- Disponível até -->
+                <div>
+                    <label for="id_available_until" class="block text-sm font-medium text-gray-400 mb-2">Disponível até</label>
+                    <input type="date" name="available_until" id="id_available_until" 
+                           value="{{ form.available_until.value|default:'' }}"
+                           class="form-input">
+                </div>
+            </div>
+            
+            <!-- Checkboxes -->
+            <div class="flex items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_active" 
+                           {% if form.is_active.value %}checked{% endif %}
+                           class="form-checkbox">
+                    <span class="text-gray-300">Ativo</span>
+                </label>
+                
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_mandatory" 
+                           {% if form.is_mandatory.value %}checked{% endif %}
+                           class="form-checkbox">
+                    <span class="text-gray-300">Obrigatório</span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-dark-600">
+            <a href="{% url 'trainings:manage_list' %}" class="px-6 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-dark-900 transition-all duration-200">
+                Cancelar
+            </a>
+            <button type="submit" class="btn-primary">
+                {% if training %}Salvar Alterações{% else %}Criar Treinamento{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
