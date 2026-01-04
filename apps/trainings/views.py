@@ -707,7 +707,10 @@ def _validate_and_save_choices(question, formset_choices, dynamic_choices, valid
     """
     Valida e salva as opções de uma pergunta.
     
-    REGRA: Se existem opções dinâmicas, elas SUBSTITUEM as do formset para evitar duplicidade.
+    REGRAS:
+    - Mínimo 2 opções, máximo 5 opções
+    - EXATAMENTE 1 resposta correta
+    - Se existem opções dinâmicas, elas SUBSTITUEM as do formset
     
     Returns:
         bool: True se salvou com sucesso, False se houve erro
@@ -734,10 +737,18 @@ def _validate_and_save_choices(question, formset_choices, dynamic_choices, valid
         validation_errors.append(f'Pergunta "{question_text[:50]}": Adicione pelo menos 2 opções de resposta.')
         return False
     
-    # Validação: pelo menos uma correta
-    has_correct = any(c['is_correct'] for c in all_choices)
-    if not has_correct:
-        validation_errors.append(f'Pergunta "{question_text[:50]}": Marque pelo menos uma opção como correta.')
+    # Validação: máximo 5 opções
+    if len(all_choices) > 5:
+        validation_errors.append(f'Pergunta "{question_text[:50]}": Máximo de 5 opções permitido.')
+        return False
+    
+    # Validação: EXATAMENTE 1 resposta correta
+    correct_count = sum(1 for c in all_choices if c['is_correct'])
+    if correct_count == 0:
+        validation_errors.append(f'Pergunta "{question_text[:50]}": Selecione uma opção como correta.')
+        return False
+    if correct_count > 1:
+        validation_errors.append(f'Pergunta "{question_text[:50]}": Apenas UMA opção pode ser marcada como correta.')
         return False
     
     # Validação: todas com texto
@@ -866,13 +877,25 @@ def quiz_create(request, training_id):
                 for error in validation_errors:
                     messages.error(request, error)
         else:
-            # Erros de validação do form/formset
+            # Erros de validação do form/formset - mostra detalhes
+            logger.error(f'Quiz form errors: {quiz_form.errors}')
+            logger.error(f'Question formset errors: {question_formset.errors}')
+            logger.error(f'Question formset non_form_errors: {question_formset.non_form_errors()}')
+            
             if not quiz_form.is_valid():
                 for field, errors in quiz_form.errors.items():
                     for error in errors:
                         messages.error(request, f'{field}: {error}')
             if not question_formset.is_valid():
-                messages.error(request, 'Erro no formulário de perguntas. Verifique os campos.')
+                # Mostra erros específicos de cada pergunta
+                for i, form_errors in enumerate(question_formset.errors):
+                    if form_errors:
+                        for field, errors in form_errors.items():
+                            for error in errors:
+                                messages.error(request, f'Pergunta {i+1} - {field}: {error}')
+                # Mostra erros gerais do formset
+                for error in question_formset.non_form_errors():
+                    messages.error(request, error)
     else:
         quiz_form = QuizForm()
         question_formset = QuestionFormSet(prefix='questions')
@@ -1008,13 +1031,25 @@ def quiz_edit(request, quiz_id):
                 quiz_form = QuizForm(request.POST, instance=quiz)
                 question_formset = QuestionFormSet(request.POST, instance=quiz, prefix='questions')
         else:
-            # Erros de validação
+            # Erros de validação - mostra detalhes
+            logger.error(f'Quiz form errors: {quiz_form.errors}')
+            logger.error(f'Question formset errors: {question_formset.errors}')
+            logger.error(f'Question formset non_form_errors: {question_formset.non_form_errors()}')
+            
             if not quiz_form.is_valid():
                 for field, errors in quiz_form.errors.items():
                     for error in errors:
                         messages.error(request, f'{field}: {error}')
             if not question_formset.is_valid():
-                messages.error(request, 'Erro no formulário de perguntas.')
+                # Mostra erros específicos de cada pergunta
+                for i, form_errors in enumerate(question_formset.errors):
+                    if form_errors:
+                        for field, errors in form_errors.items():
+                            for error in errors:
+                                messages.error(request, f'Pergunta {i+1} - {field}: {error}')
+                # Mostra erros gerais do formset
+                for error in question_formset.non_form_errors():
+                    messages.error(request, error)
     else:
         quiz_form = QuizForm(instance=quiz)
         question_formset = QuestionFormSet(instance=quiz, prefix='questions')

@@ -84,12 +84,21 @@
         <div class="card">
             <h2 class="text-xl font-semibold text-white mb-6">Perguntas</h2>
             
+            <!-- Instruções -->
+            <div class="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <p class="text-sm text-blue-300">
+                    <strong>📋 Regras:</strong> Cada pergunta deve ter de 2 a 5 opções de resposta, com <strong>apenas UMA opção correta</strong>.
+                </p>
+            </div>
+            
             <div id="questionsContainer" class="space-y-6">
                 {{ question_formset.management_form }}
                 {% for question_form in question_formset %}
-                <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="{{ forloop.counter0 }}" data-question-id="{{ question_form.instance.id|default:'' }}">
+                <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" 
+                     data-question-index="{{ forloop.counter0 }}" 
+                     data-question-id="{{ question_form.instance.id|default:'' }}">
                     <div class="flex items-start justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-white">Pergunta {{ forloop.counter }}</h3>
+                        <h3 class="text-lg font-semibold text-white question-title">Pergunta {{ forloop.counter }}</h3>
                         <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -112,13 +121,11 @@
                         
                         <!-- Opções de Resposta -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-3">Opções de Resposta *</label>
+                            <label class="block text-sm font-medium text-gray-400 mb-3">
+                                Opções de Resposta * 
+                                <span class="text-xs text-gray-500">(mín. 2, máx. 5 - selecione a correta)</span>
+                            </label>
                             
-                            <!-- 
-                                IMPORTANTE: data-question-identifier é usado pelo JS para gerar nomes de campos
-                                Para perguntas existentes: usa o ID da pergunta
-                                Para perguntas novas: usa o índice do formset
-                            -->
                             <div class="choices-container space-y-3" 
                                  data-question-id="{{ question_form.instance.id|default:'' }}" 
                                  data-question-index="{{ forloop.counter0 }}"
@@ -135,9 +142,19 @@
                                                     {{ choice_form.text }}
                                                 </div>
                                                 <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
-                                                    {{ choice_form.is_correct }}
+                                                    <input type="radio" 
+                                                           name="correct_{{ question_form.instance.id }}" 
+                                                           value="{{ forloop.counter0 }}"
+                                                           {% if choice_form.instance.is_correct %}checked{% endif %}
+                                                           class="form-radio text-brand-500"
+                                                           onchange="updateCorrectChoice(this)">
                                                     <span class="text-xs text-gray-400">Correta</span>
                                                 </label>
+                                                <!-- Hidden field para is_correct -->
+                                                <input type="hidden" 
+                                                       name="{{ choice_formset.prefix }}-{{ forloop.counter0 }}-is_correct" 
+                                                       value="{% if choice_form.instance.is_correct %}on{% endif %}"
+                                                       class="is-correct-hidden">
                                                 {{ choice_form.id }}
                                                 <div class="hidden">{{ choice_form.DELETE }}</div>
                                                 <div class="hidden">{{ choice_form.order }}</div>
@@ -157,11 +174,11 @@
                             </div>
                             
                             <!-- Botão Adicionar Opção -->
-                            <button type="button" onclick="addChoice(this)" class="mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
+                            <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>
-                                Adicionar Opção
+                                Adicionar Opção <span class="choice-count-label">(0/5)</span>
                             </button>
                         </div>
                     </div>
@@ -199,19 +216,19 @@
 /**
  * QUIZ FORM JAVASCRIPT
  * 
- * REGRAS IMPORTANTES:
- * 1. Opções dinâmicas usam o padrão: choice_{identifier}_{index}_text
- * 2. Para perguntas existentes: identifier = ID da pergunta (ex: choice_5_0_text)
- * 3. Para perguntas novas: identifier = índice do formset (ex: choice_0_0_text)
- * 4. O backend busca por TODAS as chaves que começam com choice_{identifier}_
- *    então não precisa ser sequencial (0, 1, 2...)
+ * REGRAS:
+ * 1. Cada pergunta tem de 2 a 5 opções
+ * 2. APENAS 1 resposta correta por pergunta (radio button)
+ * 3. Opções dinâmicas usam: choice_{identifier}_{index}_text e choice_{identifier}_{index}_is_correct
  */
 
-// Contador de perguntas (para novas perguntas)
+const MAX_CHOICES = 5;
+const MIN_CHOICES = 2;
+
 let questionFormsetIndex = {{ question_formset.total_form_count|default:0 }};
 
 /**
- * Adiciona uma nova pergunta ao formulário
+ * Adiciona uma nova pergunta
  */
 function addQuestion() {
     const container = document.getElementById('questionsContainer');
@@ -253,7 +270,10 @@ function addQuestion() {
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-3">Opções de Resposta *</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-3">
+                        Opções de Resposta * 
+                        <span class="text-xs text-gray-500">(mín. 2, máx. 5 - selecione a correta)</span>
+                    </label>
                     
                     <div class="choices-container space-y-3" 
                          data-question-index="${newIndex}"
@@ -262,11 +282,11 @@ function addQuestion() {
                         <div class="placeholder-text text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
                     </div>
                     
-                    <button type="button" onclick="addChoice(this)" class="mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
+                    <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Adicionar Opção
+                        Adicionar Opção <span class="choice-count-label">(0/5)</span>
                     </button>
                 </div>
             </div>
@@ -275,11 +295,9 @@ function addQuestion() {
     
     container.insertAdjacentHTML('beforeend', questionHtml);
     
-    // Atualiza contador do formset
     totalForms.value = parseInt(totalForms.value) + 1;
     questionFormsetIndex++;
     
-    // Atualiza numeração
     updateQuestionNumbers();
 }
 
@@ -291,11 +309,9 @@ function removeQuestion(button) {
     const deleteInput = questionItem.querySelector('input[name*="-DELETE"]');
     
     if (deleteInput && questionItem.dataset.questionId) {
-        // Pergunta existente: marca para deletar
         deleteInput.value = 'on';
         questionItem.style.display = 'none';
     } else {
-        // Pergunta nova: remove do DOM
         questionItem.remove();
     }
     
@@ -304,9 +320,6 @@ function removeQuestion(button) {
 
 /**
  * Adiciona uma nova opção de resposta
- * 
- * IMPORTANTE: O nome do campo segue o padrão choice_{identifier}_{index}_text
- * onde identifier é o ID da pergunta (existente) ou índice do formset (nova)
  */
 function addChoice(button) {
     const questionItem = button.closest('.question-item');
@@ -317,22 +330,25 @@ function addChoice(button) {
         return;
     }
     
+    // Verifica limite de 5 opções
+    const existingChoices = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])');
+    if (existingChoices.length >= MAX_CHOICES) {
+        alert(`Máximo de ${MAX_CHOICES} opções por pergunta.`);
+        return;
+    }
+    
     // Remove placeholder se existir
     const placeholder = choicesContainer.querySelector('.placeholder-text');
     if (placeholder) {
         placeholder.remove();
     }
     
-    // Determina o identificador da pergunta
-    // Para perguntas existentes: usa ID
-    // Para perguntas novas: usa índice do formset
+    // Determina identificador da pergunta
     let questionIdentifier = choicesContainer.dataset.questionId;
     if (!questionIdentifier || questionIdentifier === '') {
         questionIdentifier = choicesContainer.dataset.questionIndex;
     }
     
-    // Conta opções existentes (incluindo as do formset Django)
-    const existingChoices = choicesContainer.querySelectorAll('.choice-item');
     const choiceIndex = existingChoices.length;
     
     console.log(`Adicionando opção: questionIdentifier=${questionIdentifier}, choiceIndex=${choiceIndex}`);
@@ -347,15 +363,21 @@ function addChoice(button) {
                        name="choice_${questionIdentifier}_${choiceIndex}_text" 
                        class="form-input w-full" 
                        placeholder="Digite a opção de resposta..."
-                       required
-                       style="width: 100%; min-width: 0;">
+                       required>
             </div>
             <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
-                <input type="checkbox" 
-                       name="choice_${questionIdentifier}_${choiceIndex}_is_correct" 
-                       class="form-checkbox">
+                <input type="radio" 
+                       name="correct_dynamic_${questionIdentifier}" 
+                       value="${choiceIndex}"
+                       class="form-radio text-brand-500"
+                       onchange="updateDynamicCorrectChoice(this, '${questionIdentifier}')">
                 <span class="text-xs text-gray-400">Correta</span>
             </label>
+            <!-- Hidden field para is_correct -->
+            <input type="hidden" 
+                   name="choice_${questionIdentifier}_${choiceIndex}_is_correct" 
+                   value=""
+                   class="is-correct-hidden">
             <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -373,6 +395,47 @@ function addChoice(button) {
     }
     
     updateChoiceNumbers(choicesContainer);
+    updateChoiceCountLabel(questionItem);
+}
+
+/**
+ * Atualiza o hidden field quando radio é selecionado (opções dinâmicas)
+ */
+function updateDynamicCorrectChoice(radio, questionIdentifier) {
+    const choicesContainer = radio.closest('.choices-container');
+    
+    // Limpa todos os hidden fields de is_correct
+    choicesContainer.querySelectorAll('.is-correct-hidden').forEach(hidden => {
+        hidden.value = '';
+    });
+    
+    // Marca o selecionado
+    const choiceItem = radio.closest('.choice-item');
+    const hiddenField = choiceItem.querySelector('.is-correct-hidden');
+    if (hiddenField) {
+        hiddenField.value = 'on';
+    }
+    
+    console.log(`Opção correta selecionada: questionIdentifier=${questionIdentifier}, choiceIndex=${radio.value}`);
+}
+
+/**
+ * Atualiza o hidden field quando radio é selecionado (opções do formset)
+ */
+function updateCorrectChoice(radio) {
+    const choicesContainer = radio.closest('.choices-container');
+    
+    // Limpa todos os hidden fields de is_correct
+    choicesContainer.querySelectorAll('.is-correct-hidden').forEach(hidden => {
+        hidden.value = '';
+    });
+    
+    // Marca o selecionado
+    const choiceItem = radio.closest('.choice-item');
+    const hiddenField = choiceItem.querySelector('.is-correct-hidden');
+    if (hiddenField) {
+        hiddenField.value = 'on';
+    }
 }
 
 /**
@@ -381,6 +444,7 @@ function addChoice(button) {
 function removeChoice(button) {
     const choiceItem = button.closest('.choice-item');
     const choicesContainer = choiceItem.closest('.choices-container');
+    const questionItem = choiceItem.closest('.question-item');
     
     // Se é uma opção do formset Django, marca para deletar
     const deleteInput = choiceItem.querySelector('input[name*="-DELETE"]');
@@ -388,11 +452,11 @@ function removeChoice(button) {
         deleteInput.value = 'on';
         choiceItem.style.display = 'none';
     } else {
-        // Opção dinâmica: remove do DOM
         choiceItem.remove();
     }
     
     updateChoiceNumbers(choicesContainer);
+    updateChoiceCountLabel(questionItem);
 }
 
 /**
@@ -417,12 +481,37 @@ function updateChoiceNumbers(container) {
 }
 
 /**
+ * Atualiza o contador de opções no botão
+ */
+function updateChoiceCountLabel(questionItem) {
+    const choicesContainer = questionItem.querySelector('.choices-container');
+    const addBtn = questionItem.querySelector('.add-choice-btn');
+    
+    if (choicesContainer && addBtn) {
+        const count = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])').length;
+        const label = addBtn.querySelector('.choice-count-label');
+        if (label) {
+            label.textContent = `(${count}/${MAX_CHOICES})`;
+        }
+        
+        // Desabilita botão se atingiu o limite
+        if (count >= MAX_CHOICES) {
+            addBtn.disabled = true;
+            addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            addBtn.disabled = false;
+            addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+}
+
+/**
  * Atualiza a numeração das perguntas
  */
 function updateQuestionNumbers() {
     const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
     questions.forEach((question, index) => {
-        const title = question.querySelector('.question-title, h3');
+        const title = question.querySelector('.question-title');
         if (title) {
             title.textContent = `Pergunta ${index + 1}`;
         }
@@ -471,9 +560,16 @@ function validateAndPrepareForm(event) {
         }
         
         const visibleChoices = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])');
-        if (visibleChoices.length < 2) {
+        
+        if (visibleChoices.length < MIN_CHOICES) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${questionNumber}: Adicione pelo menos 2 opções de resposta.`);
+            errorMessages.push(`Pergunta ${questionNumber}: Adicione pelo menos ${MIN_CHOICES} opções de resposta.`);
+            return;
+        }
+        
+        if (visibleChoices.length > MAX_CHOICES) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: Máximo de ${MAX_CHOICES} opções permitido.`);
             return;
         }
         
@@ -481,15 +577,14 @@ function validateAndPrepareForm(event) {
         let emptyChoices = [];
         
         visibleChoices.forEach((choice, cIndex) => {
-            // Busca input de texto (pode ser do formset Django ou dinâmico)
             const choiceInput = choice.querySelector('input[type="text"]');
-            const choiceCheckbox = choice.querySelector('input[type="checkbox"]');
+            const radioBtn = choice.querySelector('input[type="radio"]');
             
             if (!choiceInput || !choiceInput.value.trim()) {
                 emptyChoices.push(cIndex + 1);
             }
             
-            if (choiceCheckbox && choiceCheckbox.checked) {
+            if (radioBtn && radioBtn.checked) {
                 hasCorrect = true;
             }
         });
@@ -501,7 +596,7 @@ function validateAndPrepareForm(event) {
         
         if (!hasCorrect) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${questionNumber}: Marque pelo menos uma opção como correta.`);
+            errorMessages.push(`Pergunta ${questionNumber}: Selecione uma opção como correta.`);
         }
     });
     
@@ -511,16 +606,18 @@ function validateAndPrepareForm(event) {
         return false;
     }
     
-    // Log para debug
     console.log('Formulário validado com sucesso. Enviando...');
-    
     return true;
 }
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    // Atualiza numeração inicial
     updateQuestionNumbers();
+    
+    // Atualiza contadores de opções
+    document.querySelectorAll('.question-item').forEach(questionItem => {
+        updateChoiceCountLabel(questionItem);
+    });
     
     // Atualiza numeração de opções em cada pergunta
     document.querySelectorAll('.choices-container').forEach(container => {

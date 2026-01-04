@@ -269,8 +269,8 @@ QuestionFormSet = inlineformset_factory(
     form=QuestionForm,
     extra=1,
     can_delete=True,
-    min_num=1,
-    validate_min=True
+    min_num=0,  # Validação será feita manualmente na view
+    validate_min=False
 )
 
 ChoiceFormSet = inlineformset_factory(
@@ -279,7 +279,7 @@ ChoiceFormSet = inlineformset_factory(
     form=ChoiceForm,
     extra=0,  # Não criar opções vazias por padrão
     can_delete=True,
-    min_num=2,
-    validate_min=True
+    min_num=0,  # Validação será feita manualmente na view
+    validate_min=False
 )
 
