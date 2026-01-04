@@ -159,13 +159,27 @@ def training_detail(request, slug):
 def video_player(request, training_slug, video_id):
     """Player de vídeo com tracking de progresso."""
     company = request.current_company
+    user = request.user
     
-    training = get_object_or_404(
-        Training,
-        company=company,
-        slug=training_slug,
-        is_active=True
-    )
+    # Admin Master: se não tem empresa selecionada, busca em qualquer empresa
+    if user.is_superuser and not company:
+        training = get_object_or_404(
+            Training,
+            slug=training_slug,
+            is_active=True
+        )
+    else:
+        # Usuários normais ou Admin Master com empresa selecionada
+        if not company:
+            messages.error(request, 'Você precisa estar vinculado a uma empresa para acessar treinamentos.')
+            return redirect('core:no_company')
+        
+        training = get_object_or_404(
+            Training,
+            company=company,
+            slug=training_slug,
+            is_active=True
+        )
     
     video = get_object_or_404(
         Video,
