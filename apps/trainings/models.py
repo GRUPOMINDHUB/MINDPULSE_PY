@@ -619,20 +619,30 @@ class UserQuizAttempt(TimeStampedModel):
             # PASSO 5: Verifica se a escolha selecionada está na lista de corretas
             correct_choice_ids = correct_choices_map.get(question_id_str, [])
             
-            if selected_choice_id in correct_choice_ids:
-                correct += 1
-                logger.info(f'✓ RESPOSTA CORRETA! Escolha {selected_choice_id} está na lista de corretas {correct_choice_ids}')
-            else:
-                # Verifica diretamente no banco como fallback (caso o mapa não tenha sido populado corretamente)
-                try:
-                    selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
-                    if selected_choice.is_correct:
+            logger.info(f'Pergunta {question.id} - Escolha selecionada: {selected_choice_id}')
+            logger.info(f'Pergunta {question.id} - Escolhas corretas esperadas: {correct_choice_ids}')
+            
+            # Verifica diretamente no banco PRIMEIRO (mais confiável)
+            try:
+                selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+                logger.info(f'Pergunta {question.id} - Escolha encontrada no banco: ID={selected_choice.id}, Texto="{selected_choice.text}", is_correct={selected_choice.is_correct}')
+                
+                if selected_choice.is_correct:
+                    correct += 1
+                    logger.info(f'✅✅✅ RESPOSTA CORRETA! Pergunta {question.id}, Escolha {selected_choice_id} é CORRETA')
+                else:
+                    logger.info(f'❌❌❌ RESPOSTA INCORRETA! Pergunta {question.id}, Escolha {selected_choice_id} é INCORRETA')
+                    # Verifica se está na lista de corretas (pode ter sido atualizada)
+                    if selected_choice_id in correct_choice_ids:
+                        logger.warning(f'⚠️ INCONSISTÊNCIA: Escolha {selected_choice_id} está na lista de corretas mas is_correct=False no banco!')
                         correct += 1
-                        logger.info(f'✓ RESPOSTA CORRETA (fallback)! Escolha {selected_choice_id} é correta')
-                    else:
-                        logger.info(f'✗ Resposta incorreta. Escolha {selected_choice_id} não está na lista de corretas')
-                except Choice.DoesNotExist:
-                    logger.error(f'✗ Escolha ID {selected_choice_id} não existe para pergunta {question.id}')
+                        logger.info(f'✅ Corrigido: Contando como correta devido à lista')
+            except Choice.DoesNotExist:
+                logger.error(f'❌ Escolha ID {selected_choice_id} não existe para pergunta {question.id}')
+                # Fallback: verifica se está na lista de corretas
+                if selected_choice_id in correct_choice_ids:
+                    logger.warning(f'⚠️ Escolha {selected_choice_id} não existe no banco mas está na lista de corretas!')
+                    correct += 1
         
         logger.info(f'\n=== RESULTADO FINAL ===')
         logger.info(f'Corretas: {correct}/{total}')
