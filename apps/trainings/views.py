@@ -558,21 +558,44 @@ def manage_create(request):
     Criar novo treinamento.
     ACCESS: ADMIN MASTER | GESTOR
     """
+    from .forms import AdminTrainingForm
+    
+    # Admin Master usa formulário com seletor de empresa
+    is_admin = request.user.is_superuser
+    FormClass = AdminTrainingForm if is_admin else TrainingForm
+    
     if request.method == 'POST':
-        form = TrainingForm(request.POST, request.FILES, company=request.current_company)
+        if is_admin:
+            form = FormClass(request.POST, request.FILES)
+        else:
+            form = FormClass(request.POST, request.FILES, company=request.current_company)
+        
         if form.is_valid():
             training = form.save(commit=False)
-            training.company = request.current_company
+            
+            # Se não for admin, força a empresa atual
+            if not is_admin:
+                training.company = request.current_company
+            
             training.created_by = request.user
             training.save()
             form.save_m2m()  # Salva relações many-to-many
             messages.success(request, f'Treinamento "{training.title}" criado com sucesso!')
             return redirect('trainings:manage_detail', pk=training.pk)
     else:
-        form = TrainingForm(company=request.current_company)
+        if is_admin:
+            # Para admin, passa a empresa atual como initial se houver
+            initial = {}
+            if request.current_company:
+                initial['company'] = request.current_company.id
+            form = FormClass(initial=initial)
+        else:
+            form = FormClass(company=request.current_company)
     
     context = {
         'form': form,
+        'title': 'Criar Treinamento',
+        'is_edit': False,
     }
     return render(request, 'trainings/manage/form.html', context)
 
@@ -584,6 +607,8 @@ def manage_edit(request, pk):
     Editar treinamento existente.
     ACCESS: ADMIN MASTER | GESTOR
     """
+    from .forms import AdminTrainingForm
+    
     training = get_object_or_404(Training, pk=pk)
     
     # Verifica permissão
@@ -592,18 +617,30 @@ def manage_edit(request, pk):
         messages.error(request, 'Você não tem permissão para editar este treinamento.')
         return redirect('trainings:manage_list')
     
+    # Admin Master usa formulário com seletor de empresa
+    FormClass = AdminTrainingForm if is_admin else TrainingForm
+    
     if request.method == 'POST':
-        form = TrainingForm(request.POST, request.FILES, instance=training, company=request.current_company)
+        if is_admin:
+            form = FormClass(request.POST, request.FILES, instance=training)
+        else:
+            form = FormClass(request.POST, request.FILES, instance=training, company=training.company)
+        
         if form.is_valid():
             form.save()
             messages.success(request, f'Treinamento "{training.title}" atualizado com sucesso!')
             return redirect('trainings:manage_detail', pk=training.pk)
     else:
-        form = TrainingForm(instance=training, company=request.current_company)
+        if is_admin:
+            form = FormClass(instance=training)
+        else:
+            form = FormClass(instance=training, company=training.company)
     
     context = {
         'form': form,
         'training': training,
+        'title': f'Editar: {training.title}',
+        'is_edit': True,
     }
     return render(request, 'trainings/manage/form.html', context)
 

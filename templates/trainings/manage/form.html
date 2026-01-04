@@ -47,7 +47,7 @@
         {% endif %}
         
         <div class="space-y-6">
-            {% if user.is_superuser %}
+            {% if user.is_superuser and form.company %}
             <!-- Empresa (Admin Master) -->
             <div>
                 <label for="id_company" class="block text-sm font-medium text-gray-400 mb-2">Empresa *</label>
@@ -55,7 +55,8 @@
                     <option value="">Selecione a empresa</option>
                     {% for company in form.company.field.queryset %}
                     <option value="{{ company.id }}" 
-                            {% if form.company.value == company.id or training.company.id == company.id %}selected{% endif %}>
+                            {% if form.company.value|stringformat:"s" == company.id|stringformat:"s" %}selected
+                            {% elif training and training.company.id == company.id %}selected{% endif %}>
                         {{ company.name }}
                     </option>
                     {% endfor %}
