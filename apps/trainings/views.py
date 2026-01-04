@@ -118,18 +118,20 @@ def training_detail(request, slug):
     
     # Verificação de permissão para usuários normais
     if not user.is_superuser:
-        # Verifica se o treinamento está atribuído ao usuário ou é global (sem assigned_users)
-        training_check = Training.objects.filter(
-            pk=training.pk
-        ).annotate(
-            assigned_count=Count('assigned_users')
-        ).filter(
-            Q(assigned_users=user) | Q(assigned_count=0)
-        ).exists()
-        
-        if not training_check:
-            messages.error(request, 'Você não tem acesso a este treinamento.')
-            return redirect('trainings:list')
+        # Gestor tem acesso a todos os treinamentos da empresa
+        if not request.is_gestor:
+            # Colaborador: verifica se o treinamento está atribuído a ele ou é global
+            training_check = Training.objects.filter(
+                pk=training.pk
+            ).annotate(
+                assigned_count=Count('assigned_users')
+            ).filter(
+                Q(assigned_users=user) | Q(assigned_count=0)
+            ).exists()
+            
+            if not training_check:
+                messages.error(request, 'Você não tem acesso a este treinamento.')
+                return redirect('trainings:list')
     
     videos = training.videos.filter(is_active=True).order_by('order')
     
