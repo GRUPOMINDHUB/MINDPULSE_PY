@@ -530,3 +530,65 @@ def video_reorder(request):
     
     return JsonResponse({'success': True})
 
+
+@login_required
+@gestor_required_ajax
+def get_company_users(request):
+    """
+    API para buscar usuários de uma empresa (para atribuição de treinamentos).
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    from apps.accounts.models import UserCompany
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    company_id = request.GET.get('company_id')
+    
+    if not company_id:
+        return JsonResponse({
+            'success': False,
+            'message': 'company_id é obrigatório'
+        }, status=400)
+    
+    try:
+        company_id = int(company_id)
+        company = Company.objects.get(id=company_id, is_active=True)
+    except (ValueError, Company.DoesNotExist):
+        return JsonResponse({
+            'success': False,
+            'message': 'Empresa não encontrada'
+        }, status=404)
+    
+    # Verifica permissão: Admin Master pode ver qualquer empresa, Gestor só a sua
+    if not request.user.is_superuser:
+        if request.current_company != company:
+            return JsonResponse({
+                'success': False,
+                'message': 'Não autorizado'
+            }, status=403)
+    
+    # Busca usuários vinculados à empresa
+    company_user_ids = UserCompany.objects.filter(
+        company=company,
+        is_active=True
+    ).values_list('user_id', flat=True)
+    
+    users = User.objects.filter(
+        id__in=company_user_ids,
+        is_active=True
+    ).order_by('first_name', 'last_name')
+    
+    users_data = [{
+        'id': user.id,
+        'full_name': user.get_full_name() or user.email,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+    } for user in users]
+    
+    return JsonResponse({
+        'success': True,
+        'users': users_data,
+        'count': len(users_data)
+    })
+

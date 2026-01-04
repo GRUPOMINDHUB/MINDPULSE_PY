@@ -55,7 +55,8 @@ class TrainingForm(forms.ModelForm):
                 widget=forms.SelectMultiple(attrs={
                     'class': 'form-select bg-[#1A1A1A] border border-[#333333] text-white rounded-lg',
                     'multiple': 'multiple',
-                    'size': '6'
+                    'size': '6',
+                    'id': 'id_assigned_users'
                 }),
                 label='Usuários Atribuídos',
                 help_text='Selecione os colaboradores que devem ter acesso a este treinamento. Deixe vazio para tornar global.'
@@ -91,20 +92,53 @@ class AdminTrainingForm(TrainingForm):
         fields = ['company'] + TRAINING_FIELDS
     
     def __init__(self, *args, **kwargs):
+        # Remove company do kwargs para não passar para o super
+        company_from_kwargs = kwargs.pop('company', None)
         super().__init__(*args, **kwargs)
-        company = self._get_company_from_form()
+        
+        # Tenta obter a empresa de várias fontes
+        company = self._get_company_from_form() or company_from_kwargs
+        
+        # Se tem instância (edição), usa a empresa da instância
+        if self.instance and self.instance.pk and not company:
+            company = self.instance.company
+        
         if company:
             self.company = company
             self._setup_assigned_users_field()
+        else:
+            # Se não tem empresa, inicializa o campo vazio mas configurado
+            self._setup_assigned_users_field_empty()
+    
+    def _setup_assigned_users_field_empty(self):
+        """Configura o campo assigned_users vazio (para Admin Master sem empresa selecionada)."""
+        if not hasattr(self.Meta.model, 'assigned_users'):
+            return
+        
+        if 'assigned_users' not in self.fields:
+            self.fields['assigned_users'] = forms.ModelMultipleChoiceField(
+                queryset=User.objects.none(),
+                required=False,
+                widget=forms.SelectMultiple(attrs={
+                    'class': 'form-select bg-[#1A1A1A] border border-[#333333] text-white rounded-lg',
+                    'multiple': 'multiple',
+                    'size': '6',
+                    'id': 'id_assigned_users'
+                }),
+                label='Usuários Atribuídos',
+                help_text='Selecione a empresa primeiro para ver os usuários disponíveis.'
+            )
     
     def _get_company_from_form(self):
         """Extrai a empresa do formulário (instância, POST ou initial)."""
         if self.instance and self.instance.pk:
             return self.instance.company
         
-        if 'company' in self.data:
+        if self.data and 'company' in self.data:
             try:
-                return Company.objects.get(id=int(self.data.get('company')), is_active=True)
+                company_id = self.data.get('company')
+                if company_id:
+                    return Company.objects.get(id=int(company_id), is_active=True)
             except (ValueError, Company.DoesNotExist):
                 return None
         

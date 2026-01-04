@@ -54,7 +54,8 @@
                 <select name="company" id="id_company" class="form-select" required>
                     <option value="">Selecione a empresa</option>
                     {% for company in form.company.field.queryset %}
-                    <option value="{{ company.id }}" {% if form.company.value == company.id %}selected{% endif %}>
+                    <option value="{{ company.id }}" 
+                            {% if form.company.value == company.id or training.company.id == company.id %}selected{% endif %}>
                         {{ company.name }}
                     </option>
                     {% endfor %}
@@ -112,14 +113,20 @@
                             {{ user.get_full_name }} ({{ user.email }})
                         </option>
                         {% empty %}
-                        <option disabled>Nenhum usuário disponível nesta empresa</option>
+                        <option disabled id="no-users-option">
+                            {% if user.is_superuser %}
+                            Selecione uma empresa para ver os usuários disponíveis
+                            {% else %}
+                            Nenhum usuário disponível nesta empresa
+                            {% endif %}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="mt-2 flex items-start gap-2">
                     <div class="flex-1">
                         <p class="text-xs text-gray-500">
-                            <strong>Dica:</strong> Segure <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Ctrl</kbd> (Windows) ou <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Cmd</kbd> (Mac) para selecionar múltiplos usuários. Deixe vazio para tornar o treinamento global.
+                            <strong>Dica:</strong> Segure <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Ctrl</kbd> (Windows) ou <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Cmd</kbd> (Mac) para selecionar múltiplos usuários. Deixe vazio para tornar o treinamento <strong class="text-brand-400">global</strong> (todos os colaboradores da empresa).
                         </p>
                     </div>
                 </div>
@@ -216,5 +223,70 @@
         </div>
     </form>
 </div>
+
+{% if user.is_superuser %}
+<script>
+// Carrega usuários dinamicamente quando Admin Master seleciona empresa
+document.addEventListener('DOMContentLoaded', function() {
+    const companySelect = document.getElementById('id_company');
+    const usersSelect = document.getElementById('id_assigned_users');
+    
+    if (companySelect && usersSelect) {
+        // Função para carregar usuários
+        function loadCompanyUsers(companyId, preserveSelected = false) {
+            if (!companyId) {
+                usersSelect.innerHTML = '<option disabled>Selecione uma empresa para ver os usuários disponíveis</option>';
+                return;
+            }
+            
+            // Preserva valores selecionados
+            const selectedValues = preserveSelected ? Array.from(usersSelect.selectedOptions).map(opt => opt.value) : [];
+            
+            // Mostra loading
+            usersSelect.innerHTML = '<option disabled>Carregando usuários...</option>';
+            usersSelect.disabled = true;
+            
+            // Busca usuários da empresa via API
+            fetch(`{% url 'trainings:get_company_users' %}?company_id=${companyId}`)
+                .then(response => response.json())
+                .then(data => {
+                    usersSelect.disabled = false;
+                    usersSelect.innerHTML = '';
+                    
+                    if (data.success && data.users.length > 0) {
+                        data.users.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = `${user.full_name} (${user.email})`;
+                            // Restaura seleção se estava selecionado antes
+                            if (preserveSelected && selectedValues.includes(String(user.id))) {
+                                option.selected = true;
+                            }
+                            usersSelect.appendChild(option);
+                        });
+                    } else {
+                        usersSelect.innerHTML = '<option disabled>Nenhum usuário disponível nesta empresa</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar usuários:', error);
+                    usersSelect.disabled = false;
+                    usersSelect.innerHTML = '<option disabled>Erro ao carregar usuários. Tente novamente.</option>';
+                });
+        }
+        
+        // Carrega usuários quando empresa é selecionada
+        companySelect.addEventListener('change', function() {
+            loadCompanyUsers(this.value, false);
+        });
+        
+        // Se já tem empresa selecionada (edição), carrega os usuários automaticamente
+        if (companySelect.value) {
+            loadCompanyUsers(companySelect.value, true);
+        }
+    }
+});
+</script>
+{% endif %}
 {% endblock %}
 
