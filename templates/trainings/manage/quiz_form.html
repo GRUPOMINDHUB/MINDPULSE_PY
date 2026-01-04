@@ -102,7 +102,7 @@
                 {% for question_form in question_formset %}
                 <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="{{ forloop.counter0 }}">
                     <div class="flex items-start justify-between mb-4">
-                        <h3 class="text-lg font-medium text-white">Pergunta {{ forloop.counter }}</h3>
+                        <h3 class="text-lg font-semibold text-white">Pergunta {{ forloop.counter }}</h3>
                         <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -111,46 +111,49 @@
                     </div>
                     
                     <div class="space-y-4">
+                        <!-- Texto da Pergunta -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">Texto da Pergunta *</label>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Pergunta *</label>
                             {{ question_form.text }}
                             {{ question_form.id }}
                             {{ question_form.DELETE }}
+                            {{ question_form.order }}
                             {% if question_form.text.errors %}
                             <p class="mt-1 text-sm text-red-400">{{ question_form.text.errors.0 }}</p>
                             {% endif %}
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
-                            {{ question_form.order }}
                         </div>
                         
                         <!-- Opções de Resposta -->
                         <div>
                             <div class="flex items-center justify-between mb-3">
                                 <label class="block text-sm font-medium text-gray-400">Opções de Resposta *</label>
-                                <button type="button" onclick="addChoice(this)" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-                                    + Adicionar Opção
+                                <button type="button" onclick="addChoice(this)" class="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Adicionar Opção
                                 </button>
                             </div>
                             
-                            <div class="choices-container space-y-2" data-question-id="{{ question_form.instance.id|default:'' }}" data-question-index="{{ forloop.counter0 }}">
+                            <div class="choices-container space-y-3" data-question-id="{{ question_form.instance.id|default:'' }}" data-question-index="{{ forloop.counter0 }}">
                                 {% if question_form.instance.pk and choice_formsets %}
                                     {% for q_id, choice_formset in choice_formsets.items %}
                                         {% if q_id == question_form.instance.id %}
                                             {{ choice_formset.management_form }}
                                             {% for choice_form in choice_formset %}
-                                            <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600">
-                                                <input type="radio" name="question_{{ question_form.instance.id }}_correct" 
-                                                       value="{{ choice_form.instance.id|default:'' }}" 
-                                                       {% if choice_form.is_correct.value or choice_form.instance.is_correct %}checked{% endif %}
-                                                       class="form-radio" required>
-                                                {{ choice_form.text }}
+                                            <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors">
+                                                <span class="text-sm text-gray-500 font-medium min-w-[2rem]">{{ forloop.counter }}</span>
+                                                <div class="flex-1">
+                                                    {{ choice_form.text }}
+                                                </div>
+                                                <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
+                                                    {{ choice_form.is_correct }}
+                                                    <span class="text-xs text-gray-400">Correta</span>
+                                                </label>
                                                 {{ choice_form.id }}
                                                 {{ choice_form.DELETE }}
                                                 {{ choice_form.order }}
-                                                <button type="button" onclick="removeChoice(this)" class="ml-auto p-1 text-gray-500 hover:text-red-400 transition-colors">
+                                                <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                                     </svg>
@@ -161,7 +164,7 @@
                                     {% endfor %}
                                 {% else %}
                                     <!-- Placeholder para novas perguntas -->
-                                    <div class="text-sm text-gray-500 italic">Adicione opções após salvar a pergunta</div>
+                                    <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta acima</div>
                                 {% endif %}
                             </div>
                         </div>
@@ -207,7 +210,7 @@ function addQuestion() {
             
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Texto da Pergunta *</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Pergunta *</label>
                     <textarea name="questions-${questionIndex}-text" 
                               class="form-input" 
                               rows="2" 
@@ -215,26 +218,22 @@ function addQuestion() {
                               required></textarea>
                     <input type="hidden" name="questions-${questionIndex}-id" value="">
                     <input type="hidden" name="questions-${questionIndex}-DELETE" value="false">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
-                    <input type="number" name="questions-${questionIndex}-order" 
-                           class="form-input" 
-                           value="${questionIndex + 1}" 
-                           min="0">
+                    <input type="hidden" name="questions-${questionIndex}-order" value="${questionIndex + 1}">
                 </div>
                 
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <label class="block text-sm font-medium text-gray-400">Opções de Resposta *</label>
-                        <button type="button" onclick="addChoice(this)" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">
-                            + Adicionar Opção
+                        <button type="button" onclick="addChoice(this)" class="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Adicionar Opção
                         </button>
                     </div>
                     
-                    <div class="choices-container space-y-2" data-question-index="${questionIndex}">
-                        <!-- Opções serão adicionadas aqui -->
+                    <div class="choices-container space-y-3" data-question-index="${questionIndex}">
+                        <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta acima</div>
                     </div>
                 </div>
             </div>
@@ -266,17 +265,23 @@ function addChoice(button) {
     const choiceCount = choicesContainer.querySelectorAll('.choice-item').length;
     
     const choiceHtml = `
-        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600">
-            <input type="radio" name="question_${questionIndex}_correct" 
-                   value="choice_${choiceCount}" 
-                   class="form-radio" required>
-            <input type="text" 
-                   name="choice_${questionIndex}_${choiceCount}_text" 
-                   class="form-input flex-1" 
-                   placeholder="Digite a opção de resposta..."
-                   required>
+        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors">
+            <span class="text-sm text-gray-500 font-medium min-w-[2rem]">${choiceCount + 1}</span>
+            <div class="flex-1">
+                <input type="text" 
+                       name="choice_${questionIndex}_${choiceCount}_text" 
+                       class="form-input w-full" 
+                       placeholder="Digite a opção de resposta..."
+                       required>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
+                <input type="checkbox" 
+                       name="choice_${questionIndex}_${choiceCount}_is_correct" 
+                       class="form-checkbox">
+                <span class="text-xs text-gray-400">Correta</span>
+            </label>
             <input type="hidden" name="choice_${questionIndex}_${choiceCount}_order" value="${choiceCount}">
-            <button type="button" onclick="removeChoice(this)" class="ml-auto p-1 text-gray-500 hover:text-red-400 transition-colors">
+            <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -285,11 +290,36 @@ function addChoice(button) {
     `;
     
     choicesContainer.insertAdjacentHTML('beforeend', choiceHtml);
+    
+    // Remove placeholder se existir
+    const placeholder = choicesContainer.querySelector('.text-gray-500.italic');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    // Atualiza números das opções
+    updateChoiceNumbers(choicesContainer);
 }
 
 function removeChoice(button) {
     const choiceItem = button.closest('.choice-item');
+    const choicesContainer = choiceItem.closest('.choices-container');
     choiceItem.remove();
+    
+    // Atualiza números das opções
+    if (choicesContainer) {
+        updateChoiceNumbers(choicesContainer);
+    }
+}
+
+function updateChoiceNumbers(container) {
+    const choices = container.querySelectorAll('.choice-item');
+    choices.forEach((choice, index) => {
+        const numberSpan = choice.querySelector('.text-gray-500.font-medium');
+        if (numberSpan) {
+            numberSpan.textContent = index + 1;
+        }
+    });
 }
 
 function updateQuestionNumbers() {
