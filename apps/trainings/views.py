@@ -1343,6 +1343,22 @@ def quiz_take(request, training_slug, quiz_id):
         if len(answers) < total_questions:
             logger.warning(f'Quiz {quiz.id} - Apenas {len(answers)} de {total_questions} perguntas foram respondidas')
         
+        # DEBUG: Log das respostas recebidas ANTES de criar tentativa
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f'=== QUIZ {quiz.id} - PROCESSANDO RESPOSTAS ===')
+        logger.info(f'Respostas recebidas: {answers}')
+        
+        # Busca todas as perguntas e escolhas para debug
+        quiz.refresh_from_db()
+        all_questions = list(quiz.questions.all().prefetch_related('choices'))
+        logger.info(f'Total de perguntas no quiz: {len(all_questions)}')
+        for q in all_questions:
+            choices_info = [(c.id, c.text, c.is_correct) for c in q.choices.all()]
+            logger.info(f'Pergunta {q.id} ({q.text[:50]}): Escolhas {choices_info}')
+            if str(q.id) in answers:
+                logger.info(f'  -> Resposta selecionada: {answers[str(q.id)]}')
+        
         # Cria tentativa com as respostas normalizadas
         attempt = UserQuizAttempt.objects.create(
             user=user,
@@ -1354,8 +1370,10 @@ def quiz_take(request, training_slug, quiz_id):
         score = attempt.calculate_score()
         
         # DEBUG: Log do resultado
-        logger.info(f'Quiz {quiz.id} - Tentativa {attempt.id} - Pontuação: {score}% ({attempt.correct_answers}/{attempt.total_questions})')
-        logger.info(f'Quiz {quiz.id} - Respostas processadas: {attempt.answers}')
+        logger.info(f'=== RESULTADO ===')
+        logger.info(f'Pontuação: {score}%')
+        logger.info(f'Corretas: {attempt.correct_answers}/{attempt.total_questions}')
+        logger.info(f'Aprovado: {attempt.is_passed}')
         
         # Redireciona para resultado
         return redirect('trainings:quiz_result', training_slug=training.slug, attempt_id=attempt.id)
