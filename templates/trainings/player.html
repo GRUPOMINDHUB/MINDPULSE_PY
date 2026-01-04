@@ -417,16 +417,30 @@ function goToQuestion(index) {
 
 function submitQuiz(event) {
     const quizId = {{ quiz.id }};
-    const answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
+    let answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
     
-    // Adiciona resposta atual se houver
-    const selected = document.querySelector('input[type="radio"]:checked');
+    // IMPORTANTE: Adiciona resposta da pergunta atual ANTES de submeter
+    const form = document.getElementById('quizForm');
+    const selected = form.querySelector('input[type="radio"]:checked');
     if (selected) {
-        answers[selected.name] = selected.value;
+        // Garante que o nome da pergunta está correto (question_ID)
+        const questionName = selected.name;
+        answers[questionName] = selected.value;
     }
     
-    // Adiciona todas as respostas ao form
-    document.getElementById('answersJson').value = JSON.stringify(answers);
+    // Garante que todas as respostas estão no formato correto (question_ID: choice_id)
+    const normalizedAnswers = {};
+    for (const [key, value] of Object.entries(answers)) {
+        // Remove 'question_' do início se existir, depois adiciona de volta para normalizar
+        let questionId = key;
+        if (key.startsWith('question_')) {
+            questionId = key.replace('question_', '');
+        }
+        normalizedAnswers[questionId] = String(value); // Garante que é string
+    }
+    
+    // Adiciona todas as respostas normalizadas ao form
+    document.getElementById('answersJson').value = JSON.stringify(normalizedAnswers);
     
     // Limpa localStorage após submit
     localStorage.removeItem(`quiz_${quizId}_answers`);

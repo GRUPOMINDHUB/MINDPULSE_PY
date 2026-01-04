@@ -1288,34 +1288,44 @@ def quiz_take(request, training_slug, quiz_id):
         # Processa respostas (pode vir do localStorage via JavaScript ou do form)
         answers = {}
         
-        # Tenta pegar do POST primeiro
+        import json
+        
+        # PRIORIDADE 1: Tenta pegar do POST (respostas diretas do form)
         for key, value in request.POST.items():
             if key.startswith('question_'):
                 question_id = key.replace('question_', '')
                 # Garante que o valor seja string para consistência
                 answers[str(question_id)] = str(value)
         
-        # Se não tem respostas no POST, tenta pegar do body JSON (se vier via AJAX)
+        # PRIORIDADE 2: Se não tem respostas no POST, tenta pegar do answers_json (localStorage)
         if not answers:
-            import json
+            answers_str = request.POST.get('answers_json', '{}')
+            try:
+                answers = json.loads(answers_str)
+                # Normaliza: remove 'question_' do início das chaves e converte para string
+                normalized_answers = {}
+                for k, v in answers.items():
+                    # Remove 'question_' se existir
+                    question_id = str(k).replace('question_', '')
+                    normalized_answers[question_id] = str(v)
+                answers = normalized_answers
+            except Exception as e:
+                # Se der erro, deixa answers vazio
+                answers = {}
+        
+        # PRIORIDADE 3: Se ainda não tem, tenta pegar do body JSON (se vier via AJAX)
+        if not answers:
             try:
                 body_data = json.loads(request.body)
                 answers = body_data.get('answers', {})
                 # Normaliza para string
-                answers = {str(k): str(v) for k, v in answers.items()}
+                normalized_answers = {}
+                for k, v in answers.items():
+                    question_id = str(k).replace('question_', '')
+                    normalized_answers[question_id] = str(v)
+                answers = normalized_answers
             except:
-                pass
-        
-        # Se ainda não tem, tenta pegar do localStorage via parâmetro
-        if not answers:
-            answers_str = request.POST.get('answers_json', '{}')
-            try:
-                import json
-                answers = json.loads(answers_str)
-                # Normaliza para string
-                answers = {str(k): str(v) for k, v in answers.items()}
-            except:
-                pass
+                answers = {}
         
         # Cria tentativa
         attempt = UserQuizAttempt.objects.create(

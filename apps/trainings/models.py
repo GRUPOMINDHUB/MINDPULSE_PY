@@ -556,25 +556,37 @@ class UserQuizAttempt(TimeStampedModel):
             return 0
         
         correct = 0
+        # Debug: vamos garantir que estamos comparando corretamente
         for question in questions:
-            # Tenta pegar a resposta como string ou int
-            selected_choice_id = self.answers.get(str(question.id)) or self.answers.get(question.id)
+            # Normaliza o ID da pergunta para string
+            question_id_str = str(question.id)
+            
+            # Tenta pegar a resposta de várias formas
+            selected_choice_id = None
+            if question_id_str in self.answers:
+                selected_choice_id = self.answers[question_id_str]
+            elif question.id in self.answers:
+                selected_choice_id = self.answers[question.id]
             
             if selected_choice_id:
-                # Converte para int se necessário
+                # Converte para int para buscar no banco
                 try:
                     selected_choice_id = int(selected_choice_id)
                 except (ValueError, TypeError):
-                    pass
+                    # Se não conseguir converter, pula esta pergunta
+                    continue
                 
-                # Busca a escolha correta
+                # Busca a escolha selecionada
                 try:
-                    choice = Choice.objects.get(id=selected_choice_id, question=question)
-                    if choice.is_correct:
+                    selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+                    # Verifica se é a resposta correta
+                    if selected_choice.is_correct:
                         correct += 1
                 except Choice.DoesNotExist:
                     # Se a escolha não existe, pode ter sido deletada ou alterada
+                    # Não conta como correta
                     pass
+            # Se não tem resposta, não conta como correta (já está implícito)
         
         self.correct_answers = correct
         self.total_questions = total
