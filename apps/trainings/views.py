@@ -224,10 +224,14 @@ def video_player(request, training_slug, video_id):
 def update_progress(request, video_id):
     """API para atualizar progresso do vídeo via AJAX."""
     video = get_object_or_404(Video, id=video_id)
+    company = request.current_company
+    user = request.user
     
     # Verifica se usuário tem acesso
-    if video.training.company != request.current_company:
-        return JsonResponse({'error': 'Não autorizado'}, status=403)
+    # Admin Master sem empresa: pode acessar qualquer vídeo
+    if not user.is_superuser or company:
+        if video.training.company != company:
+            return JsonResponse({'error': 'Não autorizado'}, status=403)
     
     progress, _ = UserProgress.objects.get_or_create(
         user=request.user,
