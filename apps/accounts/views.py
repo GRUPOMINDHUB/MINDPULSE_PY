@@ -223,6 +223,7 @@ def warning_create(request):
     """
     Criar nova advertência disciplinar.
     ACCESS: ADMIN MASTER | GESTOR
+    Usa a empresa selecionada no sidemenu (request.current_company)
     """
     # Verificação de segurança: apenas Admin Master e Gestores
     if not (request.is_gestor or request.user.is_superuser):
@@ -233,9 +234,10 @@ def warning_create(request):
     
     company = request.current_company
     
-    # Gestor precisa ter empresa vinculada
-    if not request.user.is_superuser and not company:
-        return render(request, 'core/no_company.html')
+    # Verifica se há empresa selecionada
+    if not company:
+        messages.error(request, 'Selecione uma empresa no menu lateral antes de criar uma advertência.')
+        return redirect('accounts:warning_list')
     
     if request.method == 'POST':
         form = WarningForm(request.POST, company=company)

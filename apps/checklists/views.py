@@ -318,41 +318,23 @@ def checklist_create(request):
     """
     Criar novo checklist.
     ACCESS: ADMIN MASTER | GESTOR
+    Usa a empresa selecionada no sidemenu (request.current_company)
     """
     if not (request.is_gestor or request.user.is_superuser):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Apenas gestores e administradores podem criar checklists.")
     
-    is_admin = request.user.is_superuser
-    companies = Company.objects.filter(is_active=True) if is_admin else None
-    
-    if not is_admin and not request.current_company:
-        messages.error(request, 'Você precisa estar vinculado a uma empresa para criar checklists.')
-        return redirect('core:no_company')
+    # Verifica se há empresa selecionada
+    if not request.current_company:
+        messages.error(request, 'Selecione uma empresa no menu lateral antes de criar um checklist.')
+        return redirect('checklists:manage_list')
     
     if request.method == 'POST':
-        if is_admin:
-            form = AdminChecklistForm(request.POST)
-        else:
-            form = ChecklistForm(request.POST, company=request.current_company)
+        form = ChecklistForm(request.POST, company=request.current_company)
         
         if form.is_valid():
             checklist = form.save(commit=False)
-            
-            if not is_admin:
-                if not request.current_company:
-                    messages.error(request, 'Empresa não encontrada. Tente fazer login novamente.')
-                    return redirect('core:no_company')
-                checklist.company = request.current_company
-            
-            if not checklist.company:
-                messages.error(request, 'Erro: Empresa não foi atribuída. Tente novamente.')
-                return render(request, 'checklists/manage/form.html', {
-                    'form': form,
-                    'title': 'Novo Checklist',
-                    'companies': companies,
-                    'is_admin_master': is_admin,
-                })
+            checklist.company = request.current_company
             
             if not checklist.order or checklist.order == 0:
                 max_order = Checklist.objects.filter(company=checklist.company).aggregate(
@@ -370,16 +352,11 @@ def checklist_create(request):
             messages.success(request, 'Checklist criado com sucesso!')
             return redirect('checklists:manage_list')
     else:
-        if is_admin:
-            form = AdminChecklistForm()
-        else:
-            form = ChecklistForm(company=request.current_company)
+        form = ChecklistForm(company=request.current_company)
     
     return render(request, 'checklists/manage/form.html', {
         'form': form,
         'title': 'Novo Checklist',
-        'companies': companies,
-        'is_admin_master': is_admin,
     })
 
 
@@ -389,23 +366,20 @@ def checklist_edit(request, pk):
     """
     Editar checklist existente.
     ACCESS: ADMIN MASTER | GESTOR
+    Usa a empresa do checklist
     """
     if not (request.is_gestor or request.user.is_superuser):
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied("Apenas gestores e administradores podem editar checklists.")
     
-    is_admin = request.user.is_superuser
-    
-    if is_admin:
+    # Admin pode editar qualquer, Gestor só da sua empresa
+    if request.user.is_superuser:
         checklist = get_object_or_404(Checklist, pk=pk)
     else:
         checklist = get_object_or_404(Checklist, pk=pk, company=request.current_company)
     
     if request.method == 'POST':
-        if is_admin:
-            form = AdminChecklistForm(request.POST, instance=checklist)
-        else:
-            form = ChecklistForm(request.POST, instance=checklist, company=checklist.company)
+        form = ChecklistForm(request.POST, instance=checklist, company=checklist.company)
         
         if form.is_valid():
             checklist = form.save()
@@ -418,16 +392,12 @@ def checklist_edit(request, pk):
             messages.success(request, 'Checklist atualizado!')
             return redirect('checklists:manage_list')
     else:
-        if is_admin:
-            form = AdminChecklistForm(instance=checklist)
-        else:
-            form = ChecklistForm(instance=checklist, company=checklist.company)
+        form = ChecklistForm(instance=checklist, company=checklist.company)
     
     return render(request, 'checklists/manage/form.html', {
         'form': form,
         'checklist': checklist,
         'title': 'Editar Checklist',
-        'is_admin_master': is_admin,
     })
 
 

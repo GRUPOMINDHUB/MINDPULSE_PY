@@ -49,19 +49,6 @@
         </div>
         {% endif %}
         
-        {% if user.is_superuser and companies %}
-        <!-- Empresa (Admin Master) -->
-        <div class="mb-6">
-            <label for="id_company" class="block text-sm font-medium text-gray-400 mb-2">Empresa *</label>
-            <select name="company" id="id_company" class="form-select" required>
-                <option value="">Selecione a empresa</option>
-                {% for company in companies %}
-                <option value="{{ company.id }}">{{ company.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
-        
         <!-- Sentimento -->
         <div class="mb-8">
             <label class="block text-sm font-medium text-gray-400 mb-4">Como você está se sentindo?</label>

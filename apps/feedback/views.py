@@ -60,37 +60,20 @@ def feedback_create(request):
     """
     Criar novo feedback.
     ACCESS: ADMIN MASTER | GESTOR | COLABORADOR
-    - Todos os usuários podem criar feedback
+    Usa a empresa selecionada no sidemenu (request.current_company)
     """
     user = request.user
     
-    # Admin Master pode criar feedback para qualquer empresa
-    if user.is_superuser:
-        companies = Company.objects.filter(is_active=True)
-        company = None  # Será selecionada no form
-    else:
-        company = request.current_company
-        companies = None
-        
-        if not company:
-            return render(request, 'core/no_company.html')
+    # Verifica se há empresa selecionada
+    if not request.current_company:
+        messages.error(request, 'Selecione uma empresa no menu lateral antes de enviar um feedback.')
+        return redirect('feedback:list')
     
     if request.method == 'POST':
         form = FeedbackForm(request.POST, request.FILES)
         if form.is_valid():
             feedback = form.save(commit=False)
-            
-            # Admin Master seleciona a empresa
-            if user.is_superuser:
-                company_id = request.POST.get('company')
-                if company_id:
-                    feedback.company = Company.objects.get(id=company_id)
-                else:
-                    messages.error(request, 'Selecione uma empresa.')
-                    return render(request, 'feedback/form.html', {'form': form, 'companies': companies})
-            else:
-                feedback.company = company
-            
+            feedback.company = request.current_company
             feedback.user = user
             feedback.save()
             
@@ -101,7 +84,6 @@ def feedback_create(request):
     
     return render(request, 'feedback/form.html', {
         'form': form,
-        'companies': companies,
     })
 
 
