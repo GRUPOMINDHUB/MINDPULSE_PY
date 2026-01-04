@@ -86,13 +86,43 @@ def training_list(request):
 def training_detail(request, slug):
     """Detalhes do treinamento com lista de vídeos."""
     company = request.current_company
+    user = request.user
     
-    training = get_object_or_404(
-        Training,
-        company=company,
-        slug=slug,
-        is_active=True
-    )
+    # Admin Master: se não tem empresa selecionada, busca em qualquer empresa
+    if user.is_superuser and not company:
+        training = get_object_or_404(
+            Training,
+            slug=slug,
+            is_active=True
+        )
+    else:
+        # Usuários normais ou Admin Master com empresa selecionada
+        if not company:
+            messages.error(request, 'Você precisa estar vinculado a uma empresa para acessar treinamentos.')
+            return redirect('core:no_company')
+        
+        training = get_object_or_404(
+            Training,
+            company=company,
+            slug=slug,
+            is_active=True
+        )
+    
+    # Verificação de permissão para usuários normais
+    if not user.is_superuser:
+        # Verifica se o treinamento está atribuído ao usuário ou é global (sem assigned_users)
+        from django.db.models import Count, Q
+        training_check = Training.objects.filter(
+            pk=training.pk
+        ).annotate(
+            assigned_count=Count('assigned_users')
+        ).filter(
+            Q(assigned_users=user) | Q(assigned_count=0)
+        ).exists()
+        
+        if not training_check:
+            messages.error(request, 'Você não tem acesso a este treinamento.')
+            return redirect('trainings:list')
     
     videos = training.videos.filter(is_active=True).order_by('order')
     
