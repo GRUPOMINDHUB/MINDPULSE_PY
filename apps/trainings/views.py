@@ -1184,8 +1184,11 @@ def quiz_edit(request, quiz_id):
                                     logger.info(f'  🗑️ Opção deletada: ID={del_form.instance.id}')
                         
                         # AGORA: Processa opções dinâmicas (novas adicionadas via JavaScript)
-                        logger.info(f'Processando opções dinâmicas para pergunta {question.id}')
+                        # IMPORTANTE: Tenta com o índice do formset E com o ID da pergunta
+                        logger.info(f'Processando opções dinâmicas para pergunta {question.id} (idx={idx})')
                         dynamic_choices = []
+                        
+                        # Tenta primeiro com o índice do formset (idx)
                         choice_index = 0
                         while True:
                             choice_text_key = f'choice_{idx}_{choice_index}_text'
@@ -1197,12 +1200,37 @@ def quiz_edit(request, quiz_id):
                             choice_text = request.POST.get(choice_text_key, '').strip()
                             if choice_text:
                                 is_correct = choice_correct_key in request.POST and request.POST.get(choice_correct_key) == 'on'
-                                logger.info(f'  Opção dinâmica {choice_index}: Texto="{choice_text[:30]}", is_correct={is_correct}')
+                                logger.info(f'  Opção dinâmica {choice_index} (idx={idx}): Texto="{choice_text[:30]}", is_correct={is_correct}')
                                 dynamic_choices.append({
                                     'text': choice_text,
                                     'is_correct': is_correct
                                 })
                             choice_index += 1
+                        
+                        # Se não encontrou nada, tenta com o ID da pergunta (para compatibilidade)
+                        if not dynamic_choices:
+                            logger.info(f'Tentando com ID da pergunta: {question.id}')
+                            choice_index = 0
+                            while True:
+                                choice_text_key = f'choice_{question.id}_{choice_index}_text'
+                                choice_correct_key = f'choice_{question.id}_{choice_index}_is_correct'
+                                
+                                if choice_text_key not in request.POST:
+                                    break
+                                
+                                choice_text = request.POST.get(choice_text_key, '').strip()
+                                if choice_text:
+                                    is_correct = choice_correct_key in request.POST and request.POST.get(choice_correct_key) == 'on'
+                                    logger.info(f'  Opção dinâmica {choice_index} (id={question.id}): Texto="{choice_text[:30]}", is_correct={is_correct}')
+                                    dynamic_choices.append({
+                                        'text': choice_text,
+                                        'is_correct': is_correct
+                                    })
+                                choice_index += 1
+                        
+                        # DEBUG: Mostra todas as chaves POST que começam com "choice_"
+                        all_choice_keys = [k for k in request.POST.keys() if k.startswith('choice_')]
+                        logger.info(f'Todas as chaves POST com "choice_": {all_choice_keys}')
                         
                         # Salva opções dinâmicas (novas)
                         if dynamic_choices:

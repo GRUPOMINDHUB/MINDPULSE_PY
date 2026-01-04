@@ -277,8 +277,13 @@ function addChoice(button) {
         return;
     }
     
-    const questionIndex = choicesContainer.getAttribute('data-question-index') || 
-                         choicesContainer.getAttribute('data-question-id');
+    // IMPORTANTE: Para perguntas existentes, usa o ID. Para novas, usa o índice.
+    let questionIndex = choicesContainer.getAttribute('data-question-id');
+    if (!questionIndex || questionIndex === '') {
+        questionIndex = choicesContainer.getAttribute('data-question-index');
+    }
+    
+    console.log('Adicionando opção - questionIndex:', questionIndex, 'questionId:', choicesContainer.getAttribute('data-question-id'), 'questionIndex attr:', choicesContainer.getAttribute('data-question-index'));
     const choiceCount = choicesContainer.querySelectorAll('.choice-item').length;
     
     const choiceHtml = `
