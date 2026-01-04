@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/videos/reorder/', views.video_reorder, name='video_reorder'),
     path('api/content/reorder/', views.content_reorder, name='content_reorder'),
     path('api/company-users/', views.get_company_users, name='get_company_users'),
+    path('api/training/<int:training_id>/status/', views.get_training_status, name='get_training_status'),
     
     # Rotas genéricas (slug) - DEVEM VIR POR ÚLTIMO
     path('<slug:slug>/', views.training_detail, name='detail'),

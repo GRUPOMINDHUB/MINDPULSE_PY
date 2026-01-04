@@ -1068,6 +1068,23 @@ def quiz_result(request, training_slug, attempt_id):
     attempt = get_object_or_404(UserQuizAttempt, pk=attempt_id, user=request.user)
     quiz = attempt.quiz
     
+    # Verifica se completou o treinamento após aprovar o quiz
+    training_completed = False
+    if attempt.is_passed:
+        training_completed = training.is_completed_by(request.user)
+        if training_completed:
+            # Cria recompensa se ainda não existe
+            UserTrainingReward.objects.get_or_create(
+                user=request.user,
+                training=training,
+                defaults={
+                    'points_earned': training.reward_points,
+                    'badge_earned': training.reward_badge,
+                }
+            )
+            # Adiciona pontos ao usuário
+            request.user.add_points(training.reward_points)
+    
     # Carrega perguntas com opções e respostas corretas
     questions = []
     for question in quiz.questions.all().prefetch_related('choices').order_by('order'):
@@ -1085,11 +1102,16 @@ def quiz_result(request, training_slug, attempt_id):
             'is_correct': selected_choice.is_correct if selected_choice else False,
         })
     
+    # Calcula progresso atualizado
+    total_progress = training.get_user_progress(request.user)
+    
     context = {
         'training': training,
         'quiz': quiz,
         'attempt': attempt,
         'questions': questions,
+        'training_completed': training_completed,
+        'total_progress': total_progress,
     }
     return render(request, 'trainings/quiz_result.html', context)
 

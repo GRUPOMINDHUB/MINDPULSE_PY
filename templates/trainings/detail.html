@@ -190,5 +190,90 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trainingId = {{ training.id }};
+    
+    // Verifica se precisa atualizar (vindo do quiz_result)
+    if (sessionStorage.getItem('refresh_training_detail') === 'true') {
+        sessionStorage.removeItem('refresh_training_detail');
+        location.reload();
+        return;
+    }
+    
+    // Atualiza status em tempo real se houver mudanças
+    function updateTrainingStatus() {
+        fetch(`/trainings/api/training/${trainingId}/status/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Atualiza barra de progresso
+                const progressBar = document.querySelector('.h-3.bg-dark-600 .rounded-full');
+                const progressText = document.querySelector('.text-sm.font-medium.text-white');
+                if (progressBar && progressText) {
+                    progressBar.style.width = data.training.total_progress + '%';
+                    progressText.textContent = data.training.total_progress + '%';
+                    
+                    // Atualiza cor se completou
+                    if (data.training.is_completed) {
+                        progressBar.classList.remove('bg-gradient-to-r', 'from-brand-500', 'to-brand-400');
+                        progressBar.classList.add('bg-green-500');
+                    }
+                }
+                
+                // Atualiza status dos itens de conteúdo
+                data.content_status.forEach(item => {
+                    const contentItem = document.querySelector(`[data-content-id="${item.id}"][data-content-type="${item.type}"]`);
+                    if (contentItem && item.completed) {
+                        // Adiciona badge de concluído se não existir
+                        const existingBadge = contentItem.querySelector('.bg-green-500\\/20');
+                        if (!existingBadge) {
+                            const statusContainer = contentItem.querySelector('.flex.items-center.gap-2');
+                            if (statusContainer) {
+                                const badge = document.createElement('span');
+                                badge.className = 'px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full flex items-center gap-1';
+                                badge.innerHTML = `
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    ${item.type === 'video' ? 'Concluído' : 'Aprovado'}
+                                `;
+                                statusContainer.insertBefore(badge, statusContainer.firstChild);
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar status:', error);
+        });
+    }
+    
+    // Escuta eventos de atualização
+    window.addEventListener('trainingUpdated', function(event) {
+        if (event.detail.trainingId === trainingId) {
+            updateTrainingStatus();
+        }
+    });
+    
+    // Verifica localStorage periodicamente
+    setInterval(function() {
+        if (localStorage.getItem(`training_${trainingId}_updated`) === 'true') {
+            localStorage.removeItem(`training_${trainingId}_updated`);
+            updateTrainingStatus();
+        }
+    }, 1000);
+    
+    // Atualiza ao focar na janela (se voltou de outra aba)
+    window.addEventListener('focus', updateTrainingStatus);
+});
+</script>
 {% endblock %}
 

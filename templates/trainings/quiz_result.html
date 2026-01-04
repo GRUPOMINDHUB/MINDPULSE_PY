@@ -100,9 +100,39 @@
         </div>
     </div>
     
+    <!-- Progresso do Treinamento -->
+    {% if training_completed %}
+    <div class="card mb-6 bg-gradient-to-r from-green-500/20 to-brand-500/20 border border-green-500/50">
+        <div class="text-center">
+            <div class="mb-4">
+                <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-green-400 mb-2">🎉 Treinamento Concluído!</h2>
+                <p class="text-gray-300">Parabéns! Você completou todos os vídeos e quizzes deste treinamento.</p>
+                <p class="text-brand-400 font-semibold mt-2">+{{ training.reward_points }} pontos ganhos!</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Progresso Atualizado -->
+    <div class="card mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-400">Progresso do Treinamento</span>
+            <span class="text-sm font-medium text-white">{{ total_progress }}%</span>
+        </div>
+        <div class="h-3 bg-dark-600 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500 {% if total_progress == 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
+                 style="width: {{ total_progress }}%"></div>
+        </div>
+    </div>
+    
     <!-- Actions -->
     <div class="flex items-center justify-end gap-4 mt-8">
-        <a href="{% url 'trainings:detail' training.slug %}" class="btn-primary">
+        <a href="{% url 'trainings:detail' training.slug %}" class="btn-primary" id="backToTraining">
             Voltar ao Treinamento
         </a>
         {% if not attempt.is_passed and quiz.allow_multiple_attempts %}
@@ -112,5 +142,52 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualiza status do treinamento em tempo real
+    const trainingId = {{ training.id }};
+    const quizId = {{ quiz.id }};
+    const isPassed = {{ attempt.is_passed|yesno:"true,false" }};
+    
+    // Se foi aprovado, atualiza o status na página de detalhes
+    if (isPassed) {
+        // Atualiza via API
+        fetch(`/trainings/api/training/${trainingId}/status/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Se a página de detalhes estiver aberta em outra aba, pode atualizar via localStorage
+                localStorage.setItem(`training_${trainingId}_updated`, 'true');
+                localStorage.setItem(`training_${trainingId}_progress`, data.training.total_progress);
+                localStorage.setItem(`quiz_${quizId}_completed`, 'true');
+                
+                // Dispara evento customizado
+                window.dispatchEvent(new CustomEvent('trainingUpdated', {
+                    detail: {
+                        trainingId: trainingId,
+                        progress: data.training.total_progress,
+                        isCompleted: data.training.is_completed
+                    }
+                }));
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar status:', error);
+        });
+    }
+    
+    // Se o botão "Voltar ao Treinamento" for clicado, força atualização
+    document.getElementById('backToTraining').addEventListener('click', function(e) {
+        // Marca para atualizar ao voltar
+        sessionStorage.setItem('refresh_training_detail', 'true');
+    });
+});
+</script>
 {% endblock %}
 
