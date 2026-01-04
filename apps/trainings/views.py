@@ -471,26 +471,42 @@ def training_manage_detail(request, pk):
     quizzes = training.quizzes.all().order_by('order')
     
     # Form para adicionar vídeo
+    video_form = VideoUploadForm()
+    quiz_form = QuizForm()
+    
     if request.method == 'POST':
-        form = VideoUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            video = Video.objects.create(
-                training=training,
-                title=form.cleaned_data['title'],
-                description=form.cleaned_data.get('description', ''),
-                video_file=form.cleaned_data['video_file'],
-                order=videos.count() + 1
-            )
-            messages.success(request, f'Vídeo "{video.title}" adicionado!')
-            return redirect('trainings:manage_detail', pk=pk)
-    else:
-        form = VideoUploadForm()
+        # Verifica qual formulário foi submetido
+        if 'add_video' in request.POST:
+            video_form = VideoUploadForm(request.POST, request.FILES)
+            if video_form.is_valid():
+                video = Video.objects.create(
+                    training=training,
+                    title=video_form.cleaned_data['title'],
+                    description=video_form.cleaned_data.get('description', ''),
+                    video_file=video_form.cleaned_data['video_file'],
+                    order=videos.count() + 1
+                )
+                messages.success(request, f'Vídeo "{video.title}" adicionado!')
+                return redirect('trainings:manage_detail', pk=pk)
+        
+        elif 'add_quiz' in request.POST:
+            quiz_form = QuizForm(request.POST)
+            if quiz_form.is_valid():
+                quiz = quiz_form.save(commit=False)
+                quiz.training = training
+                # Define ordem como último item (vídeos + quizzes)
+                total_items = videos.count() + quizzes.count()
+                quiz.order = total_items + 1
+                quiz.save()
+                messages.success(request, f'Quiz "{quiz.title}" criado! Agora você pode adicionar perguntas editando-o.')
+                return redirect('trainings:manage_detail', pk=pk)
     
     context = {
         'training': training,
         'videos': videos,
         'quizzes': quizzes,
-        'form': form,
+        'video_form': video_form,
+        'quiz_form': quiz_form,
         'is_admin_master': is_admin,
     }
     
