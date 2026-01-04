@@ -1409,30 +1409,32 @@ def quiz_result(request, training_slug, attempt_id):
             request.user.add_points(training.reward_points)
     
     # Carrega perguntas com opções e respostas corretas
+    # Normaliza as respostas do attempt para garantir tipos consistentes
+    normalized_attempt_answers = {}
+    for key, value in attempt.answers.items():
+        clean_key = str(key).replace('question_', '')
+        normalized_attempt_answers[clean_key] = str(value).strip()
+    
     questions = []
     for question in quiz.questions.all().prefetch_related('choices').order_by('order'):
-        # Tenta pegar a resposta de várias formas
-        selected_choice_id = None
         question_id_str = str(question.id)
         
-        if question_id_str in attempt.answers:
-            selected_choice_id = attempt.answers[question_id_str]
-        elif question.id in attempt.answers:
-            selected_choice_id = attempt.answers[question.id]
-        elif f'question_{question.id}' in attempt.answers:
-            selected_choice_id = attempt.answers[f'question_{question.id}']
+        # Busca resposta normalizada (chave sempre string)
+        selected_choice_id_str = normalized_attempt_answers.get(question_id_str)
         
         selected_choice = None
-        if selected_choice_id:
+        if selected_choice_id_str:
             try:
-                # Converte para int se necessário
-                selected_choice_id = int(selected_choice_id)
+                # Converte para int para buscar no banco
+                selected_choice_id = int(selected_choice_id_str)
                 selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
             except (ValueError, TypeError, Choice.DoesNotExist):
                 selected_choice = None
         
-        # Verifica se está correto
-        is_correct = selected_choice.is_correct if selected_choice else False
+        # Verifica se está correto (comparação robusta)
+        is_correct = False
+        if selected_choice:
+            is_correct = selected_choice.is_correct
         
         questions.append({
             'question': question,
