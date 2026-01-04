@@ -11,19 +11,7 @@
             <p class="text-gray-600 dark:text-gray-400">Desenvolva suas habilidades com nossos treinamentos em vídeo.</p>
         </div>
         
-        <div class="flex items-center gap-4">
-            <!-- Seletor removido: agora está no sidebar -->
-            
-            {% if is_gestor or user.is_superuser %}
-            <!-- Botão Criar Treinamento -->
-            <a href="{% url 'trainings:create' %}" class="btn-primary flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                Novo Treinamento
-            </a>
-            {% endif %}
-        </div>
+        <!-- Botão de criar treinamento removido: deve ser feito apenas em Gerenciar Treinamentos -->
     </div>
     
     <!-- Grid de Treinamentos -->
