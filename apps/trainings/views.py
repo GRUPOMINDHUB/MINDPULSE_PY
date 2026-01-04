@@ -470,6 +470,25 @@ def training_manage_detail(request, pk):
     videos = training.videos.all().order_by('order')
     quizzes = training.quizzes.all().order_by('order')
     
+    # Combina vídeos e quizzes em uma lista unificada ordenada
+    content_items = []
+    for video in videos:
+        content_items.append({
+            'type': 'video',
+            'id': video.id,
+            'object': video,
+            'order': video.order,
+        })
+    for quiz in quizzes:
+        content_items.append({
+            'type': 'quiz',
+            'id': quiz.id,
+            'object': quiz,
+            'order': quiz.order,
+        })
+    # Ordena por ordem
+    content_items.sort(key=lambda x: x['order'])
+    
     # Form para adicionar vídeo
     video_form = VideoUploadForm()
     quiz_form = QuizForm()
@@ -508,6 +527,7 @@ def training_manage_detail(request, pk):
         'training': training,
         'videos': videos,
         'quizzes': quizzes,
+        'content_items': content_items,
         'video_form': video_form,
         'quiz_form': quiz_form,
         'is_admin_master': is_admin,
@@ -570,6 +590,40 @@ def video_reorder(request):
                 id=item['id'],
                 training__company=request.current_company
             ).update(order=item['order'])
+    
+    return JsonResponse({'success': True})
+
+
+@login_required
+@gestor_required_ajax
+@require_POST
+def content_reorder(request):
+    """Reordenar conteúdo (vídeos e quizzes) via AJAX."""
+    data = json.loads(request.body)
+    
+    is_admin = request.user.is_superuser
+    
+    for item in data.get('content', []):
+        content_type = item.get('type')
+        content_id = item.get('id')
+        new_order = item.get('order')
+        
+        if content_type == 'video':
+            if is_admin:
+                Video.objects.filter(id=content_id).update(order=new_order)
+            else:
+                Video.objects.filter(
+                    id=content_id,
+                    training__company=request.current_company
+                ).update(order=new_order)
+        elif content_type == 'quiz':
+            if is_admin:
+                Quiz.objects.filter(id=content_id).update(order=new_order)
+            else:
+                Quiz.objects.filter(
+                    id=content_id,
+                    training__company=request.current_company
+                ).update(order=new_order)
     
     return JsonResponse({'success': True})
 

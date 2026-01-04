@@ -24,19 +24,25 @@
     </div>
     
     <div class="space-y-6">
-        <!-- Lista de Vídeos e Quizzes -->
-        <div class="space-y-6">
-            <!-- Vídeos -->
-            <div class="card">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-semibold text-white">📚 Vídeos ({{ videos.count }})</h2>
-                    <button onclick="toggleVideoForm()" class="btn-primary flex items-center gap-2">
+        <!-- Conteúdo do Treinamento -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-white">📚 Conteúdo do Treinamento ({{ content_items|length }})</h2>
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleVideoForm()" class="btn-secondary flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                         </svg>
                         Adicionar Vídeo
                     </button>
+                    <button onclick="toggleQuizForm()" class="btn-primary flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Adicionar Quiz
+                    </button>
                 </div>
+            </div>
                 
                 <!-- Formulário de Upload (Oculto por padrão) -->
                 <div id="videoFormContainer" class="hidden mb-6 p-6 bg-dark-700 rounded-xl border border-dark-600">
@@ -102,68 +108,107 @@
                     </form>
                 </div>
                 
-                <div class="space-y-3" id="videoList">
-                    {% for video in videos %}
-                    <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl group" data-video-id="{{ video.id }}">
-                        <!-- Drag Handle -->
-                        <div class="cursor-move text-gray-500 hover:text-gray-300">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
-                            </svg>
-                        </div>
-                        
-                        <!-- Order Number -->
-                        <div class="w-8 h-8 bg-dark-600 rounded-lg flex items-center justify-center text-gray-400 font-medium">
-                            {{ video.order }}
-                        </div>
-                        
-                        <!-- Info -->
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-medium text-white truncate">{{ video.title }}</h4>
-                            <p class="text-sm text-gray-500">{{ video.duration_formatted }}</p>
-                        </div>
-                        
-                        <!-- Status -->
-                        {% if video.is_active %}
-                        <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
+            <!-- Lista Unificada de Conteúdo -->
+            <div class="space-y-3" id="contentList">
+                {% for item in content_items %}
+                <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl group" 
+                     data-content-type="{{ item.type }}" 
+                     data-content-id="{{ item.id }}">
+                    <!-- Drag Handle -->
+                    <div class="cursor-move text-gray-500 hover:text-gray-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Order Number -->
+                    <div class="w-8 h-8 bg-dark-600 rounded-lg flex items-center justify-center text-gray-400 font-medium">
+                        {{ item.order }}
+                    </div>
+                    
+                    <!-- Icon -->
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                                {% if item.type == 'video' %}bg-blue-500/20 text-blue-400
+                                {% else %}bg-purple-500/20 text-purple-400{% endif %}">
+                        {% if item.type == 'video' %}
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
                         {% else %}
-                        <span class="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs font-medium rounded-full">Inativo</span>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
                         {% endif %}
-                        
-                        <!-- Actions -->
-                        <button onclick="deleteVideo({{ video.id }})" 
-                                class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                    </div>
+                    
+                    <!-- Info -->
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-medium text-white truncate">
+                            {% if item.type == 'video' %}
+                                {{ item.object.title }}
+                            {% else %}
+                                {{ item.object.title }}
+                            {% endif %}
+                        </h4>
+                        <p class="text-sm text-gray-500">
+                            {% if item.type == 'video' %}
+                                📹 {{ item.object.duration_formatted }}
+                            {% else %}
+                                🧠 {{ item.object.total_questions }} pergunta{{ item.object.total_questions|pluralize }} • Nota mínima: {{ item.object.passing_score }}%
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- Status -->
+                    {% if item.object.is_active %}
+                    <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativo</span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-gray-500/20 text-gray-400 text-xs font-medium rounded-full">Inativo</span>
+                    {% endif %}
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% if item.type == 'video' %}
+                        <button onclick="deleteVideo({{ item.id }})" 
+                                class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
                         </button>
+                        {% else %}
+                        <a href="{% url 'trainings:quiz_edit' item.id %}" 
+                           class="p-2 text-gray-500 hover:text-brand-400 hover:bg-brand-500/10 rounded-lg transition-all"
+                           title="Editar quiz">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </a>
+                        <form method="post" action="{% url 'trainings:quiz_delete' item.id %}" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este quiz?');">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                    title="Excluir quiz">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </form>
+                        {% endif %}
                     </div>
-                    {% empty %}
-                    <div class="text-center py-12 text-gray-500">
-                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
-                        <p>Nenhum vídeo adicionado ainda.</p>
-                        <p class="text-sm mt-1">Use o formulário ao lado para adicionar vídeos.</p>
-                    </div>
-                    {% endfor %}
                 </div>
+                {% empty %}
+                <div class="text-center py-12 text-gray-500">
+                    <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    <p>Nenhum conteúdo adicionado ainda.</p>
+                    <p class="text-sm mt-1">Adicione vídeos ou quizzes para começar.</p>
+                </div>
+                {% endfor %}
             </div>
             
-            <!-- Quizzes -->
-            <div class="card">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-semibold text-white">🧠 Quizzes ({{ quizzes.count }})</h2>
-                    <button onclick="toggleQuizForm()" class="btn-primary flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Adicionar Quiz
-                    </button>
-                </div>
-                
-                <!-- Formulário de Quiz (Oculto por padrão) -->
-                <div id="quizFormContainer" class="hidden mb-6 p-6 bg-dark-700 rounded-xl border border-dark-600">
+            <!-- Formulário de Quiz (Oculto por padrão) -->
+            <div id="quizFormContainer" class="hidden mt-6 p-6 bg-dark-700 rounded-xl border border-dark-600">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-white">➕ Adicionar Quiz</h3>
                         <button onclick="toggleQuizForm()" class="p-2 text-gray-400 hover:text-white transition-colors">
@@ -387,24 +432,26 @@ function handleVideoUpload(event) {
     // O feedback permanecerá visível até o reload da página
 }
 
-// Inicializa drag and drop
+// Inicializa drag and drop para conteúdo unificado
 document.addEventListener('DOMContentLoaded', function() {
-    const videoList = document.getElementById('videoList');
+    const contentList = document.getElementById('contentList');
     
-    if (videoList) {
-        const sortable = Sortable.create(videoList, {
+    if (contentList) {
+        const sortable = Sortable.create(contentList, {
             handle: '.cursor-move',
             animation: 150,
             ghostClass: 'opacity-50',
             onEnd: function(evt) {
-                // Coleta os IDs e novas ordens
-                const videos = [];
-                const items = videoList.querySelectorAll('[data-video-id]');
+                // Coleta os itens e novas ordens
+                const content = [];
+                const items = contentList.querySelectorAll('[data-content-type]');
                 
                 items.forEach((item, index) => {
-                    const videoId = parseInt(item.getAttribute('data-video-id'));
-                    videos.push({
-                        id: videoId,
+                    const contentType = item.getAttribute('data-content-type');
+                    const contentId = parseInt(item.getAttribute('data-content-id'));
+                    content.push({
+                        type: contentType,
+                        id: contentId,
                         order: index + 1
                     });
                     
@@ -416,13 +463,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 // Envia para o servidor
-                fetch('{% url "trainings:video_reorder" %}', {
+                fetch('{% url "trainings:content_reorder" %}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': '{{ csrf_token }}'
                     },
-                    body: JSON.stringify({ videos: videos })
+                    body: JSON.stringify({ content: content })
                 })
                 .then(response => response.json())
                 .then(data => {

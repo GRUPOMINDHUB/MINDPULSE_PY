@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/progress/<int:video_id>/', views.update_progress, name='update_progress'),
     path('api/video/<int:video_id>/delete/', views.video_delete, name='video_delete'),
     path('api/videos/reorder/', views.video_reorder, name='video_reorder'),
+    path('api/content/reorder/', views.content_reorder, name='content_reorder'),
     path('api/company-users/', views.get_company_users, name='get_company_users'),
     
     # Rotas genéricas (slug) - DEVEM VIR POR ÚLTIMO
