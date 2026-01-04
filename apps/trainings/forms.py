@@ -254,7 +254,7 @@ class ChoiceForm(forms.ModelForm):
         fields = ['text', 'is_correct', 'order']
         widgets = {
             'text': forms.TextInput(attrs={
-                'class': 'form-input',
+                'class': 'form-input w-full',
                 'placeholder': 'Digite a opção de resposta...'
             }),
             'is_correct': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),

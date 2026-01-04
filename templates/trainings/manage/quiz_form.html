@@ -82,15 +82,7 @@
         
         <!-- Perguntas -->
         <div class="card">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-white">Perguntas</h2>
-                <button type="button" onclick="addQuestion()" class="btn-secondary flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Adicionar Pergunta
-                </button>
-            </div>
+            <h2 class="text-xl font-semibold text-white mb-6">Perguntas</h2>
             
             <div id="questionsContainer" class="space-y-6">
                 {{ question_formset.management_form }}
@@ -131,7 +123,7 @@
                                             <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors">
                                                 <span class="text-sm text-gray-500 font-medium min-w-[2rem]">{{ forloop.counter }}</span>
                                                 <div class="flex-1">
-                                                    {{ choice_form.text }}
+                                                    {{ choice_form.text|add_class:"w-full" }}
                                                 </div>
                                                 <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
                                                     {{ choice_form.is_correct }}
