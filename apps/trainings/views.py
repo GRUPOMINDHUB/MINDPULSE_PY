@@ -341,25 +341,93 @@ def content_player(request, training_slug, content_type, content_id):
         quiz = current_content['object']
         # Força refresh do quiz para pegar dados atualizados
         quiz.refresh_from_db()
-        # Busca todas as perguntas ordenadas (força nova query)
-        questions = list(quiz.questions.all().prefetch_related('choices').order_by('order'))
-        current_question_index = request.GET.get('question', 0)
-        try:
-            current_question_index = int(current_question_index)
-        except:
-            current_question_index = 0
         
-        if current_question_index >= len(questions):
-            current_question_index = 0
+        # Verifica se está mostrando resultado de uma tentativa
+        attempt_id = request.GET.get('result')
+        if attempt_id:
+            try:
+                attempt = UserQuizAttempt.objects.get(pk=attempt_id, user=user, quiz=quiz)
+                
+                # Verifica se completou o treinamento após aprovar o quiz
+                training_completed = False
+                if attempt.is_passed:
+                    training_completed = training.is_completed_by(user)
+                    if training_completed:
+                        # Cria recompensa se ainda não existe
+                        UserTrainingReward.objects.get_or_create(
+                            user=user,
+                            training=training,
+                            defaults={
+                                'points_earned': training.reward_points,
+                                'badge_earned': training.reward_badge,
+                            }
+                        )
+                        # Adiciona pontos ao usuário
+                        user.add_points(training.reward_points)
+                
+                # Carrega perguntas com opções e respostas corretas
+                normalized_attempt_answers = {}
+                for key, value in attempt.answers.items():
+                    clean_key = str(key).replace('question_', '')
+                    normalized_attempt_answers[clean_key] = str(value).strip()
+                
+                result_questions = []
+                for question in quiz.questions.all().prefetch_related('choices').order_by('order'):
+                    question_id_str = str(question.id)
+                    selected_choice_id_str = normalized_attempt_answers.get(question_id_str)
+                    
+                    selected_choice = None
+                    if selected_choice_id_str:
+                        try:
+                            selected_choice_id = int(selected_choice_id_str)
+                            selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+                        except (ValueError, TypeError, Choice.DoesNotExist):
+                            selected_choice = None
+                    
+                    is_correct = selected_choice.is_correct if selected_choice else False
+                    
+                    result_questions.append({
+                        'question': question,
+                        'selected_choice': selected_choice,
+                        'is_correct': is_correct,
+                    })
+                
+                # Calcula progresso atualizado
+                total_progress = training.get_user_progress(user)
+                
+                context.update({
+                    'quiz': quiz,
+                    'attempt': attempt,
+                    'result_questions': result_questions,
+                    'show_result': True,
+                    'training_completed': training_completed,
+                    'total_progress': total_progress,
+                })
+            except UserQuizAttempt.DoesNotExist:
+                # Se não encontrar a tentativa, mostra quiz normal
+                pass
         
-        current_question = questions[current_question_index] if questions else None
-        context.update({
-            'quiz': quiz,
-            'questions': questions,
-            'current_question': current_question,
-            'current_question_index': current_question_index,
-            'total_questions': len(questions),
-        })
+        # Se não está mostrando resultado, mostra quiz normal
+        if 'show_result' not in context:
+            # Busca todas as perguntas ordenadas (força nova query)
+            questions = list(quiz.questions.all().prefetch_related('choices').order_by('order'))
+            current_question_index = request.GET.get('question', 0)
+            try:
+                current_question_index = int(current_question_index)
+            except:
+                current_question_index = 0
+            
+            if current_question_index >= len(questions):
+                current_question_index = 0
+            
+            current_question = questions[current_question_index] if questions else None
+            context.update({
+                'quiz': quiz,
+                'questions': questions,
+                'current_question': current_question,
+                'current_question_index': current_question_index,
+                'total_questions': len(questions),
+            })
     
     return render(request, 'trainings/player.html', context)
 
@@ -1392,8 +1460,8 @@ def quiz_take(request, training_slug, quiz_id):
         logger.info(f'Corretas: {attempt.correct_answers}/{attempt.total_questions}')
         logger.info(f'Aprovado: {attempt.is_passed}')
         
-        # Redireciona para resultado
-        return redirect('trainings:quiz_result', training_slug=training.slug, attempt_id=attempt.id)
+        # Redireciona para content_player com resultado
+        return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id) + f'?result={attempt.id}'
     
     # Se GET, redireciona para content_player
     return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id)
