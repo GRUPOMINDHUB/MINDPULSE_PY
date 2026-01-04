@@ -49,9 +49,20 @@ class User(AbstractUser):
         blank=True,
         null=True
     )
-    phone = models.CharField('Telefone', max_length=20, blank=True)
     bio = models.TextField('Biografia', blank=True)
+    
+    # Dados pessoais
     birth_date = models.DateField('Data de Nascimento', null=True, blank=True)
+    phone = models.CharField(
+        'Telefone',
+        max_length=20,
+        blank=True,
+        help_text='Formato: (00) 00000-0000'
+    )
+    
+    # Dados de localização
+    neighborhood = models.CharField('Bairro', max_length=100, blank=True)
+    city = models.CharField('Cidade', max_length=100, blank=True)
     
     # Gamificação
     total_points = models.PositiveIntegerField('Pontos Totais', default=0)

@@ -11,7 +11,7 @@ from django.db.models import Max, Q
 from django.urls import reverse
 
 from .models import Checklist, Task, TaskDone, ChecklistCompletion
-from .forms import ChecklistForm, TaskForm, AdminChecklistForm
+from .forms import ChecklistForm, TaskForm
 from apps.core.models import Company
 from apps.core.decorators import gestor_required, gestor_required_ajax
 from apps.core.utils import PeriodKeyHelper

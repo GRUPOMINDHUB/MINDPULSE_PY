@@ -68,46 +68,6 @@ class ChecklistForm(forms.ModelForm):
             self.fields['assigned_users'].queryset = User.objects.none()
 
 
-class AdminChecklistForm(ChecklistForm):
-    """Form para Admin Master - inclui seletor de empresa."""
-    
-    company = forms.ModelChoiceField(
-        queryset=Company.objects.filter(is_active=True),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label='Empresa'
-    )
-    
-    class Meta(ChecklistForm.Meta):
-        fields = ['company'] + CHECKLIST_FIELDS
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        company = self._get_company_from_form()
-        if company:
-            self.company = company
-            self._setup_assigned_users_field()
-    
-    def _get_company_from_form(self):
-        """Extrai a empresa do formulário (instância, POST ou initial)."""
-        if self.instance and self.instance.pk:
-            return self.instance.company
-        
-        if 'company' in self.data:
-            try:
-                return Company.objects.get(id=int(self.data.get('company')), is_active=True)
-            except (ValueError, Company.DoesNotExist):
-                return None
-        
-        if 'company' in self.initial:
-            try:
-                company_id = self.initial.get('company')
-                return Company.objects.get(id=company_id, is_active=True) if company_id else None
-            except (ValueError, Company.DoesNotExist, TypeError):
-                return None
-        
-        return None
-
-
 class TaskForm(forms.ModelForm):
     """Form para criar/editar tarefas."""
     

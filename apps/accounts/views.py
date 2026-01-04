@@ -119,12 +119,23 @@ def collaborators_list(request):
 
 @login_required
 def collaborator_create(request):
-    """Cadastro de novo colaborador (apenas gestores)."""
+    """
+    Cadastro de novo colaborador ou gestor.
+    ACCESS: ADMIN MASTER | GESTOR
+    
+    Permite que gestores criem outros gestores ou colaboradores
+    para sua unidade, usando a empresa do sidemenu.
+    """
     if not request.is_gestor:
         messages.error(request, 'Acesso não autorizado.')
         return redirect('core:dashboard')
     
     company = request.current_company
+    
+    # Verifica se há empresa selecionada
+    if not company:
+        messages.error(request, 'Selecione uma empresa no menu lateral antes de adicionar um colaborador.')
+        return redirect('accounts:collaborators_list')
     
     if request.method == 'POST':
         form = CollaboratorForm(company, request.POST)
@@ -132,22 +143,27 @@ def collaborator_create(request):
             try:
                 with transaction.atomic():
                     user_company = form.save()
+                    
+                    # Determina o tipo de usuário criado para a mensagem
+                    role_name = user_company.role.name if user_company.role else 'Colaborador'
+                    
                 messages.success(
                     request, 
-                    f'Colaborador {user_company.user.get_full_name()} cadastrado com sucesso!'
+                    f'{role_name} {user_company.user.get_full_name()} cadastrado com sucesso!'
                 )
                 return redirect('accounts:collaborators_list')
             except Exception as e:
-                messages.error(request, f'Erro ao cadastrar colaborador: {str(e)}')
-        else:
-            # Exibe erros de validação
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{field}: {error}')
+                messages.error(request, f'Erro ao cadastrar: {str(e)}')
     else:
         form = CollaboratorForm(company)
     
-    return render(request, 'accounts/collaborator_form.html', {'form': form})
+    context = {
+        'form': form,
+        'company': company,
+        'title': 'Adicionar Colaborador',
+    }
+    
+    return render(request, 'accounts/collaborator_form.html', context)
 
 
 @login_required

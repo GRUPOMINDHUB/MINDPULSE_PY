@@ -3,7 +3,6 @@ Forms para autenticação e gestão de usuários.
 """
 
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import authenticate
 
 from .models import User, UserCompany, Warning
@@ -80,49 +79,27 @@ class LoginForm(forms.Form):
         return self.user_cache
 
 
-class UserRegistrationForm(UserCreationForm):
-    """Form para registro de novos colaboradores."""
-    
-    class Meta:
-        model = User
-        fields = ['email', 'first_name', 'last_name', 'password1', 'password2']
-        widgets = {
-            'email': forms.EmailInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'seu@email.com',
-            }),
-            'first_name': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'Nome',
-            }),
-            'last_name': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': 'Sobrenome',
-            }),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['password1'].widget.attrs.update({
-            'class': 'form-input',
-            'placeholder': '••••••••',
-        })
-        self.fields['password2'].widget.attrs.update({
-            'class': 'form-input',
-            'placeholder': '••••••••',
-        })
-
-
 class UserProfileForm(forms.ModelForm):
     """Form para edição de perfil."""
     
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone', 'bio', 'avatar', 'birth_date']
+        fields = ['first_name', 'last_name', 'phone', 'neighborhood', 'city', 'bio', 'avatar', 'birth_date']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-input'}),
             'last_name': forms.TextInput(attrs={'class': 'form-input'}),
-            'phone': forms.TextInput(attrs={'class': 'form-input'}),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': '(00) 00000-0000'
+            }),
+            'neighborhood': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Bairro'
+            }),
+            'city': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Cidade'
+            }),
             'bio': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
             'birth_date': forms.DateInput(attrs={
                 'type': 'date',
@@ -132,34 +109,90 @@ class UserProfileForm(forms.ModelForm):
 
 
 class CollaboratorForm(forms.ModelForm):
-    """Form para gestores cadastrarem colaboradores."""
+    """
+    Form para gestores cadastrarem colaboradores ou outros gestores.
+    Permite escolher entre roles de Gestor ou Colaborador da empresa.
+    """
+    # Dados básicos
     email = forms.EmailField(
-        widget=forms.EmailInput(attrs={'class': 'form-input'})
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'colaborador@empresa.com'
+        })
     )
     first_name = forms.CharField(
+        label='Nome',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-input'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Nome'
+        })
     )
     last_name = forms.CharField(
+        label='Sobrenome',
         max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-input'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Sobrenome'
+        })
     )
+    
+    # Dados pessoais
     birth_date = forms.DateField(
+        label='Data de Nascimento',
         required=False,
         widget=forms.DateInput(attrs={
             'type': 'date',
             'class': 'form-input'
         })
     )
+    phone = forms.CharField(
+        label='Telefone',
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '(00) 00000-0000'
+        })
+    )
+    
+    # Dados de localização
+    neighborhood = forms.CharField(
+        label='Bairro',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Bairro'
+        })
+    )
+    city = forms.CharField(
+        label='Cidade',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Cidade'
+        })
+    )
+    
+    # Dados de empresa
     role = forms.ModelChoiceField(
+        label='Cargo',
         queryset=Role.objects.none(),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text='Selecione o cargo do usuário na empresa'
     )
     employee_id = forms.CharField(
+        label='Matrícula',
         max_length=50,
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-input'})
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'ID interno (opcional)'
+        })
     )
     
     class Meta:
@@ -169,13 +202,32 @@ class CollaboratorForm(forms.ModelForm):
     def __init__(self, company, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
-        self.fields['role'].queryset = Role.objects.filter(company=company)
+        # Filtra roles da empresa do gestor logado (segurança multi-tenant)
+        if company:
+            self.fields['role'].queryset = Role.objects.filter(company=company).order_by('name')
+    
+    def clean_email(self):
+        """Valida se o email já existe na empresa."""
+        email = self.cleaned_data.get('email')
+        if email:
+            # Verifica se já existe vínculo ativo com esta empresa
+            existing = UserCompany.objects.filter(
+                user__email=email,
+                company=self.company,
+                is_active=True
+            ).exists()
+            if existing:
+                raise forms.ValidationError('Este usuário já está vinculado a esta empresa.')
+        return email
     
     def save(self, commit=True):
         email = self.cleaned_data['email']
         first_name = self.cleaned_data['first_name']
         last_name = self.cleaned_data['last_name']
         birth_date = self.cleaned_data.get('birth_date')
+        phone = self.cleaned_data.get('phone', '')
+        neighborhood = self.cleaned_data.get('neighborhood', '')
+        city = self.cleaned_data.get('city', '')
         
         # Cria ou obtém o usuário
         user, created = User.objects.get_or_create(
@@ -184,20 +236,36 @@ class CollaboratorForm(forms.ModelForm):
                 'first_name': first_name,
                 'last_name': last_name,
                 'birth_date': birth_date,
+                'phone': phone,
+                'neighborhood': neighborhood,
+                'city': city,
             }
         )
         
-        # Atualiza birth_date se o usuário já existir
-        if not created and birth_date:
-            user.birth_date = birth_date
-            user.save(update_fields=['birth_date'])
+        # Atualiza dados se o usuário já existir
+        if not created:
+            update_fields = []
+            if birth_date and not user.birth_date:
+                user.birth_date = birth_date
+                update_fields.append('birth_date')
+            if phone and not user.phone:
+                user.phone = phone
+                update_fields.append('phone')
+            if neighborhood and not user.neighborhood:
+                user.neighborhood = neighborhood
+                update_fields.append('neighborhood')
+            if city and not user.city:
+                user.city = city
+                update_fields.append('city')
+            if update_fields:
+                user.save(update_fields=update_fields)
         
         if created:
             # Define uma senha temporária
             temp_password = User.objects.make_random_password()
             user.set_password(temp_password)
             user.save()
-            # Nota: Envio de email com senha temporária será implementado futuramente
+            # TODO: Enviar email com senha temporária
         
         # Cria o vínculo com a empresa
         user_company, _ = UserCompany.objects.update_or_create(
@@ -214,7 +282,11 @@ class CollaboratorForm(forms.ModelForm):
 
 
 class AdminUserCreateForm(forms.ModelForm):
-    """Form para Admin Master criar usuários e vincular à empresa."""
+    """
+    Form para Admin Master criar usuários e vincular à empresa.
+    Inclui todos os campos cadastrais e permite definir senha.
+    """
+    # Dados básicos
     email = forms.EmailField(
         label='Email',
         widget=forms.EmailInput(attrs={
@@ -238,6 +310,8 @@ class AdminUserCreateForm(forms.ModelForm):
             'placeholder': 'Sobrenome'
         })
     )
+    
+    # Dados pessoais
     birth_date = forms.DateField(
         label='Data de Nascimento',
         required=False,
@@ -246,6 +320,37 @@ class AdminUserCreateForm(forms.ModelForm):
             'class': 'form-input'
         })
     )
+    phone = forms.CharField(
+        label='Telefone',
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': '(00) 00000-0000'
+        })
+    )
+    
+    # Dados de localização
+    neighborhood = forms.CharField(
+        label='Bairro',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Bairro'
+        })
+    )
+    city = forms.CharField(
+        label='Cidade',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Cidade'
+        })
+    )
+    
+    # Segurança
     password = forms.CharField(
         label='Senha',
         widget=forms.PasswordInput(attrs={
@@ -255,12 +360,23 @@ class AdminUserCreateForm(forms.ModelForm):
         }),
         help_text='A senha será definida pelo Admin Master. O usuário poderá alterá-la após o primeiro acesso.'
     )
+    
+    # Dados de empresa
     role = forms.ModelChoiceField(
         label='Cargo',
         queryset=Role.objects.none(),
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'}),
         help_text='Selecione o cargo do usuário na empresa'
+    )
+    employee_id = forms.CharField(
+        label='Matrícula',
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'ID interno (opcional)'
+        })
     )
     
     class Meta:
@@ -270,8 +386,9 @@ class AdminUserCreateForm(forms.ModelForm):
     def __init__(self, *args, company=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
+        # Filtra roles da empresa selecionada (segurança multi-tenant)
         if company:
-            self.fields['role'].queryset = Role.objects.filter(company=company)
+            self.fields['role'].queryset = Role.objects.filter(company=company).order_by('name')
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -281,6 +398,11 @@ class AdminUserCreateForm(forms.ModelForm):
     
     def save(self, commit=True):
         user = super().save(commit=False)
+        # Salva campos adicionais
+        user.birth_date = self.cleaned_data.get('birth_date')
+        user.phone = self.cleaned_data.get('phone', '')
+        user.neighborhood = self.cleaned_data.get('neighborhood', '')
+        user.city = self.cleaned_data.get('city', '')
         if commit:
             user.save()
         return user
