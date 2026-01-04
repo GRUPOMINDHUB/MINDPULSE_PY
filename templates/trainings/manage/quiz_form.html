@@ -144,7 +144,7 @@
                                             <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600">
                                                 <input type="radio" name="question_{{ question_form.instance.id }}_correct" 
                                                        value="{{ choice_form.instance.id|default:'' }}" 
-                                                       {% if choice_form.is_correct.value %}checked{% endif %}
+                                                       {% if choice_form.is_correct.value or choice_form.instance.is_correct %}checked{% endif %}
                                                        class="form-radio" required>
                                                 {{ choice_form.text }}
                                                 {{ choice_form.id }}
