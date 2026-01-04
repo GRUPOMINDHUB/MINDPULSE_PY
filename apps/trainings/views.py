@@ -1332,6 +1332,17 @@ def quiz_take(request, training_slug, quiz_id):
             messages.error(request, 'Nenhuma resposta foi enviada. Por favor, responda todas as perguntas.')
             return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id)
         
+        # DEBUG: Log das respostas recebidas
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f'Quiz {quiz.id} - Respostas recebidas: {answers}')
+        
+        # Valida se todas as perguntas têm resposta
+        quiz.refresh_from_db()
+        total_questions = quiz.questions.count()
+        if len(answers) < total_questions:
+            logger.warning(f'Quiz {quiz.id} - Apenas {len(answers)} de {total_questions} perguntas foram respondidas')
+        
         # Cria tentativa com as respostas normalizadas
         attempt = UserQuizAttempt.objects.create(
             user=user,
@@ -1341,6 +1352,10 @@ def quiz_take(request, training_slug, quiz_id):
         
         # Calcula nota (já faz refresh interno)
         score = attempt.calculate_score()
+        
+        # DEBUG: Log do resultado
+        logger.info(f'Quiz {quiz.id} - Tentativa {attempt.id} - Pontuação: {score}% ({attempt.correct_answers}/{attempt.total_questions})')
+        logger.info(f'Quiz {quiz.id} - Respostas processadas: {attempt.answers}')
         
         # Redireciona para resultado
         return redirect('trainings:quiz_result', training_slug=training.slug, attempt_id=attempt.id)
