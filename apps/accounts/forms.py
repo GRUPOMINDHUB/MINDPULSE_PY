@@ -195,21 +195,15 @@ class CollaboratorForm(forms.ModelForm):
         self.company = company
         self.is_admin_master = is_admin_master
         
-        # Filtra roles da empresa do gestor logado (segurança multi-tenant)
+        # Filtra roles da empresa - sempre exclui admin_master
+        # Ninguém pode criar Administrador por esta tela
+        # Apenas Gestor e Colaborador são permitidos
         if company:
-            # Admin Master pode criar qualquer nível
-            # Gestor só pode criar Gestor ou Colaborador (não Admin)
-            if is_admin_master:
-                self.fields['role'].queryset = Role.objects.filter(
-                    company=company
-                ).order_by('name')
-            else:
-                # Gestor: exclui roles de nível admin_master
-                self.fields['role'].queryset = Role.objects.filter(
-                    company=company
-                ).exclude(
-                    level='admin_master'
-                ).order_by('name')
+            self.fields['role'].queryset = Role.objects.filter(
+                company=company
+            ).exclude(
+                level='admin_master'
+            ).order_by('name')
     
     def clean_email(self):
         """Valida se o email já existe na empresa."""
