@@ -246,7 +246,19 @@ function removeQuestion(button) {
 }
 
 function addChoice(button) {
-    const choicesContainer = button.parentElement.nextElementSibling;
+    // Encontra o container de opções (irmão anterior do botão)
+    const choicesContainer = button.previousElementSibling;
+    if (!choicesContainer || !choicesContainer.classList.contains('choices-container')) {
+        // Se não encontrar, tenta encontrar pelo parent
+        const questionItem = button.closest('.question-item');
+        choicesContainer = questionItem ? questionItem.querySelector('.choices-container') : null;
+    }
+    
+    if (!choicesContainer) {
+        console.error('Container de opções não encontrado');
+        return;
+    }
+    
     const questionIndex = choicesContainer.getAttribute('data-question-index') || 
                          choicesContainer.getAttribute('data-question-id');
     const choiceCount = choicesContainer.querySelectorAll('.choice-item').length;
