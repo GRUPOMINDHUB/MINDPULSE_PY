@@ -134,6 +134,7 @@ def training_detail(request, slug):
                 return redirect('trainings:list')
     
     videos = training.videos.filter(is_active=True).order_by('order')
+    quizzes = training.quizzes.filter(is_active=True).order_by('order')
     
     # Busca progresso do usuário em cada vídeo
     user_progress = UserProgress.objects.filter(
@@ -143,21 +144,45 @@ def training_detail(request, slug):
     
     progress_map = {p['video_id']: p for p in user_progress}
     
-    videos_with_progress = []
+    # Busca tentativas de quiz do usuário
+    from .models import UserQuizAttempt
+    quiz_attempts = UserQuizAttempt.objects.filter(
+        user=request.user,
+        quiz__in=quizzes
+    ).values('quiz_id', 'is_passed')
+    
+    quiz_passed_map = {a['quiz_id']: a['is_passed'] for a in quiz_attempts}
+    
+    # Combina vídeos e quizzes em uma lista unificada ordenada
+    content_items = []
     for video in videos:
         progress = progress_map.get(video.id, {'completed': False, 'last_position': 0})
-        videos_with_progress.append({
-            'video': video,
+        content_items.append({
+            'type': 'video',
+            'id': video.id,
+            'object': video,
+            'order': video.order,
             'completed': progress['completed'],
-            'last_position': progress['last_position'],
         })
+    for quiz in quizzes:
+        is_passed = quiz_passed_map.get(quiz.id, False)
+        content_items.append({
+            'type': 'quiz',
+            'id': quiz.id,
+            'object': quiz,
+            'order': quiz.order,
+            'completed': is_passed,
+        })
+    # Ordena por ordem
+    content_items.sort(key=lambda x: x['order'])
     
     # Calcula progresso total
     total_progress = training.get_user_progress(request.user)
     
     context = {
         'training': training,
-        'videos': videos_with_progress,
+        'videos': [{'video': item['object'], 'completed': item['completed']} for item in content_items if item['type'] == 'video'],
+        'content_items': content_items,
         'total_progress': total_progress,
     }
     
@@ -753,12 +778,12 @@ def quiz_create(request, training_id):
                 question.quiz = quiz
                 question.save()
             
-            # Para cada pergunta, salva as opções
+            # Validação: Para cada pergunta, verifica opções
+            validation_errors = []
             for form in question_formset.forms:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
                     question = form.instance
                     if question.pk:
-                        # Remove opções antigas se necessário
                         choice_prefix = f'choices_{question.id}'
                         choice_formset = ChoiceFormSet(
                             request.POST,
@@ -767,16 +792,45 @@ def quiz_create(request, training_id):
                         )
                         
                         if choice_formset.is_valid():
-                            choices = choice_formset.save(commit=False)
-                            for choice in choices:
-                                choice.question = question
-                                choice.save()
-                            choice_formset.save_m2m()
+                            valid_choices = []
+                            has_correct = False
                             
-                            # Deleta opções marcadas para deletar
-                            for form in choice_formset.deleted_forms:
-                                if form.instance.pk:
-                                    form.instance.delete()
+                            for choice_form in choice_formset.forms:
+                                if choice_form.cleaned_data and not choice_form.cleaned_data.get('DELETE', False):
+                                    choice_text = choice_form.cleaned_data.get('text', '').strip()
+                                    if not choice_text:
+                                        validation_errors.append(f'Pergunta "{form.cleaned_data.get("text", "")[:50]}": Todas as opções devem ter texto preenchido.')
+                                        break
+                                    if choice_form.cleaned_data.get('is_correct', False):
+                                        has_correct = True
+                                    valid_choices.append(choice_form)
+                            
+                            if not has_correct and valid_choices:
+                                validation_errors.append(f'Pergunta "{form.cleaned_data.get("text", "")[:50]}": Deve ter pelo menos uma resposta correta marcada.')
+                            
+                            if not validation_errors:
+                                for choice_form in valid_choices:
+                                    choice = choice_form.save(commit=False)
+                                    choice.question = question
+                                    choice.save()
+                            
+                            # Deleta opções marcadas
+                            for del_form in choice_formset.deleted_forms:
+                                if del_form.instance.pk:
+                                    del_form.instance.delete()
+            
+            if validation_errors:
+                for error in validation_errors:
+                    messages.error(request, error)
+                # Recarrega o formulário com erros
+                quiz_form = QuizForm(request.POST)
+                question_formset = QuestionFormSet(request.POST, prefix='questions')
+                context = {
+                    'training': training,
+                    'quiz_form': quiz_form,
+                    'question_formset': question_formset,
+                }
+                return render(request, 'trainings/manage/quiz_form.html', context)
             
             messages.success(request, 'Quiz criado com sucesso!')
             return redirect('trainings:manage_detail', pk=training.pk)
@@ -827,6 +881,7 @@ def quiz_edit(request, quiz_id):
                     form.instance.delete()
             
             # Processa opções de cada pergunta
+            validation_errors = []
             for form in question_formset.forms:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
                     question = form.instance
@@ -840,14 +895,53 @@ def quiz_edit(request, quiz_id):
                         
                         if choice_formset.is_valid():
                             choices = choice_formset.save(commit=False)
-                            for choice in choices:
-                                choice.question = question
-                                choice.save()
+                            valid_choices = []
+                            has_correct = False
+                            
+                            for choice_form in choice_formset.forms:
+                                if choice_form.cleaned_data and not choice_form.cleaned_data.get('DELETE', False):
+                                    choice_text = choice_form.cleaned_data.get('text', '').strip()
+                                    if not choice_text:
+                                        validation_errors.append(f'Pergunta {form.cleaned_data.get("text", "")[:50]}: Todas as opções devem ter texto preenchido.')
+                                        break
+                                    if choice_form.cleaned_data.get('is_correct', False):
+                                        has_correct = True
+                                    valid_choices.append(choice_form)
+                            
+                            if not has_correct and valid_choices:
+                                validation_errors.append(f'Pergunta "{form.cleaned_data.get("text", "")[:50]}": Deve ter pelo menos uma resposta correta marcada.')
+                            
+                            if not validation_errors:
+                                for choice_form in valid_choices:
+                                    choice = choice_form.save(commit=False)
+                                    choice.question = question
+                                    choice.save()
                             
                             # Deleta opções marcadas
                             for del_form in choice_formset.deleted_forms:
                                 if del_form.instance.pk:
                                     del_form.instance.delete()
+            
+            if validation_errors:
+                for error in validation_errors:
+                    messages.error(request, error)
+                # Recarrega o formulário com erros
+                quiz_form = QuizForm(request.POST, instance=quiz)
+                question_formset = QuestionFormSet(request.POST, instance=quiz, prefix='questions')
+                choice_formsets = {}
+                for question in quiz.questions.all():
+                    choice_formsets[question.id] = ChoiceFormSet(
+                        instance=question,
+                        prefix=f'choices_{question.id}'
+                    )
+                context = {
+                    'training': training,
+                    'quiz': quiz,
+                    'quiz_form': quiz_form,
+                    'question_formset': question_formset,
+                    'choice_formsets': choice_formsets,
+                }
+                return render(request, 'trainings/manage/quiz_form.html', context)
             
             messages.success(request, 'Quiz atualizado com sucesso!')
             return redirect('trainings:manage_detail', pk=training.pk)

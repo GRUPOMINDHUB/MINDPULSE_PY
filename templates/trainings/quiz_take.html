@@ -41,20 +41,20 @@
             
             <div class="space-y-3">
                 {% for choice in question.choices.all %}
-                <label class="flex items-start gap-3 p-4 bg-dark-700 rounded-lg border border-dark-600 hover:border-brand-500/50 cursor-pointer transition-all">
+                <label class="flex items-start gap-3 p-4 bg-dark-700 rounded-lg border border-dark-600 hover:border-brand-500/50 cursor-pointer transition-all group">
                     <input type="radio" 
                            name="question_{{ question.id }}" 
                            value="{{ choice.id }}" 
                            class="mt-1 form-radio" 
                            required>
-                    <span class="text-gray-300 flex-1">{{ choice.text }}</span>
+                    <span class="text-gray-300 flex-1 group-hover:text-white transition-colors">{{ choice.text }}</span>
                 </label>
                 {% endfor %}
             </div>
         </div>
         {% endfor %}
         
-        <div class="flex items-center justify-end gap-4">
+        <div class="flex items-center justify-end gap-4 pt-6 border-t border-dark-600">
             <a href="{% url 'trainings:detail' training.slug %}" class="px-6 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-dark-900 transition-all duration-200">
                 Cancelar
             </a>
