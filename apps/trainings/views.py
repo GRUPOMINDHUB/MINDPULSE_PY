@@ -1190,42 +1190,6 @@ def quiz_edit(request, quiz_id):
                             validation_errors.append(f'Pergunta "{question_text[:50]}": Erro ao processar opções.')
                     
                     else:
-                        choice_prefix = f'choices_{question.id}'
-                        choice_formset = ChoiceFormSet(
-                            request.POST,
-                            instance=question,
-                            prefix=choice_prefix
-                        )
-                        
-                        if choice_formset.is_valid():
-                            choices = choice_formset.save(commit=False)
-                            valid_choices = []
-                            has_correct = False
-                            
-                            for choice_form in choice_formset.forms:
-                                if choice_form.cleaned_data and not choice_form.cleaned_data.get('DELETE', False):
-                                    choice_text = choice_form.cleaned_data.get('text', '').strip()
-                                    if not choice_text:
-                                        validation_errors.append(f'Pergunta "{question_text[:50]}": Todas as opções devem ter texto preenchido.')
-                                        break
-                                    if choice_form.cleaned_data.get('is_correct', False):
-                                        has_correct = True
-                                    valid_choices.append(choice_form)
-                            
-                            if not has_correct and valid_choices:
-                                validation_errors.append(f'Pergunta "{question_text[:50]}": Deve ter pelo menos uma resposta correta marcada.')
-                            
-                            if not validation_errors:
-                                for choice_form in valid_choices:
-                                    choice = choice_form.save(commit=False)
-                                    choice.question = question
-                                    choice.save()
-                            
-                            # Deleta opções marcadas
-                            for del_form in choice_formset.deleted_forms:
-                                if del_form.instance.pk:
-                                    del_form.instance.delete()
-                    else:
                         # PERGUNTA NOVA: Processa opções dinâmicas do JavaScript
                         logger.info(f'Pergunta nova - Processando opções dinâmicas')
                         dynamic_choices = []
