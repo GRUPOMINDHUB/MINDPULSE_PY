@@ -198,8 +198,103 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Histórico Disciplinar -->
+            <div class="card mt-6">
+                <h3 class="text-lg font-semibold text-white mb-4">⚠️ Histórico Disciplinar</h3>
+                
+                {% if warnings %}
+                <div class="space-y-3 max-h-[400px] overflow-y-auto">
+                    {% for warning in warnings %}
+                    <div class="p-4 bg-dark-700 rounded-xl border border-dark-600">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-medium border {{ warning.get_warning_type_display_class }}">
+                                        {{ warning.get_warning_type_display }}
+                                    </span>
+                                    <span class="text-xs text-gray-500">{{ warning.created_at|date:"d/m/Y" }}</span>
+                                </div>
+                                <p class="text-sm text-gray-300 mt-2">{{ warning.reason|truncatewords:15 }}</p>
+                                {% if warning.issuer %}
+                                <p class="text-xs text-gray-500 mt-1">Aplicado por: {{ warning.issuer.get_full_name }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <button onclick="showWarningModal({{ warning.id }}, '{{ warning.get_warning_type_display }}', '{{ warning.reason|escapejs }}', '{{ warning.created_at|date:"d/m/Y H:i" }}', '{{ warning.issuer.get_full_name|default:"N/A" }}')" 
+                                class="mt-2 text-xs text-brand-400 hover:text-brand-300 transition-colors">
+                            Ver detalhes →
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <svg class="w-16 h-16 text-gray-600 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-sm text-gray-500">Nenhuma advertência registrada</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Modal de Detalhes da Advertência -->
+<div id="warningModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-dark-800 rounded-xl border border-dark-600 max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold text-white">Detalhes da Advertência</h3>
+            <button onclick="closeWarningModal()" class="text-gray-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="text-sm font-medium text-gray-400">Tipo</label>
+                <p id="modalType" class="mt-1 text-white"></p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-400">Data</label>
+                <p id="modalDate" class="mt-1 text-white"></p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-400">Aplicado por</label>
+                <p id="modalIssuer" class="mt-1 text-white"></p>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-400">Motivo</label>
+                <p id="modalReason" class="mt-1 text-white whitespace-pre-wrap"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showWarningModal(id, type, reason, date, issuer) {
+    document.getElementById('modalType').textContent = type;
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('modalIssuer').textContent = issuer;
+    document.getElementById('modalReason').textContent = reason;
+    document.getElementById('warningModal').classList.remove('hidden');
+    document.getElementById('warningModal').classList.add('flex');
+}
+
+function closeWarningModal() {
+    document.getElementById('warningModal').classList.add('hidden');
+    document.getElementById('warningModal').classList.remove('flex');
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('warningModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeWarningModal();
+    }
+});
+</script>
 {% endblock %}
 

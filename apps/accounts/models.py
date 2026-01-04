@@ -215,3 +215,58 @@ class UserCompany(TimeStampedModel):
     def is_admin_master(self):
         return self.access_level == 'admin_master'
 
+
+class Warning(TimeStampedModel):
+    """
+    Advertência disciplinar aplicada a um colaborador.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    WARNING_TYPE_CHOICES = [
+        ('oral', 'Advertência Oral'),
+        ('escrita', 'Advertência Escrita'),
+        ('suspensao', 'Suspensão'),
+    ]
+    
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='warnings_received',
+        verbose_name='Colaborador'
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='warnings',
+        verbose_name='Empresa'
+    )
+    issuer = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='warnings_issued',
+        verbose_name='Aplicado por'
+    )
+    warning_type = models.CharField(
+        'Tipo de Advertência',
+        max_length=20,
+        choices=WARNING_TYPE_CHOICES,
+        default='oral'
+    )
+    reason = models.TextField('Motivo', help_text='Descrição detalhada do motivo da advertência')
+    
+    class Meta:
+        verbose_name = 'Advertência'
+        verbose_name_plural = 'Advertências'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.get_warning_type_display()} - {self.user.get_full_name()} ({self.created_at.strftime('%d/%m/%Y')})"
+    
+    def get_warning_type_display_class(self):
+        """Retorna classe CSS baseada no tipo de advertência."""
+        classes = {
+            'oral': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+            'escrita': 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+            'suspensao': 'bg-red-500/20 text-red-400 border-red-500/50',
+        }
+        return classes.get(self.warning_type, 'bg-gray-500/20 text-gray-400 border-gray-500/50')

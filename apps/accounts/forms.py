@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import authenticate
 
-from .models import User, UserCompany
+from .models import User, UserCompany, Warning
 from apps.core.models import Company, Role
 
 
@@ -338,4 +338,47 @@ class ChangePasswordForm(forms.Form):
         if commit:
             self.user.save()
         return self.user
+
+
+class WarningForm(forms.ModelForm):
+    """Form para lançamento de advertência disciplinar."""
+    
+    class Meta:
+        model = Warning
+        fields = ['user', 'warning_type', 'reason']
+        widgets = {
+            'user': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'warning_type': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'reason': forms.Textarea(attrs={
+                'class': 'form-input',
+                'rows': 5,
+                'placeholder': 'Descreva detalhadamente o motivo da advertência...'
+            }),
+        }
+        labels = {
+            'user': 'Colaborador',
+            'warning_type': 'Tipo de Advertência',
+            'reason': 'Motivo',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        company = kwargs.pop('company', None)
+        super().__init__(*args, **kwargs)
+        
+        if company:
+            # Filtra apenas colaboradores ativos da empresa
+            from apps.accounts.models import UserCompany
+            company_user_ids = UserCompany.objects.filter(
+                company=company,
+                is_active=True
+            ).values_list('user_id', flat=True)
+            
+            self.fields['user'].queryset = User.objects.filter(
+                id__in=company_user_ids,
+                is_active=True
+            ).order_by('first_name', 'last_name')
 

@@ -10,8 +10,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 
-from .forms import LoginForm, UserProfileForm, CollaboratorForm, ChangePasswordForm
-from .models import User, UserCompany
+from .forms import LoginForm, UserProfileForm, CollaboratorForm, ChangePasswordForm, WarningForm
+from .models import User, UserCompany, Warning
+from django.http import HttpResponseForbidden
 
 
 def login_view(request):
@@ -67,9 +68,15 @@ def profile_view(request):
         user=request.user
     ).select_related('company', 'role')
     
+    # Busca histórico de advertências do usuário
+    warnings = Warning.objects.filter(
+        user=request.user
+    ).select_related('company', 'issuer').order_by('-created_at')
+    
     context = {
         'form': form,
         'user_companies': user_companies,
+        'warnings': warnings,
     }
     
     return render(request, 'accounts/profile.html', context)
@@ -166,4 +173,94 @@ def collaborator_toggle_status(request, pk):
         'is_active': user_company.is_active,
         'message': f'Colaborador {status_text} com sucesso!'
     })
+
+
+@login_required
+def warning_list(request):
+    """
+    Lista de advertências disciplinares.
+    ACCESS: ADMIN MASTER | GESTOR
+    - Admin Master: Vê todas as advertências (ou da empresa selecionada)
+    - Gestor: Vê apenas advertências da sua empresa
+    """
+    # Verificação de segurança: apenas Admin Master e Gestores
+    if not (request.is_gestor or request.user.is_superuser):
+        return HttpResponseForbidden(
+            '<h1>403 - Acesso Negado</h1>'
+            '<p>Você não tem permissão para acessar esta página.</p>'
+        )
+    
+    user = request.user
+    company = request.current_company
+    
+    # Admin Master: se current_company for None, mostra todas (visão global)
+    if user.is_superuser:
+        if company:
+            warnings = Warning.objects.filter(
+                company=company
+            ).select_related('user', 'company', 'issuer').order_by('-created_at')
+        else:
+            warnings = Warning.objects.all().select_related('user', 'company', 'issuer').order_by('-created_at')
+    else:
+        # Gestor: precisa ter empresa vinculada
+        if not company:
+            return render(request, 'core/no_company.html')
+        
+        warnings = Warning.objects.filter(
+            company=company
+        ).select_related('user', 'company', 'issuer').order_by('-created_at')
+    
+    context = {
+        'warnings': warnings,
+        'is_admin_master': user.is_superuser,
+    }
+    
+    return render(request, 'accounts/warning_list.html', context)
+
+
+@login_required
+def warning_create(request):
+    """
+    Criar nova advertência disciplinar.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    # Verificação de segurança: apenas Admin Master e Gestores
+    if not (request.is_gestor or request.user.is_superuser):
+        return HttpResponseForbidden(
+            '<h1>403 - Acesso Negado</h1>'
+            '<p>Você não tem permissão para acessar esta página.</p>'
+        )
+    
+    company = request.current_company
+    
+    # Gestor precisa ter empresa vinculada
+    if not request.user.is_superuser and not company:
+        return render(request, 'core/no_company.html')
+    
+    if request.method == 'POST':
+        form = WarningForm(request.POST, company=company)
+        if form.is_valid():
+            warning = form.save(commit=False)
+            warning.issuer = request.user
+            warning.company = company
+            warning.save()
+            
+            messages.success(
+                request,
+                f'Advertência aplicada a {warning.user.get_full_name()} com sucesso!'
+            )
+            return redirect('accounts:warning_list')
+        else:
+            # Exibe erros de validação
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+    else:
+        form = WarningForm(company=company)
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'accounts/warning_form.html', context)
 

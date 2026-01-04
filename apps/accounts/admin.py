@@ -4,7 +4,7 @@ Admin configuration for Accounts models.
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, UserCompany
+from .models import User, UserCompany, Warning
 
 
 @admin.register(User)
@@ -37,4 +37,14 @@ class UserCompanyAdmin(admin.ModelAdmin):
     search_fields = ['user__email', 'user__first_name', 'company__name', 'employee_id']
     raw_id_fields = ['user']
     readonly_fields = ['joined_at', 'deactivated_at']
+
+
+@admin.register(Warning)
+class WarningAdmin(admin.ModelAdmin):
+    list_display = ['user', 'company', 'warning_type', 'issuer', 'created_at']
+    list_filter = ['warning_type', 'company', 'created_at']
+    search_fields = ['user__email', 'user__first_name', 'user__last_name', 'reason']
+    raw_id_fields = ['user', 'issuer']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
 
