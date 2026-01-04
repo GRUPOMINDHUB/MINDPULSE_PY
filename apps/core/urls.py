@@ -26,5 +26,8 @@ urlpatterns = [
     
     # Troca de empresa (Admin Master)
     path('switch-company/', views.switch_company, name='switch_company'),
+    
+    # Relatórios (Gestor | Admin Master)
+    path('relatorios/', views.report_management, name='report_management'),
 ]
 

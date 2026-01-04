@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório - Mindpulse</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            color: #1a1a1a;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #F83531;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #F83531;
+        }
+        
+        .company-info {
+            text-align: right;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .user-info {
+            text-align: right;
+            font-size: 11px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        h1 {
+            font-size: 20px;
+            color: #1a1a1a;
+            margin: 20px 0 10px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #F83531;
+        }
+        
+        h2 {
+            font-size: 16px;
+            color: #333;
+            margin: 15px 0 10px 0;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .info-row {
+            display: table-row;
+        }
+        
+        .info-label {
+            display: table-cell;
+            width: 30%;
+            font-weight: bold;
+            color: #666;
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-value {
+            display: table-cell;
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stats-grid {
+            display: table;
+            width: 100%;
+            margin: 15px 0;
+        }
+        
+        .stat-box {
+            display: table-cell;
+            width: 33.33%;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #F83531;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 11px;
+        }
+        
+        th {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-type {
+            display: inline-block;
+            padding: 3px 8px;
+            background-color: #F83531;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #F83531;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <div>
+            <div class="logo">⚡ Mindpulse</div>
+            <div style="font-size: 10px; color: #666; margin-top: 5px;">Sistema de Gestão de Treinamentos</div>
+        </div>
+        <div>
+            <div class="company-info">
+                <strong>{{ report_data.company.name }}</strong><br>
+                Relatório gerado em: {{ report_data.generated_at|date:"d/m/Y H:i" }}<br>
+                Período: {{ report_data.start_date|date:"d/m/Y" }} até {{ report_data.end_date|date:"d/m/Y" }}
+            </div>
+            {% if report_data.user %}
+            <div class="user-info">
+                <strong>{{ report_data.profile.name }}</strong><br>
+                {{ report_data.profile.email }}<br>
+                {% if report_data.profile.phone %}Tel: {{ report_data.profile.phone }}{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if report_data.user %}
+    <!-- Relatório Individual -->
+    
+    <!-- Perfil -->
+    <div class="section">
+        <h1>👤 Perfil do Colaborador</h1>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Nome:</div>
+                <div class="info-value">{{ report_data.profile.name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Email:</div>
+                <div class="info-value">{{ report_data.profile.email }}</div>
+            </div>
+            {% if report_data.profile.age %}
+            <div class="info-row">
+                <div class="info-label">Idade:</div>
+                <div class="info-value">{{ report_data.profile.age }} anos</div>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <div class="info-label">Telefone:</div>
+                <div class="info-value">{{ report_data.profile.phone }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Cidade:</div>
+                <div class="info-value">{{ report_data.profile.city }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Bairro:</div>
+                <div class="info-value">{{ report_data.profile.neighborhood }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ranking -->
+    {% if report_data.ranking %}
+    <div class="section">
+        <h1>🏆 Ranking</h1>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Posição</div>
+                <div class="stat-value">{{ report_data.ranking.position }}º</div>
+                <div style="font-size: 9px; color: #999; margin-top: 5px;">de {{ report_data.ranking.total_users }} colaboradores</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Pontos Totais</div>
+                <div class="stat-value">{{ report_data.ranking.total_points }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Checklists -->
+    {% if report_data.checklists %}
+    <div class="section">
+        <h1>✅ Checklists</h1>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Checklists Concluídos</div>
+                <div class="stat-value">{{ report_data.checklists.total_completed }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Tarefas Concluídas</div>
+                <div class="stat-value">{{ report_data.checklists.total_tasks_completed }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Atrasos</div>
+                <div class="stat-value" style="color: #dc2626;">{{ report_data.checklists.overdue_count }}</div>
+            </div>
+        </div>
+        
+        {% if report_data.checklists.completions %}
+        <h2>Últimas Conclusões</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Checklist</th>
+                    <th>Data</th>
+                    <th>Pontos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for completion in report_data.checklists.completions %}
+                <tr>
+                    <td>{{ completion.checklist }}</td>
+                    <td>{{ completion.date }}</td>
+                    <td>{{ completion.points }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Treinamentos -->
+    {% if report_data.trainings %}
+    <div class="section">
+        <h1>🎓 Treinamentos</h1>
+        <div style="margin: 15px 0;">
+            <div class="stat-label">Progresso Médio</div>
+            <div class="stat-value" style="font-size: 32px;">{{ report_data.trainings.avg_progress }}%</div>
+        </div>
+        
+        {% if report_data.trainings.trainings %}
+        <h2>Detalhamento por Treinamento</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Treinamento</th>
+                    <th>Progresso</th>
+                    <th>Vídeos</th>
+                    <th>Quizzes</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for training in report_data.trainings.trainings %}
+                <tr>
+                    <td>{{ training.title }}</td>
+                    <td>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ training.progress }}%;">{{ training.progress }}%</div>
+                        </div>
+                    </td>
+                    <td>{{ training.completed_videos }}/{{ training.total_videos }}</td>
+                    <td>{{ training.passed_quizzes }}/{{ training.total_quizzes }}</td>
+                    <td>{% if training.is_completed %}✓ Concluído{% else %}Em andamento{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Quizzes -->
+    {% if report_data.quizzes %}
+    <div class="section">
+        <h1>📝 Quizzes</h1>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Média de Notas</div>
+                <div class="stat-value">{{ report_data.quizzes.avg_score }}%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Aprovados</div>
+                <div class="stat-value" style="color: #16a34a;">{{ report_data.quizzes.total_passed }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total de Tentativas</div>
+                <div class="stat-value">{{ report_data.quizzes.total_attempts }}</div>
+            </div>
+        </div>
+        
+        {% if report_data.quizzes.attempts %}
+        <h2>Últimas Tentativas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Quiz</th>
+                    <th>Treinamento</th>
+                    <th>Data</th>
+                    <th>Nota</th>
+                    <th>Acertos</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in report_data.quizzes.attempts %}
+                <tr>
+                    <td>{{ attempt.quiz_title }}</td>
+                    <td>{{ attempt.training_title }}</td>
+                    <td>{{ attempt.date }}</td>
+                    <td><strong>{{ attempt.score }}%</strong></td>
+                    <td>{{ attempt.correct_answers }}/{{ attempt.total_questions }}</td>
+                    <td>{% if attempt.is_passed %}✓ Aprovado{% else %}✗ Reprovado{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Advertências -->
+    {% if report_data.warnings %}
+    <div class="section">
+        <h1>⚠️ Advertências</h1>
+        <div style="margin: 15px 0;">
+            <div class="stat-label">Total no Período</div>
+            <div class="stat-value" style="color: #dc2626; font-size: 32px;">{{ report_data.warnings.total }}</div>
+        </div>
+        
+        {% if report_data.warnings.warnings %}
+        <h2>Detalhamento</h2>
+        {% for warning in report_data.warnings.warnings %}
+        <div class="warning-box">
+            <div style="margin-bottom: 8px;">
+                <span class="warning-type">{{ warning.type }}</span>
+                <span style="font-size: 10px; color: #666;">{{ warning.date }}</span>
+            </div>
+            <div style="margin-bottom: 5px; font-weight: bold;">Motivo:</div>
+            <div style="margin-bottom: 8px;">{{ warning.reason }}</div>
+            <div style="font-size: 10px; color: #666;">Aplicado por: {{ warning.issuer }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="no-data">Nenhuma advertência registrada no período.</div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Relatório Geral da Empresa -->
+    <div class="section">
+        <h1>📊 Resumo da Empresa</h1>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Total de Usuários</div>
+                <div class="stat-value">{{ report_data.summary.total_users }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total de Checklists</div>
+                <div class="stat-value">{{ report_data.summary.total_checklists }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total de Treinamentos</div>
+                <div class="stat-value">{{ report_data.summary.total_trainings }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Rodapé -->
+    <div class="footer">
+        <p>Relatório gerado automaticamente pelo sistema Mindpulse</p>
+        <p>{{ report_data.generated_at|date:"d/m/Y H:i:s" }}</p>
+    </div>
+</body>
+</html>
+

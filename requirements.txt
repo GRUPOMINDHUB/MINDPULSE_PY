@@ -24,6 +24,9 @@ whitenoise==6.6.0
 django-crispy-forms==2.1
 crispy-tailwind==1.0.3
 
+# PDF Generation
+xhtml2pdf==0.2.18
+
 # Google Cloud Storage (instalar quando necessário em produção)
 # django-storages[google]==1.14.2
 # google-cloud-storage==2.14.0

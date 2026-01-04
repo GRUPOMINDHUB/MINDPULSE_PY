@@ -114,6 +114,18 @@ class User(AbstractUser):
         return self.birth_date.month == today.month and self.birth_date.day == today.day
     
     @property
+    def age(self):
+        """Retorna a idade atual do usuário baseada no birth_date."""
+        if not self.birth_date:
+            return None
+        today = timezone.now().date()
+        age = today.year - self.birth_date.year
+        # Ajusta se ainda não completou aniversário este ano
+        if (today.month, today.day) < (self.birth_date.month, self.birth_date.day):
+            age -= 1
+        return age
+    
+    @property
     def is_admin_master(self):
         """
         Verifica se o usuário é Admin Master (superuser).
