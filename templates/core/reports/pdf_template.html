@@ -280,15 +280,21 @@
         <h1>✅ Checklists</h1>
         <div class="stats-grid">
             <div class="stat-box">
-                <div class="stat-label">Checklists Concluídos</div>
+                <div class="stat-label">Checklists Concluídos (Período)</div>
                 <div class="stat-value">{{ report_data.checklists.total_completed }}</div>
+                {% if report_data.checklists.total_completed_all %}
+                <div style="font-size: 9px; color: #999; margin-top: 5px;">Total geral: {{ report_data.checklists.total_completed_all }}</div>
+                {% endif %}
             </div>
             <div class="stat-box">
-                <div class="stat-label">Tarefas Concluídas</div>
+                <div class="stat-label">Tarefas Concluídas (Período)</div>
                 <div class="stat-value">{{ report_data.checklists.total_tasks_completed }}</div>
+                {% if report_data.checklists.total_tasks_completed_all %}
+                <div style="font-size: 9px; color: #999; margin-top: 5px;">Total geral: {{ report_data.checklists.total_tasks_completed_all }}</div>
+                {% endif %}
             </div>
             <div class="stat-box">
-                <div class="stat-label">Atrasos</div>
+                <div class="stat-label">Atrasos Atuais</div>
                 <div class="stat-value" style="color: #dc2626;">{{ report_data.checklists.overdue_count }}</div>
             </div>
         </div>
@@ -364,16 +370,25 @@
         <h1>📝 Quizzes</h1>
         <div class="stats-grid">
             <div class="stat-box">
-                <div class="stat-label">Média de Notas</div>
+                <div class="stat-label">Média de Notas (Geral)</div>
                 <div class="stat-value">{{ report_data.quizzes.avg_score }}%</div>
+                {% if report_data.quizzes.avg_score_period %}
+                <div style="font-size: 9px; color: #999; margin-top: 5px;">No período: {{ report_data.quizzes.avg_score_period }}%</div>
+                {% endif %}
             </div>
             <div class="stat-box">
-                <div class="stat-label">Aprovados</div>
+                <div class="stat-label">Aprovados (Geral)</div>
                 <div class="stat-value" style="color: #16a34a;">{{ report_data.quizzes.total_passed }}</div>
+                {% if report_data.quizzes.total_passed_period %}
+                <div style="font-size: 9px; color: #999; margin-top: 5px;">No período: {{ report_data.quizzes.total_passed_period }}</div>
+                {% endif %}
             </div>
             <div class="stat-box">
-                <div class="stat-label">Total de Tentativas</div>
+                <div class="stat-label">Total de Tentativas (Geral)</div>
                 <div class="stat-value">{{ report_data.quizzes.total_attempts }}</div>
+                {% if report_data.quizzes.total_attempts_period %}
+                <div style="font-size: 9px; color: #999; margin-top: 5px;">No período: {{ report_data.quizzes.total_attempts_period }}</div>
+                {% endif %}
             </div>
         </div>
         

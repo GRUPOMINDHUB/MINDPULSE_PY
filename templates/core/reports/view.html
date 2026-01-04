@@ -95,15 +95,21 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">✅ Checklists</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div class="p-4 bg-green-500/20 rounded-xl border border-green-500/50">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Checklists Concluídos</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Checklists Concluídos (Período)</p>
                     <p class="text-2xl font-bold text-green-400">{{ report_data.checklists.total_completed }}</p>
+                    {% if report_data.checklists.total_completed_all %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Total geral: {{ report_data.checklists.total_completed_all }}</p>
+                    {% endif %}
                 </div>
                 <div class="p-4 bg-blue-500/20 rounded-xl border border-blue-500/50">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Tarefas Concluídas</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Tarefas Concluídas (Período)</p>
                     <p class="text-2xl font-bold text-blue-400">{{ report_data.checklists.total_tasks_completed }}</p>
+                    {% if report_data.checklists.total_tasks_completed_all %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Total geral: {{ report_data.checklists.total_tasks_completed_all }}</p>
+                    {% endif %}
                 </div>
                 <div class="p-4 bg-red-500/20 rounded-xl border border-red-500/50">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Atrasos</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Atrasos Atuais</p>
                     <p class="text-2xl font-bold text-red-400">{{ report_data.checklists.overdue_count }}</p>
                 </div>
             </div>
@@ -163,16 +169,25 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📝 Quizzes</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div class="p-4 bg-blue-500/20 rounded-xl border border-blue-500/50">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Média de Notas</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Média de Notas (Geral)</p>
                     <p class="text-2xl font-bold text-blue-400">{{ report_data.quizzes.avg_score }}%</p>
+                    {% if report_data.quizzes.avg_score_period %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">No período: {{ report_data.quizzes.avg_score_period }}%</p>
+                    {% endif %}
                 </div>
                 <div class="p-4 bg-green-500/20 rounded-xl border border-green-500/50">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Aprovados</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Aprovados (Geral)</p>
                     <p class="text-2xl font-bold text-green-400">{{ report_data.quizzes.total_passed }}</p>
+                    {% if report_data.quizzes.total_passed_period %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">No período: {{ report_data.quizzes.total_passed_period }}</p>
+                    {% endif %}
                 </div>
                 <div class="p-4 bg-gray-500/20 rounded-xl border border-gray-500/50">
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Tentativas</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Tentativas (Geral)</p>
                     <p class="text-2xl font-bold text-gray-400">{{ report_data.quizzes.total_attempts }}</p>
+                    {% if report_data.quizzes.total_attempts_period %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">No período: {{ report_data.quizzes.total_attempts_period }}</p>
+                    {% endif %}
                 </div>
             </div>
             

@@ -151,7 +151,10 @@ def _get_user_checklists(user, company, start_datetime, end_datetime):
 
 
 def _get_user_trainings(user, company, start_datetime, end_datetime):
-    """Extrai dados de treinamentos do usuário no período."""
+    """
+    Extrai dados de treinamentos do usuário.
+    Mostra TODOS os treinamentos atribuídos ao usuário, com progresso atual.
+    """
     # Treinamentos atribuídos ao usuário ou globais
     trainings = Training.objects.filter(
         company=company,
@@ -164,22 +167,28 @@ def _get_user_trainings(user, company, start_datetime, end_datetime):
     total_progress = 0
     
     for training in trainings:
-        # Progresso do usuário no treinamento
-        total_videos = training.videos.count()
+        # Progresso do usuário no treinamento (TODOS os vídeos, não apenas do período)
+        total_videos = training.videos.filter(is_active=True).count()
         completed_videos = UserProgress.objects.filter(
             user=user,
             video__training=training,
+            video__is_active=True,
             completed=True
         ).count()
         
-        # Verificar quizzes
+        # Verificar quizzes (TODOS os quizzes)
         quizzes = training.quizzes.filter(is_active=True)
         total_quizzes = quizzes.count()
-        passed_quizzes = UserQuizAttempt.objects.filter(
-            user=user,
-            quiz__training=training,
-            is_passed=True
-        ).distinct('quiz').count()
+        
+        # Quizzes aprovados (verificar se o usuário passou em pelo menos uma tentativa de cada quiz)
+        passed_quizzes = 0
+        for quiz in quizzes:
+            if UserQuizAttempt.objects.filter(
+                user=user,
+                quiz=quiz,
+                is_passed=True
+            ).exists():
+                passed_quizzes += 1
         
         # Progresso geral (vídeos + quizzes)
         if total_videos + total_quizzes > 0:
@@ -189,7 +198,7 @@ def _get_user_trainings(user, company, start_datetime, end_datetime):
         
         total_progress += progress
         
-        # Verificar se foi iniciado/concluído no período
+        # Verificar se foi iniciado
         first_access = UserProgress.objects.filter(
             user=user,
             video__training=training
@@ -219,27 +228,49 @@ def _get_user_trainings(user, company, start_datetime, end_datetime):
 
 
 def _get_user_quizzes(user, company, start_datetime, end_datetime):
-    """Extrai dados de quizzes do usuário no período."""
-    attempts = UserQuizAttempt.objects.filter(
+    """
+    Extrai dados de quizzes do usuário.
+    Mostra tentativas do período, mas também estatísticas gerais.
+    """
+    # Tentativas no período
+    attempts_period = UserQuizAttempt.objects.filter(
         user=user,
         quiz__training__company=company,
         completed_at__gte=start_datetime,
         completed_at__lte=end_datetime
     ).select_related('quiz', 'quiz__training').order_by('-completed_at')
     
-    if not attempts.exists():
+    # TODAS as tentativas (para estatísticas gerais)
+    attempts_all = UserQuizAttempt.objects.filter(
+        user=user,
+        quiz__training__company=company
+    ).select_related('quiz', 'quiz__training')
+    
+    if not attempts_all.exists():
         return {
             'avg_score': 0,
+            'avg_score_period': 0,
             'total_attempts': 0,
+            'total_attempts_period': 0,
             'total_passed': 0,
+            'total_passed_period': 0,
             'attempts': [],
         }
     
-    avg_score = attempts.aggregate(avg=Avg('score'))['avg'] or 0
-    total_passed = attempts.filter(is_passed=True).count()
+    # Estatísticas gerais (todas as tentativas)
+    avg_score_all = attempts_all.aggregate(avg=Avg('score'))['avg'] or 0
+    total_passed_all = attempts_all.filter(is_passed=True).count()
+    
+    # Estatísticas do período
+    if attempts_period.exists():
+        avg_score_period = attempts_period.aggregate(avg=Avg('score'))['avg'] or 0
+        total_passed_period = attempts_period.filter(is_passed=True).count()
+    else:
+        avg_score_period = 0
+        total_passed_period = 0
     
     attempts_list = []
-    for attempt in attempts[:20]:  # Limitar a 20 mais recentes
+    for attempt in attempts_period[:20]:  # Limitar a 20 mais recentes do período
         attempts_list.append({
             'quiz_title': attempt.quiz.title,
             'training_title': attempt.quiz.training.title,
@@ -251,20 +282,26 @@ def _get_user_quizzes(user, company, start_datetime, end_datetime):
         })
     
     return {
-        'avg_score': round(avg_score, 1),
-        'total_attempts': attempts.count(),
-        'total_passed': total_passed,
+        'avg_score': round(avg_score_all, 1),  # Média geral
+        'avg_score_period': round(avg_score_period, 1),  # Média do período
+        'total_attempts': attempts_all.count(),  # Total geral
+        'total_attempts_period': attempts_period.count(),  # Total do período
+        'total_passed': total_passed_all,  # Aprovados geral
+        'total_passed_period': total_passed_period,  # Aprovados no período
         'attempts': attempts_list,
     }
 
 
 def _get_user_warnings(user, company, start_datetime, end_datetime):
-    """Extrai advertências do usuário no período."""
+    """
+    Extrai advertências do usuário.
+    IMPORTANTE: Mostra TODAS as advertências do usuário, não apenas do período,
+    pois advertências são históricas e devem aparecer sempre no relatório.
+    """
+    # Buscar TODAS as advertências do usuário na empresa (sem filtro de período)
     warnings = Warning.objects.filter(
         user=user,
-        company=company,
-        created_at__gte=start_datetime,
-        created_at__lte=end_datetime
+        company=company
     ).select_related('issuer').order_by('-created_at')
     
     warnings_list = []
