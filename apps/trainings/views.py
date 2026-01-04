@@ -435,7 +435,7 @@ def get_company_users(request):
     API para obter usuários de uma empresa.
     ACCESS: ADMIN MASTER | GESTOR
     """
-    from apps.accounts.models import User
+    from apps.accounts.models import User, UserCompany
     from apps.core.models import Company
     
     company_id = request.GET.get('company_id')
@@ -455,9 +455,14 @@ def get_company_users(request):
     if not company:
         return JsonResponse({'success': False, 'error': 'Nenhuma empresa selecionada'}, status=400)
     
-    # Busca usuários ativos da empresa
-    users = User.objects.filter(
+    # Busca usuários ativos da empresa via UserCompany
+    user_ids = UserCompany.objects.filter(
         company=company,
+        is_active=True
+    ).values_list('user_id', flat=True)
+    
+    users = User.objects.filter(
+        id__in=user_ids,
         is_active=True
     ).exclude(
         is_superuser=True  # Exclui admin master
