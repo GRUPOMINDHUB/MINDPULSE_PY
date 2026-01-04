@@ -185,9 +185,36 @@ def content_player(request, slug, content_type, content_id):
         questions = None
         attempt = None
         show_result = False
+        current_question = None
+        current_question_index = 0
+        total_questions = 0
+        
+        # Busca progresso do vídeo
+        progress, _ = UserProgress.objects.get_or_create(
+            user=user,
+            video=content,
+            defaults={'completed': False, 'last_position': 0}
+        )
     elif content_type == 'quiz':
         content = get_object_or_404(Quiz, pk=content_id, training=training)
         questions = list(content.questions.all().order_by('order').prefetch_related('choices'))
+        total_questions = len(questions)
+        
+        # Pega o índice da pergunta atual (via query param)
+        question_index = request.GET.get('question', '0')
+        try:
+            current_question_index = int(question_index)
+        except (ValueError, TypeError):
+            current_question_index = 0
+        
+        # Garante que o índice está dentro dos limites
+        if current_question_index < 0:
+            current_question_index = 0
+        if current_question_index >= total_questions:
+            current_question_index = max(0, total_questions - 1)
+        
+        # Pega a pergunta atual
+        current_question = questions[current_question_index] if questions else None
         
         # Verifica se está mostrando resultado
         result_id = request.GET.get('result')
@@ -197,6 +224,8 @@ def content_player(request, slug, content_type, content_id):
         else:
             attempt = None
             show_result = False
+        
+        progress = None  # Quiz não tem progresso de vídeo
     else:
         messages.error(request, 'Tipo de conteúdo inválido.')
         return redirect('trainings:detail', slug=slug)
@@ -234,6 +263,10 @@ def content_player(request, slug, content_type, content_id):
         'next_content': next_content,
         'all_content': all_content,
         'current_index': current_index,
+        'current_question': current_question,
+        'current_question_index': current_question_index,
+        'total_questions': total_questions,
+        'progress': progress,
     }
     
     # Adiciona variáveis específicas para facilitar acesso no template
