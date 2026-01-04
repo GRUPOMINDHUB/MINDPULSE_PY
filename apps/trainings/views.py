@@ -366,8 +366,14 @@ def quiz_take(request, slug, quiz_id):
     
     logger.info(f'Quiz {quiz.id} - Tentativa {attempt.id}: Score={attempt.score}, Passed={attempt.is_passed}')
     
-    # Redireciona para resultado
-    return redirect(f"{request.build_absolute_uri(request.path.replace('/take/', '/'))}/content/quiz/{quiz.id}/?result={attempt.id}".replace('//', '/'))
+    # Redireciona para resultado usando reverse
+    from django.urls import reverse
+    result_url = reverse('trainings:content_player', kwargs={
+        'slug': training.slug,
+        'content_type': 'quiz',
+        'content_id': quiz.id
+    })
+    return redirect(f"{result_url}?result={attempt.id}")
 
 
 @login_required
