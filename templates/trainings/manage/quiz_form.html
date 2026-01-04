@@ -225,10 +225,161 @@
 const MAX_CHOICES = 5;
 const MIN_CHOICES = 2;
 
-let questionFormsetIndex = {{ question_formset.total_form_count|default:0 }};
+let questionFormsetIndex = {{ question_formset.total_form_count|default:1 }};
+
+// Inicializa primeira pergunta com 2 opções se for criação nova
+{% if not quiz %}
+document.addEventListener('DOMContentLoaded', function() {
+    // Se não tem perguntas, adiciona uma com 2 opções
+    const questions = document.querySelectorAll('.question-item:not(.empty-state)');
+    if (questions.length === 0) {
+        addQuestionWithOptions();
+    } else {
+        // Se tem pergunta mas sem opções, adiciona 2 opções
+        questions.forEach(q => {
+            const choicesContainer = q.querySelector('.choices-container');
+            const choices = choicesContainer.querySelectorAll('.choice-item');
+            if (choices.length === 0) {
+                const btn = q.querySelector('.add-choice-btn');
+                if (btn) {
+                    addChoice(btn);
+                    addChoice(btn);
+                }
+            }
+        });
+    }
+});
+
+function addQuestionWithOptions() {
+    const container = document.getElementById('questionsContainer');
+    const totalForms = document.getElementById('id_questions-TOTAL_FORMS');
+    
+    // Remove empty state se existir
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const newIndex = 0;
+    
+    const questionHtml = `
+        <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" 
+             data-question-index="${newIndex}" 
+             data-question-id=""
+             data-is-new="true">
+            <div class="flex items-start justify-between mb-4">
+                <h3 class="text-lg font-medium text-white question-title">Pergunta 1</h3>
+                <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Pergunta *</label>
+                    <textarea name="questions-${newIndex}-text" 
+                              class="form-input" 
+                              rows="2" 
+                              placeholder="Digite a pergunta..."
+                              required></textarea>
+                    <input type="hidden" name="questions-${newIndex}-id" value="">
+                    <input type="hidden" name="questions-${newIndex}-DELETE" value="false">
+                    <input type="hidden" name="questions-${newIndex}-order" value="1">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-3">
+                        Opções de Resposta * 
+                        <span class="text-xs text-gray-500">(mín. 2, máx. 5 - selecione a correta)</span>
+                    </label>
+                    
+                    <div class="choices-container space-y-3" 
+                         data-question-index="${newIndex}"
+                         data-question-id=""
+                         data-question-identifier="${newIndex}">
+                        <!-- Opção 1 -->
+                        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors" 
+                             data-choice-index="0"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-sm text-gray-500 font-medium min-w-[2rem]">1</span>
+                            <div class="flex-1">
+                                <input type="text" 
+                                       name="choice_${newIndex}_0_text" 
+                                       class="form-input w-full" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="0"
+                                       class="form-radio text-brand-500"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <span class="text-xs text-gray-400">Correta</span>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_0_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Opção 2 -->
+                        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors" 
+                             data-choice-index="1"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-sm text-gray-500 font-medium min-w-[2rem]">2</span>
+                            <div class="flex-1">
+                                <input type="text" 
+                                       name="choice_${newIndex}_1_text" 
+                                       class="form-input w-full" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="1"
+                                       class="form-radio text-brand-500"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <span class="text-xs text-gray-400">Correta</span>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_1_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Adicionar Opção <span class="choice-count-label">(2/5)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    totalForms.value = 1;
+    questionFormsetIndex = 1;
+}
+{% endif %}
 
 /**
- * Adiciona uma nova pergunta
+ * Adiciona uma nova pergunta com 2 opções padrão
  */
 function addQuestion() {
     const container = document.getElementById('questionsContainer');
@@ -241,6 +392,7 @@ function addQuestion() {
     }
     
     const newIndex = questionFormsetIndex;
+    const questionNumber = getVisibleQuestionCount() + 1;
     
     const questionHtml = `
         <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" 
@@ -248,7 +400,7 @@ function addQuestion() {
              data-question-id=""
              data-is-new="true">
             <div class="flex items-start justify-between mb-4">
-                <h3 class="text-lg font-medium text-white question-title">Pergunta ${getVisibleQuestionCount() + 1}</h3>
+                <h3 class="text-lg font-medium text-white question-title">Pergunta ${questionNumber}</h3>
                 <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -279,14 +431,73 @@ function addQuestion() {
                          data-question-index="${newIndex}"
                          data-question-id=""
                          data-question-identifier="${newIndex}">
-                        <div class="placeholder-text text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
+                        <!-- Opção 1 -->
+                        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors" 
+                             data-choice-index="0"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-sm text-gray-500 font-medium min-w-[2rem]">1</span>
+                            <div class="flex-1">
+                                <input type="text" 
+                                       name="choice_${newIndex}_0_text" 
+                                       class="form-input w-full" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="0"
+                                       class="form-radio text-brand-500"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <span class="text-xs text-gray-400">Correta</span>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_0_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Opção 2 -->
+                        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors" 
+                             data-choice-index="1"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-sm text-gray-500 font-medium min-w-[2rem]">2</span>
+                            <div class="flex-1">
+                                <input type="text" 
+                                       name="choice_${newIndex}_1_text" 
+                                       class="form-input w-full" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="1"
+                                       class="form-radio text-brand-500"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <span class="text-xs text-gray-400">Correta</span>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_1_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     
                     <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Adicionar Opção <span class="choice-count-label">(0/5)</span>
+                        Adicionar Opção <span class="choice-count-label">(2/5)</span>
                     </button>
                 </div>
             </div>

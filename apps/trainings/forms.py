@@ -267,7 +267,7 @@ QuestionFormSet = inlineformset_factory(
     Quiz,
     Question,
     form=QuestionForm,
-    extra=1,
+    extra=0,  # JS cria perguntas dinamicamente
     can_delete=True,
     min_num=0,  # Validação será feita manualmente na view
     validate_min=False
