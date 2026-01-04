@@ -1327,7 +1327,12 @@ def quiz_take(request, training_slug, quiz_id):
             except:
                 answers = {}
         
-        # Cria tentativa
+        # Valida se tem respostas antes de criar tentativa
+        if not answers:
+            messages.error(request, 'Nenhuma resposta foi enviada. Por favor, responda todas as perguntas.')
+            return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id)
+        
+        # Cria tentativa com as respostas normalizadas
         attempt = UserQuizAttempt.objects.create(
             user=user,
             quiz=quiz,
