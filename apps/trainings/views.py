@@ -1233,19 +1233,7 @@ def quiz_edit(request, quiz_id):
                                     })
                                 choice_index += 1
                         
-                        # Salva opções dinâmicas (novas)
-                        if dynamic_choices:
-                            logger.info(f'Encontradas {len(dynamic_choices)} opções dinâmicas')
-                            for order, choice_data in enumerate(dynamic_choices):
-                                choice = Choice.objects.create(
-                                    question=question,
-                                    text=choice_data['text'],
-                                    is_correct=choice_data['is_correct'],
-                                    order=question.choices.count() + order  # Adiciona no final
-                                )
-                                logger.info(f'  ✅ Opção dinâmica criada: ID={choice.id}, is_correct={choice.is_correct}')
-                        
-                        # Valida se tem pelo menos uma correta (formset OU dinâmica)
+                        # IMPORTANTE: Valida ANTES de salvar
                         has_correct = has_correct_formset or any(c['is_correct'] for c in dynamic_choices)
                         total_choices = len(formset_choices) + len(dynamic_choices)
                         
@@ -1253,8 +1241,25 @@ def quiz_edit(request, quiz_id):
                         
                         if not has_correct and total_choices > 0:
                             validation_errors.append(f'Pergunta "{question_text[:50]}": Deve ter pelo menos uma resposta correta marcada.')
+                            # NÃO salva nada se não tiver correta
                         elif total_choices < 2:
                             validation_errors.append(f'Pergunta "{question_text[:50]}": Adicione pelo menos 2 opções de resposta.')
+                            # NÃO salva nada se não tiver pelo menos 2 opções
+                        else:
+                            # Só salva se passou na validação
+                            # Salva opções dinâmicas (novas) - APENAS se não houver erros
+                            if dynamic_choices and not validation_errors:
+                                logger.info(f'Salvando {len(dynamic_choices)} opções dinâmicas')
+                                # Calcula ordem baseada no total de opções existentes (após salvar formset)
+                                existing_count = question.choices.count()
+                                for order, choice_data in enumerate(dynamic_choices):
+                                    choice = Choice.objects.create(
+                                        question=question,
+                                        text=choice_data['text'],
+                                        is_correct=choice_data['is_correct'],
+                                        order=existing_count + order  # Adiciona no final
+                                    )
+                                    logger.info(f'  ✅ Opção dinâmica criada: ID={choice.id}, Texto="{choice.text[:30]}", is_correct={choice.is_correct}, order={choice.order}')
                     
                     else:
                         # PERGUNTA NOVA: Processa opções dinâmicas do JavaScript
