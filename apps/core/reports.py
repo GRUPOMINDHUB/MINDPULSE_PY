@@ -172,7 +172,6 @@ def _get_user_trainings(user, company, start_datetime, end_datetime):
         completed_videos = UserProgress.objects.filter(
             user=user,
             video__training=training,
-            video__is_active=True,
             completed=True
         ).count()
         
