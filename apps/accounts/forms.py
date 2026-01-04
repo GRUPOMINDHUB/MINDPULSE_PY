@@ -177,6 +177,17 @@ class CollaboratorForm(forms.ModelForm):
         })
     )
     
+    # Senha provisória
+    password = forms.CharField(
+        label='Senha Provisória',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-input',
+            'placeholder': '••••••••'
+        }),
+        min_length=6,
+        help_text='Mínimo 6 caracteres. O usuário poderá alterar no primeiro acesso.'
+    )
+    
     # Dados de empresa
     role = forms.ModelChoiceField(
         label='Cargo',
@@ -260,11 +271,10 @@ class CollaboratorForm(forms.ModelForm):
                 user.save(update_fields=update_fields)
         
         if created:
-            # Define uma senha temporária
-            temp_password = User.objects.make_random_password()
-            user.set_password(temp_password)
+            # Define a senha provisória informada pelo criador
+            password = self.cleaned_data.get('password')
+            user.set_password(password)
             user.save()
-            # TODO: Enviar email com senha temporária
         
         # Gera matrícula automaticamente (EMPRESA-ANO-SEQUENCIAL)
         import datetime

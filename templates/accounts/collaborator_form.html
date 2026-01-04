@@ -97,9 +97,22 @@
                            class="form-input" 
                            placeholder="colaborador@empresa.com"
                            required>
-                    <p class="mt-1 text-xs text-gray-500">Uma senha temporária será gerada automaticamente</p>
                     {% if form.email.errors %}
                     <p class="mt-1 text-sm text-red-400">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Senha Provisória -->
+                <div>
+                    <label for="id_password" class="block text-sm font-medium text-gray-400 mb-2">Senha Provisória *</label>
+                    <input type="password" name="password" id="id_password" 
+                           class="form-input" 
+                           placeholder="••••••••"
+                           minlength="6"
+                           required>
+                    <p class="mt-1 text-xs text-gray-500">Mínimo 6 caracteres. O usuário poderá alterar no primeiro acesso.</p>
+                    {% if form.password.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.password.errors.0 }}</p>
                     {% endif %}
                 </div>
             </div>
