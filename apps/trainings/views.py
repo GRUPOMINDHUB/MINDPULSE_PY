@@ -45,25 +45,43 @@ def training_list(request):
             is_active=True
         )
     else:
-        # Colaborador vê apenas atribuídos ou globais (sem atribuição específica)
-        trainings = Training.objects.filter(
+        # Colaborador vê apenas:
+        # 1. Treinamentos atribuídos diretamente a ele
+        # 2. Treinamentos globais (sem nenhum usuário atribuído)
+        from django.db.models import Count
+        
+        # Treinamentos com assigned_users vazio (globais)
+        global_trainings = Training.objects.filter(
             company=company,
             is_active=True
-        ).filter(
-            Q(assigned_users=user) | Q(assigned_users__isnull=True)
-        ).distinct()
+        ).annotate(
+            num_assigned=Count('assigned_users')
+        ).filter(num_assigned=0)
+        
+        # Treinamentos atribuídos ao usuário
+        assigned_trainings = Training.objects.filter(
+            company=company,
+            is_active=True,
+            assigned_users=user
+        )
+        
+        # Combina ambos
+        trainings = (global_trainings | assigned_trainings).distinct()
     
     # Calcula progresso para cada treinamento
-    trainings_with_progress = []
+    training_data = []
     for training in trainings:
         progress = get_user_progress(user, training)
-        trainings_with_progress.append({
+        is_completed = progress >= 100
+        training_data.append({
             'training': training,
-            'progress': progress
+            'progress': progress,
+            'is_completed': is_completed
         })
     
     context = {
-        'trainings': trainings_with_progress,
+        'training_data': training_data,
+        'is_gestor': hasattr(user, 'is_gestor') and user.is_gestor,
     }
     return render(request, 'trainings/list.html', context)
 
@@ -187,9 +205,11 @@ def content_player(request, slug, content_type, content_id):
     
     all_content = []
     for v in videos:
-        all_content.append({'type': 'video', 'item': v, 'order': v.order})
+        watched = UserProgress.objects.filter(user=user, video=v, completed=True).exists()
+        all_content.append({'type': 'video', 'item': v, 'order': v.order, 'completed': watched})
     for q in quizzes:
-        all_content.append({'type': 'quiz', 'item': q, 'order': q.order})
+        passed = UserQuizAttempt.objects.filter(user=user, quiz=q, is_passed=True).exists()
+        all_content.append({'type': 'quiz', 'item': q, 'order': q.order, 'completed': passed})
     all_content.sort(key=lambda x: x['order'])
     
     current_index = None

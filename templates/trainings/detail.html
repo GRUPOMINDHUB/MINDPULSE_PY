@@ -51,7 +51,7 @@
                         </div>
                     </div>
                     
-                    {% if total_progress == 100 %}
+                    {% if progress >= 100 %}
                     <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -77,11 +77,11 @@
                     <div class="flex-1">
                         <div class="flex items-center justify-between text-sm mb-2">
                             <span class="text-gray-500">Progresso</span>
-                            <span class="text-white font-medium" id="progressText">{{ total_progress }}%</span>
+                            <span class="text-white font-medium" id="progressText">{{ progress }}%</span>
                         </div>
                         <div class="h-3 bg-dark-600 rounded-full overflow-hidden">
-                            <div id="progressBar" class="h-full rounded-full transition-all duration-500 {% if total_progress == 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
-                                 style="width: {{ total_progress }}%"></div>
+                            <div id="progressBar" class="h-full rounded-full transition-all duration-500 {% if progress >= 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
+                                 style="width: {{ progress }}%"></div>
                         </div>
                     </div>
                     
@@ -95,13 +95,13 @@
                 {% if content_items %}
                 <div class="mt-4">
                     {% with first_item=content_items|first %}
-                    <a href="{% url 'trainings:content_player' training.slug first_item.type first_item.id %}" 
+                    <a href="{% url 'trainings:content_player' training.slug first_item.type first_item.item.id %}" 
                        class="btn-primary w-full md:w-auto inline-flex items-center justify-center gap-2 text-lg py-4 px-8">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        {% if total_progress == 0 %}Iniciar Treinamento{% elif total_progress == 100 %}Revisar Treinamento{% else %}Continuar Treinamento{% endif %}
+                        {% if progress == 0 %}Iniciar Treinamento{% elif progress >= 100 %}Revisar Treinamento{% else %}Continuar Treinamento{% endif %}
                     </a>
                     {% endwith %}
                 </div>
@@ -116,10 +116,10 @@
     <div class="space-y-3">
         {% for item in content_items %}
         {% if item.type == 'video' %}
-        <a href="{% url 'trainings:content_player' training.slug item.type item.id %}" 
+        <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
            class="flex items-center gap-4 p-4 rounded-xl border group transition-all
                   {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 hover:border-brand-500/50{% endif %}"
-           data-content-id="{{ item.id }}"
+           data-content-id="{{ item.item.id }}"
            data-content-type="{{ item.type }}">
             <!-- Order Number -->
             <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium
@@ -145,9 +145,9 @@
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium transition-colors truncate
                            {% if item.completed %}text-green-400{% else %}text-white group-hover:text-brand-400{% endif %}">
-                    {{ item.object.title }}
+                    {{ item.item.title }}
                 </h3>
-                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">📹 {{ item.object.duration_formatted }}</p>
+                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">📹 {{ item.item.duration_formatted }}</p>
             </div>
             
             <!-- Status -->
@@ -171,10 +171,10 @@
             </div>
         </a>
         {% else %}
-        <a href="{% url 'trainings:content_player' training.slug item.type item.id %}" 
+        <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
            class="flex items-center gap-4 p-4 rounded-xl border group transition-all
                   {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 hover:border-brand-500/50{% endif %}"
-           data-content-id="{{ item.id }}"
+           data-content-id="{{ item.item.id }}"
            data-content-type="{{ item.type }}">
             <!-- Order Number -->
             <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium
@@ -200,9 +200,9 @@
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium transition-colors truncate
                            {% if item.completed %}text-green-400{% else %}text-white group-hover:text-brand-400{% endif %}">
-                    {{ item.object.title }}
+                    {{ item.item.title }}
                 </h3>
-                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">🧠 {{ item.object.total_questions }} pergunta{{ item.object.total_questions|pluralize }} • Nota mínima: {{ item.object.passing_score }}%</p>
+                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">🧠 {{ item.item.total_questions }} pergunta{{ item.item.total_questions|pluralize }} • Nota mínima: {{ item.item.passing_score }}%</p>
             </div>
             
             <!-- Status -->
