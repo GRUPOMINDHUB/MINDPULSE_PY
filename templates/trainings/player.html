@@ -401,18 +401,23 @@ if (quizForm) {
 
 function goToQuestion(index) {
     const form = document.getElementById('quizForm');
+    const quizId = {{ quiz.id }};
     
-    // Salva resposta atual
+    // IMPORTANTE: Salva resposta atual ANTES de navegar
     const selected = form.querySelector('input[type="radio"]:checked');
     if (selected) {
-        const quizId = {{ quiz.id }};
         const answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
+        // Garante que salva com o nome exato
         answers[selected.name] = selected.value;
         localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
+        console.log('Navegando - Resposta salva:', selected.name, '=', selected.value);
     }
     
-    // Redireciona para próxima pergunta
-    window.location.href = `{% url 'trainings:content_player' training.slug 'quiz' quiz.id %}?question=${index}`;
+    // Pequeno delay para garantir que o localStorage foi salvo
+    setTimeout(function() {
+        // Redireciona para próxima pergunta
+        window.location.href = `{% url 'trainings:content_player' training.slug 'quiz' quiz.id %}?question=${index}`;
+    }, 100);
 }
 
 function submitQuiz(event) {
@@ -426,17 +431,34 @@ function submitQuiz(event) {
         // Garante que o nome da pergunta está correto (question_ID)
         const questionName = selected.name;
         answers[questionName] = selected.value;
+        console.log('Submit - Resposta atual salva:', questionName, '=', selected.value);
     }
+    
+    // Debug: mostra todas as respostas coletadas
+    console.log('Todas as respostas antes de normalizar:', answers);
     
     // Garante que todas as respostas estão no formato correto (question_ID: choice_id)
     const normalizedAnswers = {};
     for (const [key, value] of Object.entries(answers)) {
-        // Remove 'question_' do início se existir, depois adiciona de volta para normalizar
+        // Remove 'question_' do início se existir para normalizar
         let questionId = key;
         if (key.startsWith('question_')) {
             questionId = key.replace('question_', '');
         }
-        normalizedAnswers[questionId] = String(value); // Garante que é string
+        // Garante que o valor é string e não está vazio
+        if (value && String(value).trim() !== '') {
+            normalizedAnswers[questionId] = String(value);
+        }
+    }
+    
+    // Debug: mostra respostas normalizadas
+    console.log('Respostas normalizadas:', normalizedAnswers);
+    
+    // Valida se tem pelo menos uma resposta
+    if (Object.keys(normalizedAnswers).length === 0) {
+        alert('Por favor, responda pelo menos uma pergunta antes de finalizar o quiz.');
+        event.preventDefault();
+        return false;
     }
     
     // Adiciona todas as respostas normalizadas ao form
