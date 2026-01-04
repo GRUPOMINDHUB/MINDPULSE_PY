@@ -51,15 +51,7 @@
                     {% endif %}
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="{{ quiz_form.order.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
-                        {{ quiz_form.order }}
-                        {% if quiz_form.order.errors %}
-                        <p class="mt-1 text-sm text-red-400">{{ quiz_form.order.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="{{ quiz_form.passing_score.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Nota Mínima (%)</label>
                         {{ quiz_form.passing_score }}
@@ -75,6 +67,9 @@
                         </label>
                     </div>
                 </div>
+                
+                <!-- Campo de ordem oculto (será definido automaticamente) -->
+                <div class="hidden">{{ quiz_form.order }}</div>
                 
                 <div>
                     <label class="flex items-center gap-2 cursor-pointer">
