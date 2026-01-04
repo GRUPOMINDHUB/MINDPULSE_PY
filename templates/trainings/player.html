@@ -350,23 +350,28 @@
                         {% endif %}
                     {% endif %}
                 {% else %}
-                    <!-- Quiz navigation -->
-                    {% if next_content %}
-                    <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.id %}" 
-                       class="btn-primary flex items-center gap-2">
-                        Próximo {% if next_content.type == 'video' %}Vídeo{% else %}Quiz{% endif %}
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </a>
+                    <!-- Quiz navigation (só mostra se não estiver mostrando resultado) -->
+                    {% if not show_result %}
+                        {% if next_content %}
+                        <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.id %}" 
+                           class="btn-primary flex items-center gap-2">
+                            Próximo {% if next_content.type == 'video' %}Vídeo{% else %}Quiz{% endif %}
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'trainings:detail' training.slug %}" 
+                           class="btn-primary flex items-center gap-2">
+                            Finalizar
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </a>
+                        {% endif %}
                     {% else %}
-                    <a href="{% url 'trainings:detail' training.slug %}" 
-                       class="btn-primary flex items-center gap-2">
-                        Finalizar
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </a>
+                        <!-- Quando mostra resultado, os botões estão dentro do card do resultado -->
+                        <div></div>
                     {% endif %}
                 {% endif %}
             </div>
