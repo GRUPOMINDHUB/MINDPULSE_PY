@@ -304,13 +304,18 @@ def video_complete(request, video_id):
 
 
 @login_required
-def quiz_take(request, quiz_id):
+def quiz_take(request, slug, quiz_id):
     """
     Processa submissão do quiz.
     ACCESS: TODOS
     """
     quiz = get_object_or_404(Quiz, pk=quiz_id)
     training = quiz.training
+    
+    # Verifica se o slug corresponde ao treinamento
+    if training.slug != slug:
+        messages.error(request, 'Quiz não encontrado neste treinamento.')
+        return redirect('trainings:list')
     
     if request.method != 'POST':
         return redirect('trainings:content_player', slug=training.slug, content_type='quiz', content_id=quiz.id)
