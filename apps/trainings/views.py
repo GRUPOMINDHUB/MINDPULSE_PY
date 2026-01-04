@@ -194,6 +194,26 @@ def video_player(request, training_slug, video_id):
         video=video
     )
     
+    # Verifica se pode acessar este vídeo (deve ter completado o anterior)
+    # Pega o vídeo anterior na ordem
+    prev_video_in_order = Video.objects.filter(
+        training=training,
+        is_active=True,
+        order__lt=video.order
+    ).order_by('-order').first()
+    
+    # Se existe vídeo anterior, verifica se foi completado
+    if prev_video_in_order and not user.is_superuser:
+        prev_progress = UserProgress.objects.filter(
+            user=user,
+            video=prev_video_in_order,
+            completed=True
+        ).exists()
+        
+        if not prev_progress:
+            messages.warning(request, f'Você precisa assistir 90% do vídeo anterior "{prev_video_in_order.title}" antes de acessar este vídeo.')
+            return redirect('trainings:player', training_slug=training.slug, video_id=prev_video_in_order.id)
+    
     # Próximo vídeo
     next_video = Video.objects.filter(
         training=training,
@@ -201,12 +221,8 @@ def video_player(request, training_slug, video_id):
         order__gt=video.order
     ).order_by('order').first()
     
-    # Vídeo anterior
-    prev_video = Video.objects.filter(
-        training=training,
-        is_active=True,
-        order__lt=video.order
-    ).order_by('-order').first()
+    # Vídeo anterior (para navegação)
+    prev_video = prev_video_in_order
     
     context = {
         'training': training,

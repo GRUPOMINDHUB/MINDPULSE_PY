@@ -91,6 +91,7 @@
                 {% endif %}
                 
                 {% if next_video %}
+                {% if progress.completed %}
                 <a href="{% url 'trainings:player' training.slug next_video.id %}" 
                    class="btn-primary flex items-center gap-2"
                    id="nextVideoBtn">
@@ -99,6 +100,19 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </a>
+                {% else %}
+                <button type="button" 
+                        class="btn-secondary flex items-center gap-2 cursor-not-allowed opacity-50"
+                        id="nextVideoBtn"
+                        disabled
+                        data-next-url="{% url 'trainings:player' training.slug next_video.id %}"
+                        title="Assista 90% do vídeo para desbloquear o próximo">
+                    Próximo
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                {% endif %}
                 {% else %}
                 <a href="{% url 'trainings:detail' training.slug %}" 
                    class="btn-primary flex items-center gap-2">
