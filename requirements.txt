@@ -7,7 +7,7 @@ python-decouple==3.8
 python-dotenv==1.0.0
 
 # Image & Video Processing
-Pillow==10.2.0
+Pillow>=10.4.0
 moviepy==1.0.3
 
 # Forms & Widgets
