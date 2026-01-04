@@ -185,7 +185,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <!-- Gráfico Checklists -->
             <div class="card">
-                <h3 class="text-lg font-semibold text-white mb-4">📋 Checklists: Aplicados vs Concluídos</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Checklists: Aplicados vs Concluídos</h3>
                 <div class="h-[300px]">
                     <canvas id="checklistChart"></canvas>
                 </div>
@@ -193,7 +193,7 @@
             
             <!-- Gráfico Treinamentos -->
             <div class="card">
-                <h3 class="text-lg font-semibold text-white mb-4">🎬 Treinamentos: Aplicados vs Concluídos</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">🎬 Treinamentos: Aplicados vs Concluídos</h3>
                 <div class="h-[300px]">
                     <canvas id="trainingChart"></canvas>
                 </div>
@@ -203,7 +203,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Gráfico Feedbacks -->
             <div class="card">
-                <h3 class="text-lg font-semibold text-white mb-4">💬 Feedbacks: Recebidos vs Resolvidos</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">💬 Feedbacks: Recebidos vs Resolvidos</h3>
                 <div class="h-[300px]">
                     <canvas id="feedbackChart"></canvas>
                 </div>
@@ -211,7 +211,7 @@
             
             <!-- Resumo Comparativo -->
             <div class="card">
-                <h3 class="text-lg font-semibold text-white mb-4">📊 Resumo Comparativo</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📊 Resumo Comparativo</h3>
                 <div class="h-[300px]">
                     <canvas id="summaryChart"></canvas>
                 </div>
@@ -336,6 +336,11 @@ function updateCharts(data) {
     if (feedbackChart) feedbackChart.destroy();
     if (summaryChart) summaryChart.destroy();
     
+    // Detectar tema atual
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const textColor = isDarkMode ? '#9CA3AF' : '#374151';
+    const gridColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -343,7 +348,7 @@ function updateCharts(data) {
             legend: {
                 position: 'bottom',
                 labels: {
-                    color: '#9CA3AF',
+                    color: textColor,
                     padding: 15,
                     font: { family: 'Outfit', size: 12 }
                 }
@@ -351,12 +356,12 @@ function updateCharts(data) {
         },
         scales: {
             x: {
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                ticks: { color: '#9CA3AF', font: { family: 'Outfit' } }
+                grid: { color: gridColor },
+                ticks: { color: textColor, font: { family: 'Outfit' } }
             },
             y: {
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                ticks: { color: '#9CA3AF', font: { family: 'Outfit' } },
+                grid: { color: gridColor },
+                ticks: { color: textColor, font: { family: 'Outfit' } },
                 beginAtZero: true
             }
         }
@@ -467,7 +472,7 @@ function updateCharts(data) {
                 legend: {
                     position: 'right',
                     labels: {
-                        color: '#9CA3AF',
+                        color: textColor,
                         padding: 10,
                         font: { family: 'Outfit', size: 12 },
                         generateLabels: function(chart) {
