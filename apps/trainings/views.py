@@ -71,11 +71,12 @@ def training_list(request):
     # Calcula progresso para cada treinamento
     training_data = []
     for training in trainings:
-        progress = get_user_progress(user, training)
-        is_completed = progress >= 100
+        progress_data = get_user_progress(user, training)
+        total_progress = progress_data.get('total_progress', 0) if isinstance(progress_data, dict) else progress_data
+        is_completed = total_progress >= 100
         training_data.append({
             'training': training,
-            'progress': progress,
+            'progress': total_progress,
             'is_completed': is_completed
         })
     
@@ -150,7 +151,8 @@ def training_detail(request, slug):
     content_items.sort(key=lambda x: x['order'])
     
     # Calcula progresso
-    progress = get_user_progress(user, training)
+    progress_data = get_user_progress(user, training)
+    progress = progress_data.get('total_progress', 0) if isinstance(progress_data, dict) else progress_data
     
     context = {
         'training': training,
@@ -362,10 +364,16 @@ def get_training_status(request, training_id):
             'completed': passed
         })
     
+    total_progress = progress.get('total_progress', 0) if isinstance(progress, dict) else progress
+    
     return JsonResponse({
-        'progress': progress,
+        'success': True,
+        'training': {
+            'total_progress': total_progress,
+            'is_completed': total_progress >= 100
+        },
         'content_status': content_status,
-        'is_complete': progress.get('total_progress', 0) >= 100
+        'is_complete': total_progress >= 100
     })
 
 
