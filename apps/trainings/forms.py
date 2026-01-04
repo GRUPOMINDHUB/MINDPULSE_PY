@@ -153,8 +153,39 @@ class AdminTrainingForm(TrainingForm):
         return None
 
 
+class VideoForm(forms.ModelForm):
+    """Form para criar/editar vídeo."""
+    
+    class Meta:
+        model = Video
+        fields = ['title', 'description', 'video_file', 'order', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Título do vídeo'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-input',
+                'rows': 2,
+                'placeholder': 'Descrição opcional'
+            }),
+            'video_file': forms.FileInput(attrs={
+                'class': 'form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer',
+                'accept': 'video/mp4,video/webm,video/quicktime'
+            }),
+            'order': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Torna video_file opcional na edição
+        if self.instance and self.instance.pk:
+            self.fields['video_file'].required = False
+
+
 class VideoUploadForm(forms.Form):
-    """Form simplificado para upload de vídeo."""
+    """Form simplificado para upload de vídeo (criação rápida)."""
     title = forms.CharField(
         max_length=255,
         widget=forms.TextInput(attrs={

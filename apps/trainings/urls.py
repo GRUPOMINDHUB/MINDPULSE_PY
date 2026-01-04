@@ -18,6 +18,9 @@ urlpatterns = [
     path('manage/<int:pk>/edit/', views.training_edit, name='edit'),
     path('manage/<int:pk>/delete/', views.training_delete, name='delete'),
     
+    # Vídeos
+    path('manage/video/<int:video_id>/edit/', views.video_edit, name='video_edit'),
+    
     # Quizzes
     path('manage/<int:training_id>/quiz/create/', views.quiz_create, name='quiz_create'),
     path('manage/quiz/<int:quiz_id>/edit/', views.quiz_edit, name='quiz_edit'),

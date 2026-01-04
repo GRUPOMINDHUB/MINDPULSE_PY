@@ -11,7 +11,7 @@ from django.db.models import Max, Q, Count
 import json
 
 from .models import Training, Video, UserProgress, UserTrainingReward, Quiz, Question, Choice, UserQuizAttempt
-from .forms import TrainingForm, VideoUploadForm, AdminTrainingForm, QuizForm, QuestionFormSet, ChoiceFormSet
+from .forms import TrainingForm, VideoUploadForm, AdminTrainingForm, QuizForm, QuestionFormSet, ChoiceFormSet, VideoForm
 from apps.core.models import Company
 from apps.core.decorators import gestor_required, gestor_required_ajax
 
@@ -553,6 +553,39 @@ def training_delete(request, pk):
     messages.success(request, 'Treinamento excluído!')
     
     return redirect('trainings:manage_list')
+
+
+@login_required
+@gestor_required
+def video_edit(request, video_id):
+    """
+    Editar vídeo existente.
+    ACCESS: ADMIN MASTER | GESTOR
+    """
+    video = get_object_or_404(Video, pk=video_id)
+    training = video.training
+    
+    # Verifica permissão
+    is_admin = request.user.is_superuser
+    if not is_admin and training.company != request.current_company:
+        messages.error(request, 'Você não tem permissão para editar este vídeo.')
+        return redirect('trainings:manage_list')
+    
+    if request.method == 'POST':
+        form = VideoForm(request.POST, request.FILES, instance=video)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Vídeo atualizado com sucesso!')
+            return redirect('trainings:manage_detail', pk=training.pk)
+    else:
+        form = VideoForm(instance=video)
+    
+    context = {
+        'training': training,
+        'video': video,
+        'form': form,
+    }
+    return render(request, 'trainings/manage/video_form.html', context)
 
 
 @login_required
