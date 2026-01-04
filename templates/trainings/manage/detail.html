@@ -35,12 +35,12 @@
                         </svg>
                         Adicionar Vídeo
                     </button>
-                    <button onclick="toggleQuizForm()" class="btn-primary flex items-center gap-2">
+                    <a href="{% url 'trainings:quiz_create' training.pk %}" class="btn-primary flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                         Adicionar Quiz
-                    </button>
+                    </a>
                 </div>
             </div>
                 
@@ -209,86 +209,6 @@
                 {% endfor %}
             </div>
             
-            <!-- Formulário de Quiz (Oculto por padrão) -->
-            <div id="quizFormContainer" class="hidden mt-6 p-6 bg-dark-700 rounded-xl border border-dark-600">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-white">➕ Adicionar Quiz</h3>
-                        <button onclick="toggleQuizForm()" class="p-2 text-gray-400 hover:text-white transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                    <form method="post" class="space-y-4">
-                        {% csrf_token %}
-                        <input type="hidden" name="add_quiz" value="1">
-                        
-                        <div>
-                            <label for="{{ quiz_form.title.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Título *</label>
-                            {{ quiz_form.title }}
-                            {% if quiz_form.title.errors %}
-                            <p class="mt-1 text-sm text-red-400">{{ quiz_form.title.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-                        
-                        <div>
-                            <label for="{{ quiz_form.description.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Descrição</label>
-                            {{ quiz_form.description }}
-                            {% if quiz_form.description.errors %}
-                            <p class="mt-1 text-sm text-red-400">{{ quiz_form.description.errors.0 }}</p>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label for="{{ quiz_form.order.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Ordem</label>
-                                {{ quiz_form.order }}
-                                <p class="mt-1 text-xs text-gray-500">Será calculada automaticamente se vazio</p>
-                            </div>
-                            
-                            <div>
-                                <label for="{{ quiz_form.passing_score.id_for_label }}" class="block text-sm font-medium text-gray-400 mb-2">Nota Mínima (%)</label>
-                                {{ quiz_form.passing_score }}
-                                {% if quiz_form.passing_score.errors %}
-                                <p class="mt-1 text-sm text-red-400">{{ quiz_form.passing_score.errors.0 }}</p>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="flex items-end">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    {{ quiz_form.is_active }}
-                                    <span class="text-gray-300">Ativo</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                {{ quiz_form.allow_multiple_attempts }}
-                                <span class="text-gray-300">Permitir múltiplas tentativas</span>
-                            </label>
-                        </div>
-                        
-                        <div class="bg-brand-500/10 border border-brand-500/30 rounded-lg p-4">
-                            <p class="text-sm text-brand-300">
-                                <strong>💡 Dica:</strong> Após criar o quiz, você poderá editá-lo para adicionar perguntas e opções de resposta.
-                            </p>
-                        </div>
-                        
-                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-dark-600">
-                            <button type="button" onclick="toggleQuizForm()" class="px-4 py-2 border border-white text-white rounded-lg hover:bg-white hover:text-dark-900 transition-all duration-200">
-                                Cancelar
-                            </button>
-                            <button type="submit" class="btn-primary flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                Criar Quiz
-                            </button>
-                        </div>
-                    </form>
-                </div>
             </div>
         </div>
     </div>
@@ -308,32 +228,6 @@ function toggleVideoForm() {
     if (isHidden) {
         container.classList.remove('hidden');
         container.style.animation = 'slideDown 0.3s ease-out';
-        // Fecha o formulário de quiz se estiver aberto
-        const quizContainer = document.getElementById('quizFormContainer');
-        if (!quizContainer.classList.contains('hidden')) {
-            quizContainer.classList.add('hidden');
-        }
-    } else {
-        container.style.animation = 'slideUp 0.3s ease-out';
-        setTimeout(() => {
-            container.classList.add('hidden');
-        }, 300);
-    }
-}
-
-// Toggle formulário de quiz
-function toggleQuizForm() {
-    const container = document.getElementById('quizFormContainer');
-    const isHidden = container.classList.contains('hidden');
-    
-    if (isHidden) {
-        container.classList.remove('hidden');
-        container.style.animation = 'slideDown 0.3s ease-out';
-        // Fecha o formulário de vídeo se estiver aberto
-        const videoContainer = document.getElementById('videoFormContainer');
-        if (!videoContainer.classList.contains('hidden')) {
-            videoContainer.classList.add('hidden');
-        }
     } else {
         container.style.animation = 'slideUp 0.3s ease-out';
         setTimeout(() => {
