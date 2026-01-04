@@ -144,13 +144,14 @@ def training_detail(request, slug):
     
     progress_map = {p['video_id']: p for p in user_progress}
     
-    # Busca tentativas de quiz do usuário
-    quiz_attempts = UserQuizAttempt.objects.filter(
-        user=request.user,
-        quiz__in=quizzes
-    ).values('quiz_id', 'is_passed')
-    
-    quiz_passed_map = {a['quiz_id']: a['is_passed'] for a in quiz_attempts}
+    # Busca tentativas de quiz do usuário (pega a última tentativa de cada quiz)
+    quiz_passed_map = {}
+    for quiz in quizzes:
+        latest_attempt = UserQuizAttempt.objects.filter(
+            user=request.user,
+            quiz=quiz
+        ).order_by('-completed_at').first()
+        quiz_passed_map[quiz.id] = latest_attempt.is_passed if latest_attempt else False
     
     # Combina vídeos e quizzes em uma lista unificada ordenada
     content_items = []
