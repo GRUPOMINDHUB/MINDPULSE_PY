@@ -395,6 +395,8 @@ if (quizForm) {
             const answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
             answers[e.target.name] = e.target.value;
             localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
+            console.log('💾 Resposta salva no localStorage:', e.target.name, '=', e.target.value);
+            console.log('📦 Todas as respostas no localStorage:', answers);
         }
     });
 }
@@ -410,7 +412,10 @@ function goToQuestion(index) {
         // Garante que salva com o nome exato
         answers[selected.name] = selected.value;
         localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
-        console.log('Navegando - Resposta salva:', selected.name, '=', selected.value);
+        console.log('💾 Navegando - Resposta salva:', selected.name, '=', selected.value);
+        console.log('📦 Todas as respostas após salvar:', answers);
+    } else {
+        console.warn('⚠️ Navegando sem resposta selecionada para a pergunta atual');
     }
     
     // Pequeno delay para garantir que o localStorage foi salvo
@@ -431,11 +436,12 @@ function submitQuiz(event) {
         // Garante que o nome da pergunta está correto (question_ID)
         const questionName = selected.name;
         answers[questionName] = selected.value;
-        console.log('Submit - Resposta atual salva:', questionName, '=', selected.value);
+        console.log('✅ Submit - Resposta atual salva:', questionName, '=', selected.value);
     }
     
-    // Debug: mostra todas as respostas coletadas
-    console.log('Todas as respostas antes de normalizar:', answers);
+    // Debug: mostra todas as respostas coletadas do localStorage
+    console.log('📦 Todas as respostas do localStorage:', answers);
+    console.log('📊 Total de respostas coletadas:', Object.keys(answers).length);
     
     // Garante que todas as respostas estão no formato correto (question_ID: choice_id)
     const normalizedAnswers = {};
@@ -448,11 +454,15 @@ function submitQuiz(event) {
         // Garante que o valor é string e não está vazio
         if (value && String(value).trim() !== '') {
             normalizedAnswers[questionId] = String(value);
+            console.log(`  ✓ Pergunta ${questionId}: Escolha ${value}`);
+        } else {
+            console.warn(`  ✗ Pergunta ${questionId}: Valor vazio ou inválido (${value})`);
         }
     }
     
     // Debug: mostra respostas normalizadas
-    console.log('Respostas normalizadas:', normalizedAnswers);
+    console.log('✅ Respostas normalizadas finais:', normalizedAnswers);
+    console.log('📊 Total de respostas normalizadas:', Object.keys(normalizedAnswers).length);
     
     // Valida se tem pelo menos uma resposta
     if (Object.keys(normalizedAnswers).length === 0) {
@@ -463,6 +473,7 @@ function submitQuiz(event) {
     
     // Adiciona todas as respostas normalizadas ao form
     document.getElementById('answersJson').value = JSON.stringify(normalizedAnswers);
+    console.log('📤 Enviando answers_json:', document.getElementById('answersJson').value);
     
     // Limpa localStorage após submit
     localStorage.removeItem(`quiz_${quizId}_answers`);

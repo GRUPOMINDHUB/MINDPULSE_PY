@@ -1302,26 +1302,32 @@ def quiz_take(request, training_slug, quiz_id):
         
         # PRIORIDADE 1: Tenta pegar do POST (respostas diretas do form)
         for key, value in request.POST.items():
+            # Ignora campos do sistema
+            if key in ['csrfmiddlewaretoken', 'question_index', 'answers_json']:
+                continue
             if key.startswith('question_'):
                 question_id = key.replace('question_', '')
                 # Garante que o valor seja string para consistência
-                answers[str(question_id)] = str(value)
+                answers[str(question_id)] = str(value).strip()
         
-        # PRIORIDADE 2: Se não tem respostas no POST, tenta pegar do answers_json (localStorage)
-        if not answers:
-            answers_str = request.POST.get('answers_json', '{}')
-            try:
-                answers = json.loads(answers_str)
-                # Normaliza: remove 'question_' do início das chaves e converte para string
-                normalized_answers = {}
-                for k, v in answers.items():
-                    # Remove 'question_' se existir
-                    question_id = str(k).replace('question_', '')
-                    normalized_answers[question_id] = str(v)
-                answers = normalized_answers
-            except Exception as e:
-                # Se der erro, deixa answers vazio
-                answers = {}
+        # PRIORIDADE 2: SEMPRE tenta pegar do answers_json (localStorage) e MERGE com POST
+        # Isso garante que todas as respostas sejam capturadas, mesmo que algumas venham do POST
+        answers_str = request.POST.get('answers_json', '{}')
+        try:
+            json_answers = json.loads(answers_str)
+            # Normaliza: remove 'question_' do início das chaves e converte para string
+            for k, v in json_answers.items():
+                # Remove 'question_' se existir
+                question_id = str(k).replace('question_', '')
+                clean_value = str(v).strip()
+                if clean_value:  # Só adiciona se não estiver vazio
+                    # MERGE: Se já existe no answers (do POST), mantém; senão, adiciona do JSON
+                    if question_id not in answers:
+                        answers[question_id] = clean_value
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f'Erro ao processar answers_json: {e}')
+            # Se der erro, continua com answers do POST
         
         # PRIORIDADE 3: Se ainda não tem, tenta pegar do body JSON (se vier via AJAX)
         if not answers:
@@ -1342,32 +1348,33 @@ def quiz_take(request, training_slug, quiz_id):
             messages.error(request, 'Nenhuma resposta foi enviada. Por favor, responda todas as perguntas.')
             return redirect('trainings:content_player', training_slug=training.slug, content_type='quiz', content_id=quiz_id)
         
-        # DEBUG: Log das respostas recebidas
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f'Quiz {quiz.id} - Respostas recebidas: {answers}')
-        
-        # Valida se todas as perguntas têm resposta
-        quiz.refresh_from_db()
-        total_questions = quiz.questions.count()
-        if len(answers) < total_questions:
-            logger.warning(f'Quiz {quiz.id} - Apenas {len(answers)} de {total_questions} perguntas foram respondidas')
-        
         # DEBUG: Log das respostas recebidas ANTES de criar tentativa
         import logging
         logger = logging.getLogger(__name__)
         logger.info(f'=== QUIZ {quiz.id} - PROCESSANDO RESPOSTAS ===')
-        logger.info(f'Respostas recebidas: {answers}')
+        logger.info(f'POST completo: {dict(request.POST)}')
+        logger.info(f'answers_json recebido: {request.POST.get("answers_json", "NÃO ENVIADO")}')
+        logger.info(f'Respostas finais processadas: {answers}')
         
-        # Busca todas as perguntas e escolhas para debug
+        # Valida se todas as perguntas têm resposta
         quiz.refresh_from_db()
-        all_questions = list(quiz.questions.all().prefetch_related('choices'))
-        logger.info(f'Total de perguntas no quiz: {len(all_questions)}')
+        all_questions = list(quiz.questions.all().prefetch_related('choices').order_by('order'))
+        total_questions = len(all_questions)
+        logger.info(f'Total de perguntas no quiz: {total_questions}')
+        
+        # DEBUG: Mostra todas as perguntas e suas escolhas corretas
         for q in all_questions:
-            choices_info = [(c.id, c.text, c.is_correct) for c in q.choices.all()]
+            choices_info = [(c.id, c.text[:30], c.is_correct) for c in q.choices.all()]
+            correct_choices = [c.id for c in q.choices.all() if c.is_correct]
             logger.info(f'Pergunta {q.id} ({q.text[:50]}): Escolhas {choices_info}')
+            logger.info(f'  -> Escolhas CORRETAS: {correct_choices}')
             if str(q.id) in answers:
-                logger.info(f'  -> Resposta selecionada: {answers[str(q.id)]}')
+                logger.info(f'  -> Resposta selecionada pelo usuário: {answers[str(q.id)]}')
+            else:
+                logger.warning(f'  -> ⚠️ NENHUMA RESPOSTA para pergunta {q.id}')
+        
+        if len(answers) < total_questions:
+            logger.warning(f'Quiz {quiz.id} - Apenas {len(answers)} de {total_questions} perguntas foram respondidas')
         
         # Cria tentativa com as respostas normalizadas
         attempt = UserQuizAttempt.objects.create(
