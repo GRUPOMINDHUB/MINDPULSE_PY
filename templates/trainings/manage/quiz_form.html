@@ -120,15 +120,7 @@
                         
                         <!-- Opções de Resposta -->
                         <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <label class="block text-sm font-medium text-gray-400">Opções de Resposta *</label>
-                                <button type="button" onclick="addChoice(this)" class="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                    </svg>
-                                    Adicionar Opção
-                                </button>
-                            </div>
+                            <label class="block text-sm font-medium text-gray-400 mb-3">Opções de Resposta *</label>
                             
                             <div class="choices-container space-y-3" data-question-id="{{ question_form.instance.id|default:'' }}" data-question-index="{{ forloop.counter0 }}">
                                 {% if question_form.instance.pk and choice_formsets %}
@@ -217,19 +209,19 @@ function addQuestion() {
                 </div>
                 
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <label class="block text-sm font-medium text-gray-400">Opções de Resposta *</label>
-                        <button type="button" onclick="addChoice(this)" class="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            Adicionar Opção
-                        </button>
-                    </div>
+                    <label class="block text-sm font-medium text-gray-400 mb-3">Opções de Resposta *</label>
                     
                     <div class="choices-container space-y-3" data-question-index="${questionIndex}">
-                        <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta acima</div>
+                        <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
                     </div>
+                    
+                    <!-- Botão Adicionar Opção -->
+                    <button type="button" onclick="addChoice(this)" class="mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Adicionar Opção
+                    </button>
                 </div>
             </div>
         </div>
