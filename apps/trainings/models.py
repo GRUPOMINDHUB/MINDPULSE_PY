@@ -556,62 +556,63 @@ class UserQuizAttempt(TimeStampedModel):
             return 0
         
         correct = 0
-        # Busca todas as escolhas de uma vez para otimizar e debug
-        all_choices = Choice.objects.filter(question__in=questions).select_related('question')
+        import logging
+        logger = logging.getLogger(__name__)
         
-        # Cria mapa de escolhas corretas por pergunta
-        correct_choices_map = {}
-        # Cria mapa de todas as escolhas por pergunta (para debug)
-        all_choices_map = {}
-        
-        for choice in all_choices:
-            question_id = str(choice.question.id)
-            if question_id not in all_choices_map:
-                all_choices_map[question_id] = []
-            all_choices_map[question_id].append({
-                'id': choice.id,
-                'text': choice.text,
-                'is_correct': choice.is_correct
-            })
-            
-            if choice.is_correct:
-                if question_id not in correct_choices_map:
-                    correct_choices_map[question_id] = []
-                correct_choices_map[question_id].append(choice.id)
+        logger.info(f'=== CALCULANDO PONTUAÇÃO - QUIZ {self.quiz.id} ===')
+        logger.info(f'Respostas recebidas: {self.answers}')
+        logger.info(f'Total de perguntas: {total}')
         
         # Processa cada pergunta
         for question in questions:
             question_id_str = str(question.id)
+            logger.info(f'\n--- Processando Pergunta {question.id} ({question.text[:50]}) ---')
+            
+            # Busca todas as escolhas desta pergunta (força nova query)
+            question_choices = list(Choice.objects.filter(question=question))
+            correct_choices = [c for c in question_choices if c.is_correct]
+            logger.info(f'Escolhas da pergunta: {[(c.id, c.text[:30], c.is_correct) for c in question_choices]}')
+            logger.info(f'Escolhas CORRETAS: {[c.id for c in correct_choices]}')
             
             # Tenta pegar a resposta de várias formas
             selected_choice_id = None
             if question_id_str in self.answers:
                 selected_choice_id = self.answers[question_id_str]
+                logger.info(f'Resposta encontrada em answers[{question_id_str}]: {selected_choice_id}')
             elif question.id in self.answers:
                 selected_choice_id = self.answers[question.id]
+                logger.info(f'Resposta encontrada em answers[{question.id}]: {selected_choice_id}')
             elif f'question_{question.id}' in self.answers:
                 selected_choice_id = self.answers[f'question_{question.id}']
+                logger.info(f'Resposta encontrada em answers[question_{question.id}]: {selected_choice_id}')
+            else:
+                logger.warning(f'NENHUMA RESPOSTA ENCONTRADA para pergunta {question.id}')
             
             if selected_choice_id:
                 # Converte para int para comparar
                 try:
                     selected_choice_id = int(selected_choice_id)
                 except (ValueError, TypeError):
-                    # Se não conseguir converter, pula esta pergunta
+                    logger.error(f'Erro ao converter selected_choice_id: {selected_choice_id}')
                     continue
                 
-                # DEBUG: Verifica diretamente no banco se a escolha é correta
+                # Verifica diretamente no banco se a escolha é correta
                 try:
                     selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+                    logger.info(f'Escolha selecionada encontrada: ID {selected_choice.id}, Texto: "{selected_choice.text}", Correta: {selected_choice.is_correct}')
+                    
                     if selected_choice.is_correct:
                         correct += 1
+                        logger.info(f'✓ RESPOSTA CORRETA! Total: {correct}')
+                    else:
+                        logger.info(f'✗ Resposta incorreta')
                 except Choice.DoesNotExist:
-                    # Se a escolha não existe, pode ter sido deletada ou alterada
-                    # Tenta verificar se o ID está na lista de corretas como fallback
-                    if question_id_str in correct_choices_map:
-                        if selected_choice_id in correct_choices_map[question_id_str]:
-                            correct += 1
-            # Se não tem resposta, não conta como correta (já está implícito)
+                    logger.error(f'Escolha ID {selected_choice_id} não existe para pergunta {question.id}')
+            else:
+                logger.warning(f'Pergunta {question.id} sem resposta')
+        
+        logger.info(f'\n=== RESULTADO FINAL ===')
+        logger.info(f'Corretas: {correct}/{total}')
         
         self.correct_answers = correct
         self.total_questions = total

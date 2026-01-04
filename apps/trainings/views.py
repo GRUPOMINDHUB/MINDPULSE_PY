@@ -1411,18 +1411,33 @@ def quiz_result(request, training_slug, attempt_id):
     # Carrega perguntas com opções e respostas corretas
     questions = []
     for question in quiz.questions.all().prefetch_related('choices').order_by('order'):
-        selected_choice_id = attempt.answers.get(str(question.id))
+        # Tenta pegar a resposta de várias formas
+        selected_choice_id = None
+        question_id_str = str(question.id)
+        
+        if question_id_str in attempt.answers:
+            selected_choice_id = attempt.answers[question_id_str]
+        elif question.id in attempt.answers:
+            selected_choice_id = attempt.answers[question.id]
+        elif f'question_{question.id}' in attempt.answers:
+            selected_choice_id = attempt.answers[f'question_{question.id}']
+        
         selected_choice = None
         if selected_choice_id:
             try:
+                # Converte para int se necessário
+                selected_choice_id = int(selected_choice_id)
                 selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
-            except Choice.DoesNotExist:
-                pass
+            except (ValueError, TypeError, Choice.DoesNotExist):
+                selected_choice = None
+        
+        # Verifica se está correto
+        is_correct = selected_choice.is_correct if selected_choice else False
         
         questions.append({
             'question': question,
             'selected_choice': selected_choice,
-            'is_correct': selected_choice.is_correct if selected_choice else False,
+            'is_correct': is_correct,
         })
     
     # Calcula progresso atualizado
