@@ -73,14 +73,14 @@
                 {% endif %}
                 
                 <!-- Progress -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 mb-4">
                     <div class="flex-1">
                         <div class="flex items-center justify-between text-sm mb-2">
                             <span class="text-gray-500">Progresso</span>
                             <span class="text-white font-medium" id="progressText">{{ total_progress }}%</span>
                         </div>
                         <div class="h-3 bg-dark-600 rounded-full overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-500 {% if total_progress == 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
+                            <div id="progressBar" class="h-full rounded-full transition-all duration-500 {% if total_progress == 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
                                  style="width: {{ total_progress }}%"></div>
                         </div>
                     </div>
@@ -90,6 +90,22 @@
                         <p class="text-xs text-gray-500">pontos</p>
                     </div>
                 </div>
+                
+                <!-- Botão Iniciar Treinamento -->
+                {% if content_items %}
+                <div class="mt-4">
+                    {% with first_item=content_items|first %}
+                    <a href="{% url 'trainings:content_player' training.slug first_item.type first_item.id %}" 
+                       class="btn-primary w-full md:w-auto inline-flex items-center justify-center gap-2 text-lg py-4 px-8">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {% if total_progress == 0 %}Iniciar Treinamento{% elif total_progress == 100 %}Revisar Treinamento{% else %}Continuar Treinamento{% endif %}
+                    </a>
+                    {% endwith %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -247,13 +263,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const progressBar = document.getElementById('progressBar');
                 const progressText = document.getElementById('progressText');
                 if (progressBar && progressText) {
-                    progressBar.style.width = data.training.total_progress + '%';
-                    progressText.textContent = data.training.total_progress + '%';
+                    const newProgress = data.training.total_progress || 0;
+                    progressBar.style.width = newProgress + '%';
+                    progressText.textContent = Math.round(newProgress) + '%';
                     
                     // Atualiza cor se completou
-                    if (data.training.is_completed) {
+                    if (data.training.is_completed || newProgress >= 100) {
                         progressBar.classList.remove('bg-gradient-to-r', 'from-brand-500', 'to-brand-400');
                         progressBar.classList.add('bg-green-500');
+                    } else {
+                        progressBar.classList.remove('bg-green-500');
+                        progressBar.classList.add('bg-gradient-to-r', 'from-brand-500', 'to-brand-400');
                     }
                 }
                 

@@ -890,7 +890,7 @@ def get_training_status(request, training_id):
         'training': {
             'id': training.id,
             'title': training.title,
-            'total_progress': total_progress,
+            'total_progress': round(total_progress, 1),
             'is_completed': is_completed,
         },
         'content_status': content_status,
