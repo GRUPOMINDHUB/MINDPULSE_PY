@@ -46,16 +46,23 @@ def training_list(request):
         if not company:
             return render(request, 'core/no_company.html')
         
-        # Filtra treinamentos: assigned_users contém o usuário OU assigned_users está vazio (global)
-        from django.db.models import Count
-        trainings = Training.objects.filter(
-            company=company,
-            is_active=True
-        ).annotate(
-            assigned_count=Count('assigned_users')
-        ).filter(
-            Q(assigned_users=user) | Q(assigned_count=0)
-        ).distinct().prefetch_related('videos', 'assigned_users')
+        # Gestor vê todos os treinamentos da empresa
+        if request.is_gestor:
+            trainings = Training.objects.filter(
+                company=company,
+                is_active=True
+            ).prefetch_related('videos', 'assigned_users')
+        else:
+            # Colaborador: vê apenas treinamentos atribuídos a ele OU globais (sem assigned_users)
+            from django.db.models import Count
+            trainings = Training.objects.filter(
+                company=company,
+                is_active=True
+            ).annotate(
+                assigned_count=Count('assigned_users')
+            ).filter(
+                Q(assigned_users=user) | Q(assigned_count=0)
+            ).distinct().prefetch_related('videos', 'assigned_users')
     
     # Adiciona progresso do usuário a cada treinamento
     training_data = []
