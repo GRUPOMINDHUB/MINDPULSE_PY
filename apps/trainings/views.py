@@ -748,6 +748,75 @@ def get_company_users(request):
 
 
 @login_required
+def get_training_status(request, training_id):
+    """
+    API para obter status atualizado do treinamento (progresso, quizzes aprovados, etc).
+    """
+    training = get_object_or_404(Training, pk=training_id)
+    user = request.user
+    
+    # Verifica acesso
+    is_admin = user.is_superuser
+    if not is_admin:
+        company = request.current_company
+        if not company or training.company != company:
+            return JsonResponse({'error': 'Não autorizado'}, status=403)
+    
+    # Calcula progresso
+    total_progress = training.get_user_progress(user)
+    is_completed = training.is_completed_by(user)
+    
+    # Status de vídeos e quizzes
+    content_status = []
+    videos = training.videos.filter(is_active=True).order_by('order')
+    quizzes = training.quizzes.filter(is_active=True).order_by('order')
+    
+    # Vídeos
+    user_progress = UserProgress.objects.filter(
+        user=user,
+        video__in=videos
+    ).values('video_id', 'completed')
+    progress_map = {p['video_id']: p['completed'] for p in user_progress}
+    
+    for video in videos:
+        content_status.append({
+            'type': 'video',
+            'id': video.id,
+            'order': video.order,
+            'completed': progress_map.get(video.id, False),
+        })
+    
+    # Quizzes
+    for quiz in quizzes:
+        # Verifica se foi aprovado (pega a última tentativa)
+        latest_attempt = UserQuizAttempt.objects.filter(
+            user=user,
+            quiz=quiz
+        ).order_by('-completed_at').first()
+        
+        content_status.append({
+            'type': 'quiz',
+            'id': quiz.id,
+            'order': quiz.order,
+            'completed': latest_attempt.is_passed if latest_attempt else False,
+        })
+    
+    # Ordena por ordem
+    content_status.sort(key=lambda x: x['order'])
+    
+    return JsonResponse({
+        'success': True,
+        'training': {
+            'id': training.id,
+            'title': training.title,
+            'total_progress': total_progress,
+            'is_completed': is_completed,
+        },
+        'content_status': content_status,
+    })
+
+
+@login_required
 @gestor_required
 def quiz_create(request, training_id):
     """
