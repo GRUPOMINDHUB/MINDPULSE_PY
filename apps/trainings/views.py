@@ -494,9 +494,12 @@ def training_manage_detail(request, pk):
             if quiz_form.is_valid():
                 quiz = quiz_form.save(commit=False)
                 quiz.training = training
-                # Define ordem como último item (vídeos + quizzes)
-                total_items = videos.count() + quizzes.count()
-                quiz.order = total_items + 1
+                # Define ordem automaticamente se não foi informada
+                if not quiz.order or quiz.order == 0:
+                    # Pega a maior ordem entre vídeos e quizzes
+                    max_video_order = videos.aggregate(Max('order'))['order__max'] or 0
+                    max_quiz_order = quizzes.aggregate(Max('order'))['order__max'] or 0
+                    quiz.order = max(max_video_order, max_quiz_order) + 1
                 quiz.save()
                 messages.success(request, f'Quiz "{quiz.title}" criado! Agora você pode adicionar perguntas editando-o.')
                 return redirect('trainings:manage_detail', pk=pk)
