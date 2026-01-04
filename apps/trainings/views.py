@@ -1185,6 +1185,8 @@ def quiz_edit(request, quiz_id):
                         instance=question,
                         prefix=f'choices_{question.id}'
                     )
+                # Força refresh antes de renderizar
+                quiz.refresh_from_db()
                 context = {
                     'training': training,
                     'quiz': quiz,
@@ -1194,6 +1196,8 @@ def quiz_edit(request, quiz_id):
                 }
                 return render(request, 'trainings/manage/quiz_form.html', context)
             
+            # Força refresh do quiz após salvar
+            quiz.refresh_from_db()
             messages.success(request, 'Quiz atualizado com sucesso!')
             return redirect('trainings:manage_detail', pk=training.pk)
     else:
