@@ -221,6 +221,20 @@ function updateProgress() {
             hasCompleted = true;
             document.getElementById('completionBadge').classList.remove('hidden');
             
+            // Desbloqueia o botão "Próximo" quando completa
+            const nextBtn = document.getElementById('nextVideoBtn');
+            if (nextBtn && nextBtn.disabled) {
+                const nextVideoUrl = nextBtn.getAttribute('data-next-url');
+                if (nextVideoUrl) {
+                    nextBtn.outerHTML = `<a href="${nextVideoUrl}" class="btn-primary flex items-center gap-2" id="nextVideoBtn">
+                        Próximo
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>`;
+                }
+            }
+            
             if (data.training_completed) {
                 showRewardModal(data.message);
             }
