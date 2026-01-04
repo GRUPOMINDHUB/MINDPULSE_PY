@@ -735,79 +735,82 @@ def report_management(request):
     start_date = today.replace(day=1)  # Primeiro dia do mês
     end_date = today
     
-    # Processar formulário
-    if request.method == 'GET':
-        # Atalhos de período
-        period = request.GET.get('period', '')
-        if period == 'week':
-            # Semana atual
-            start_date = today - timedelta(days=today.weekday())
-            end_date = today
-        elif period == 'month':
-            # Mês atual
-            start_date = today.replace(day=1)
-            end_date = today
-        elif period == 'quarter':
-            # Últimos 3 meses
-            end_date = today
-            start_date = (end_date - timedelta(days=90)).replace(day=1)
-        else:
-            # Datas customizadas
-            start_str = request.GET.get('start_date', '')
-            end_str = request.GET.get('end_date', '')
-            if start_str:
-                try:
-                    start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
-                except ValueError:
-                    pass
-            if end_str:
-                try:
-                    end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
-                except ValueError:
-                    pass
-        
-        # Usuário selecionado
-        user_id = request.GET.get('user', '')
-        user = None
-        if user_id:
-            try:
-                user = get_object_or_404(User, pk=user_id)
-                # Verificar segurança multi-tenant
-                if not UserCompany.objects.filter(
-                    user=user,
-                    company=company,
-                    is_active=True
-                ).exists():
-                    messages.error(request, 'Usuário não pertence à empresa selecionada.')
-                    user = None
-            except (ValueError, Http404):
-                messages.error(request, 'Usuário inválido.')
-                user = None
-        
-        # Ação: Visualizar ou Baixar
-        action = request.GET.get('action', 'view')
-        
-        if action == 'download':
-            # Gerar PDF
-            return _generate_pdf(request, company, start_date, end_date, user)
-        else:
-            # Visualizar na tela
-            report_data = get_report_data(company, start_date, end_date, user)
-            return render(request, 'core/reports/view.html', {
-                'report_data': report_data,
-                'users': users,
-                'selected_user_id': user_id if user else '',
-                'start_date': start_date.strftime('%Y-%m-%d'),
-                'end_date': end_date.strftime('%Y-%m-%d'),
-                'selected_period': period,
-            })
+    # Verificar se há parâmetros GET (se não houver, mostrar formulário)
+    has_params = bool(request.GET.get('action') or request.GET.get('start_date') or request.GET.get('period'))
     
-    # GET sem parâmetros: mostrar formulário
-    return render(request, 'core/reports/management.html', {
-        'users': users,
-        'start_date': start_date.strftime('%Y-%m-%d'),
-        'end_date': end_date.strftime('%Y-%m-%d'),
-    })
+    if not has_params:
+        # GET sem parâmetros: mostrar formulário
+        return render(request, 'core/reports/management.html', {
+            'users': users,
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+        })
+    
+    # Processar formulário quando há parâmetros
+    # Atalhos de período
+    period = request.GET.get('period', '')
+    if period == 'week':
+        # Semana atual
+        start_date = today - timedelta(days=today.weekday())
+        end_date = today
+    elif period == 'month':
+        # Mês atual
+        start_date = today.replace(day=1)
+        end_date = today
+    elif period == 'quarter':
+        # Últimos 3 meses
+        end_date = today
+        start_date = (end_date - timedelta(days=90)).replace(day=1)
+    else:
+        # Datas customizadas
+        start_str = request.GET.get('start_date', '')
+        end_str = request.GET.get('end_date', '')
+        if start_str:
+            try:
+                start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        if end_str:
+            try:
+                end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+    
+    # Usuário selecionado
+    user_id = request.GET.get('user', '')
+    user = None
+    if user_id:
+        try:
+            user = get_object_or_404(User, pk=user_id)
+            # Verificar segurança multi-tenant
+            if not UserCompany.objects.filter(
+                user=user,
+                company=company,
+                is_active=True
+            ).exists():
+                messages.error(request, 'Usuário não pertence à empresa selecionada.')
+                user = None
+        except (ValueError, Http404):
+            messages.error(request, 'Usuário inválido.')
+            user = None
+    
+    # Ação: Visualizar ou Baixar
+    action = request.GET.get('action', 'view')
+    
+    if action == 'download':
+        # Gerar PDF
+        return _generate_pdf(request, company, start_date, end_date, user)
+    else:
+        # Visualizar na tela
+        report_data = get_report_data(company, start_date, end_date, user)
+        return render(request, 'core/reports/view.html', {
+            'report_data': report_data,
+            'users': users,
+            'selected_user_id': user_id if user else '',
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'selected_period': period,
+        })
 
 
 def _generate_pdf(request, company, start_date, end_date, user=None):
