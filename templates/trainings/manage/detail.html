@@ -135,6 +135,9 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- SortableJS para drag and drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
 <script>
 function deleteVideo(videoId) {
     if (!confirm('Tem certeza que deseja excluir este vídeo?')) return;
@@ -168,6 +171,62 @@ function handleVideoUpload(event) {
     // O formulário será submetido normalmente
     // O feedback permanecerá visível até o reload da página
 }
+
+// Inicializa drag and drop
+document.addEventListener('DOMContentLoaded', function() {
+    const videoList = document.getElementById('videoList');
+    
+    if (videoList) {
+        const sortable = Sortable.create(videoList, {
+            handle: '.cursor-move',
+            animation: 150,
+            ghostClass: 'opacity-50',
+            onEnd: function(evt) {
+                // Coleta os IDs e novas ordens
+                const videos = [];
+                const items = videoList.querySelectorAll('[data-video-id]');
+                
+                items.forEach((item, index) => {
+                    const videoId = parseInt(item.getAttribute('data-video-id'));
+                    videos.push({
+                        id: videoId,
+                        order: index + 1
+                    });
+                    
+                    // Atualiza o número de ordem na interface
+                    const orderElement = item.querySelector('.w-8.h-8.bg-dark-600');
+                    if (orderElement) {
+                        orderElement.textContent = index + 1;
+                    }
+                });
+                
+                // Envia para o servidor
+                fetch('{% url "trainings:video_reorder" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ videos: videos })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Opcional: mostrar feedback visual de sucesso
+                        console.log('Ordem atualizada com sucesso!');
+                    } else {
+                        console.error('Erro ao atualizar ordem');
+                        location.reload(); // Recarrega em caso de erro
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    location.reload(); // Recarrega em caso de erro
+                });
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
 
