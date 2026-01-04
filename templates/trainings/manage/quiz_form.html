@@ -151,9 +151,17 @@
                                     {% endfor %}
                                 {% else %}
                                     <!-- Placeholder para novas perguntas -->
-                                    <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta acima</div>
+                                    <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
                                 {% endif %}
                             </div>
+                            
+                            <!-- Botão Adicionar Opção -->
+                            <button type="button" onclick="addChoice(this)" class="mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Adicionar Opção
+                            </button>
                         </div>
                     </div>
                 </div>
