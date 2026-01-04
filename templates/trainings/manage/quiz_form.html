@@ -227,7 +227,17 @@ function addQuestion() {
         </div>
     `;
     
-    container.insertAdjacentHTML('beforeend', questionHtml);
+    // Insere antes do botão "Adicionar Pergunta"
+    const addQuestionBtn = document.querySelector('button[onclick="addQuestion()"]');
+    if (addQuestionBtn && addQuestionBtn.parentElement) {
+        addQuestionBtn.parentElement.insertBefore(
+            document.createRange().createContextualFragment(questionHtml),
+            addQuestionBtn
+        );
+    } else {
+        container.insertAdjacentHTML('beforeend', questionHtml);
+    }
+    
     totalForms.value = parseInt(totalForms.value) + 1;
     questionIndex++;
     updateQuestionNumbers();
