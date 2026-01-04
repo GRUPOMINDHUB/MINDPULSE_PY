@@ -188,7 +188,7 @@
                 Dados da Empresa
             </h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
                 <!-- Cargo -->
                 <div>
                     <label for="id_role" class="block text-sm font-medium text-gray-400 mb-2">Cargo</label>
@@ -200,21 +200,9 @@
                         </option>
                         {% endfor %}
                     </select>
-                    <p class="mt-1 text-xs text-gray-500">Define o nível de acesso do usuário</p>
+                    <p class="mt-1 text-xs text-gray-500">Define o nível de acesso do usuário. A matrícula será gerada automaticamente.</p>
                     {% if form.role.errors %}
                     <p class="mt-1 text-sm text-red-400">{{ form.role.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                
-                <!-- Matrícula -->
-                <div>
-                    <label for="id_employee_id" class="block text-sm font-medium text-gray-400 mb-2">Matrícula</label>
-                    <input type="text" name="employee_id" id="id_employee_id" 
-                           value="{{ form.employee_id.value|default:'' }}"
-                           class="form-input" 
-                           placeholder="ID interno (opcional)">
-                    {% if form.employee_id.errors %}
-                    <p class="mt-1 text-sm text-red-400">{{ form.employee_id.errors.0 }}</p>
                     {% endif %}
                 </div>
             </div>

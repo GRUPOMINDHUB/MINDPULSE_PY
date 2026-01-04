@@ -185,26 +185,31 @@ class CollaboratorForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'}),
         help_text='Selecione o cargo do usuário na empresa'
     )
-    employee_id = forms.CharField(
-        label='Matrícula',
-        max_length=50,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-input',
-            'placeholder': 'ID interno (opcional)'
-        })
-    )
     
     class Meta:
         model = UserCompany
-        fields = ['role', 'employee_id']
+        fields = ['role']
     
-    def __init__(self, company, *args, **kwargs):
+    def __init__(self, company, *args, is_admin_master=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.company = company
+        self.is_admin_master = is_admin_master
+        
         # Filtra roles da empresa do gestor logado (segurança multi-tenant)
         if company:
-            self.fields['role'].queryset = Role.objects.filter(company=company).order_by('name')
+            # Admin Master pode criar qualquer nível
+            # Gestor só pode criar Gestor ou Colaborador (não Admin)
+            if is_admin_master:
+                self.fields['role'].queryset = Role.objects.filter(
+                    company=company
+                ).order_by('name')
+            else:
+                # Gestor: exclui roles de nível admin_master
+                self.fields['role'].queryset = Role.objects.filter(
+                    company=company
+                ).exclude(
+                    level='admin_master'
+                ).order_by('name')
     
     def clean_email(self):
         """Valida se o email já existe na empresa."""
@@ -267,13 +272,22 @@ class CollaboratorForm(forms.ModelForm):
             user.save()
             # TODO: Enviar email com senha temporária
         
+        # Gera matrícula automaticamente (EMPRESA-ANO-SEQUENCIAL)
+        import datetime
+        year = datetime.datetime.now().year
+        company_prefix = self.company.slug[:3].upper() if self.company.slug else 'EMP'
+        
+        # Conta quantos usuários já existem na empresa para gerar sequencial
+        count = UserCompany.objects.filter(company=self.company).count() + 1
+        employee_id = f"{company_prefix}-{year}-{count:04d}"
+        
         # Cria o vínculo com a empresa
         user_company, _ = UserCompany.objects.update_or_create(
             user=user,
             company=self.company,
             defaults={
                 'role': self.cleaned_data['role'],
-                'employee_id': self.cleaned_data.get('employee_id', ''),
+                'employee_id': employee_id,
                 'is_active': True,
             }
         )

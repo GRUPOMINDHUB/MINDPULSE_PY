@@ -137,8 +137,10 @@ def collaborator_create(request):
         messages.error(request, 'Selecione uma empresa no menu lateral antes de adicionar um colaborador.')
         return redirect('accounts:collaborators_list')
     
+    is_admin = request.user.is_superuser
+    
     if request.method == 'POST':
-        form = CollaboratorForm(company, request.POST)
+        form = CollaboratorForm(company, request.POST, is_admin_master=is_admin)
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -149,13 +151,13 @@ def collaborator_create(request):
                     
                 messages.success(
                     request, 
-                    f'{role_name} {user_company.user.get_full_name()} cadastrado com sucesso!'
+                    f'{role_name} {user_company.user.get_full_name()} cadastrado com sucesso! Matrícula: {user_company.employee_id}'
                 )
                 return redirect('accounts:collaborators_list')
             except Exception as e:
                 messages.error(request, f'Erro ao cadastrar: {str(e)}')
     else:
-        form = CollaboratorForm(company)
+        form = CollaboratorForm(company, is_admin_master=is_admin)
     
     context = {
         'form': form,
