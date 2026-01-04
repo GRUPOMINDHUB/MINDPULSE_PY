@@ -236,12 +236,40 @@ def content_player(request, training_slug, content_type, content_id):
     videos = list(training.videos.filter(is_active=True).order_by('order'))
     quizzes = list(training.quizzes.filter(is_active=True).order_by('order'))
     
+    # Busca progresso do usuário
+    user_progress = UserProgress.objects.filter(
+        user=user,
+        video__in=videos
+    ).values('video_id', 'completed')
+    progress_map = {p['video_id']: p['completed'] for p in user_progress}
+    
+    # Busca tentativas de quiz do usuário
+    quiz_passed_map = {}
+    for quiz in quizzes:
+        latest_attempt = UserQuizAttempt.objects.filter(
+            user=user,
+            quiz=quiz
+        ).order_by('-completed_at').first()
+        quiz_passed_map[quiz.id] = latest_attempt.is_passed if latest_attempt else False
+    
     # Combina em lista unificada
     all_content = []
     for video in videos:
-        all_content.append({'type': 'video', 'id': video.id, 'order': video.order, 'object': video})
+        all_content.append({
+            'type': 'video', 
+            'id': video.id, 
+            'order': video.order, 
+            'object': video,
+            'completed': progress_map.get(video.id, False)
+        })
     for quiz in quizzes:
-        all_content.append({'type': 'quiz', 'id': quiz.id, 'order': quiz.order, 'object': quiz})
+        all_content.append({
+            'type': 'quiz', 
+            'id': quiz.id, 
+            'order': quiz.order, 
+            'object': quiz,
+            'completed': quiz_passed_map.get(quiz.id, False)
+        })
     all_content.sort(key=lambda x: x['order'])
     
     # Busca o conteúdo atual
@@ -308,8 +336,8 @@ def content_player(request, training_slug, content_type, content_id):
         })
     elif content_type == 'quiz':
         quiz = current_content['object']
-        # Busca a primeira pergunta não respondida ou a primeira pergunta
-        questions = list(quiz.questions.filter(is_active=True).order_by('order'))
+        # Busca todas as perguntas ordenadas
+        questions = list(quiz.questions.all().order_by('order'))
         current_question_index = request.GET.get('question', 0)
         try:
             current_question_index = int(current_question_index)
