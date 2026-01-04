@@ -235,6 +235,13 @@ def content_player(request, slug, content_type, content_id):
         'all_content': all_content,
         'current_index': current_index,
     }
+    
+    # Adiciona variáveis específicas para facilitar acesso no template
+    if content_type == 'quiz':
+        context['quiz'] = content
+    elif content_type == 'video':
+        context['video'] = content
+    
     return render(request, 'trainings/player.html', context)
 
 
