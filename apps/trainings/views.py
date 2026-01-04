@@ -232,7 +232,10 @@ def content_player(request, training_slug, content_type, content_id):
             is_active=True
         )
     
-    # Busca todos os conteúdos ordenados
+    # Força refresh do training para pegar dados atualizados
+    training.refresh_from_db()
+    
+    # Busca todos os conteúdos ordenados (força nova query)
     videos = list(training.videos.filter(is_active=True).order_by('order'))
     quizzes = list(training.quizzes.filter(is_active=True).order_by('order'))
     
@@ -336,8 +339,10 @@ def content_player(request, training_slug, content_type, content_id):
         })
     elif content_type == 'quiz':
         quiz = current_content['object']
-        # Busca todas as perguntas ordenadas
-        questions = list(quiz.questions.all().order_by('order'))
+        # Força refresh do quiz para pegar dados atualizados
+        quiz.refresh_from_db()
+        # Busca todas as perguntas ordenadas (força nova query)
+        questions = list(quiz.questions.all().prefetch_related('choices').order_by('order'))
         current_question_index = request.GET.get('question', 0)
         try:
             current_question_index = int(current_question_index)
@@ -1273,6 +1278,9 @@ def quiz_take(request, training_slug, quiz_id):
     # O status de "Aprovado" será mantido, mas o usuário pode refazer quantas vezes quiser
     
     if request.method == 'POST':
+        # Força refresh do quiz para pegar dados atualizados
+        quiz.refresh_from_db()
+        
         # Processa respostas (pode vir do localStorage via JavaScript ou do form)
         answers = {}
         
@@ -1280,7 +1288,8 @@ def quiz_take(request, training_slug, quiz_id):
         for key, value in request.POST.items():
             if key.startswith('question_'):
                 question_id = key.replace('question_', '')
-                answers[question_id] = value
+                # Garante que o valor seja string para consistência
+                answers[str(question_id)] = str(value)
         
         # Se não tem respostas no POST, tenta pegar do body JSON (se vier via AJAX)
         if not answers:
@@ -1288,6 +1297,8 @@ def quiz_take(request, training_slug, quiz_id):
             try:
                 body_data = json.loads(request.body)
                 answers = body_data.get('answers', {})
+                # Normaliza para string
+                answers = {str(k): str(v) for k, v in answers.items()}
             except:
                 pass
         
@@ -1295,7 +1306,10 @@ def quiz_take(request, training_slug, quiz_id):
         if not answers:
             answers_str = request.POST.get('answers_json', '{}')
             try:
+                import json
                 answers = json.loads(answers_str)
+                # Normaliza para string
+                answers = {str(k): str(v) for k, v in answers.items()}
             except:
                 pass
         
@@ -1306,7 +1320,7 @@ def quiz_take(request, training_slug, quiz_id):
             answers=answers
         )
         
-        # Calcula nota
+        # Calcula nota (já faz refresh interno)
         score = attempt.calculate_score()
         
         # Redireciona para resultado

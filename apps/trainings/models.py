@@ -540,19 +540,40 @@ class UserQuizAttempt(TimeStampedModel):
     
     def calculate_score(self):
         """Calcula a nota baseada nas respostas."""
-        total = self.quiz.total_questions
+        # Força refresh do quiz para pegar dados atualizados
+        self.quiz.refresh_from_db()
+        
+        # Busca todas as perguntas do quiz (força nova query)
+        questions = list(self.quiz.questions.all().prefetch_related('choices'))
+        total = len(questions)
+        
         if total == 0:
+            self.correct_answers = 0
+            self.total_questions = 0
+            self.score = 0
+            self.is_passed = False
+            self.save()
             return 0
         
         correct = 0
-        for question in self.quiz.questions.all():
-            selected_choice_id = self.answers.get(str(question.id))
+        for question in questions:
+            # Tenta pegar a resposta como string ou int
+            selected_choice_id = self.answers.get(str(question.id)) or self.answers.get(question.id)
+            
             if selected_choice_id:
+                # Converte para int se necessário
+                try:
+                    selected_choice_id = int(selected_choice_id)
+                except (ValueError, TypeError):
+                    pass
+                
+                # Busca a escolha correta
                 try:
                     choice = Choice.objects.get(id=selected_choice_id, question=question)
                     if choice.is_correct:
                         correct += 1
                 except Choice.DoesNotExist:
+                    # Se a escolha não existe, pode ter sido deletada ou alterada
                     pass
         
         self.correct_answers = correct
