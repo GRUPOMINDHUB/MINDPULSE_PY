@@ -68,7 +68,7 @@
                     </div>
                 </div>
                 
-                <!-- Campo de ordem oculto (será definido automaticamente) -->
+                <!-- Campo de ordem oculto -->
                 <div class="hidden">{{ quiz_form.order }}</div>
                 
                 <div>
@@ -87,7 +87,7 @@
             <div id="questionsContainer" class="space-y-6">
                 {{ question_formset.management_form }}
                 {% for question_form in question_formset %}
-                <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="{{ forloop.counter0 }}">
+                <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="{{ forloop.counter0 }}" data-question-id="{{ question_form.instance.id|default:'' }}">
                     <div class="flex items-start justify-between mb-4">
                         <h3 class="text-lg font-semibold text-white">Pergunta {{ forloop.counter }}</h3>
                         <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
@@ -114,14 +114,23 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-400 mb-3">Opções de Resposta *</label>
                             
-                            <div class="choices-container space-y-3" data-question-id="{{ question_form.instance.id|default:'' }}" data-question-index="{{ forloop.counter0 }}">
+                            <!-- 
+                                IMPORTANTE: data-question-identifier é usado pelo JS para gerar nomes de campos
+                                Para perguntas existentes: usa o ID da pergunta
+                                Para perguntas novas: usa o índice do formset
+                            -->
+                            <div class="choices-container space-y-3" 
+                                 data-question-id="{{ question_form.instance.id|default:'' }}" 
+                                 data-question-index="{{ forloop.counter0 }}"
+                                 data-question-identifier="{% if question_form.instance.id %}{{ question_form.instance.id }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                                
                                 {% if question_form.instance.pk and choice_formsets %}
                                     {% for q_id, choice_formset in choice_formsets.items %}
                                         {% if q_id == question_form.instance.id %}
                                             {{ choice_formset.management_form }}
                                             {% for choice_form in choice_formset %}
-                                            <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors">
-                                                <span class="text-sm text-gray-500 font-medium min-w-[2rem]">{{ forloop.counter }}</span>
+                                            <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors" data-choice-index="{{ forloop.counter0 }}">
+                                                <span class="choice-number text-sm text-gray-500 font-medium min-w-[2rem]">{{ forloop.counter }}</span>
                                                 <div class="flex-1">
                                                     {{ choice_form.text }}
                                                 </div>
@@ -143,7 +152,7 @@
                                     {% endfor %}
                                 {% else %}
                                     <!-- Placeholder para novas perguntas -->
-                                    <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
+                                    <div class="placeholder-text text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
                                 {% endif %}
                             </div>
                             
@@ -158,7 +167,7 @@
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-12 text-gray-500">
+                <div class="empty-state text-center py-12 text-gray-500">
                     <p>Nenhuma pergunta adicionada ainda.</p>
                     <p class="text-sm mt-1">Clique em "Adicionar Pergunta" para começar.</p>
                 </div>
@@ -179,7 +188,7 @@
             <a href="{% url 'trainings:manage_detail' training.pk %}" class="px-6 py-3 border border-white text-white rounded-xl hover:bg-white hover:text-dark-900 transition-all duration-200">
                 Cancelar
             </a>
-            <button type="submit" class="btn-primary" onclick="return validateQuizForm(event)">
+            <button type="submit" class="btn-primary" onclick="return validateAndPrepareForm(event)">
                 {% if quiz %}Salvar Alterações{% else %}Criar Quiz{% endif %}
             </button>
         </div>
@@ -187,15 +196,42 @@
 </div>
 
 <script>
-let questionIndex = {{ question_formset.total_form_count|default:0 }};
+/**
+ * QUIZ FORM JAVASCRIPT
+ * 
+ * REGRAS IMPORTANTES:
+ * 1. Opções dinâmicas usam o padrão: choice_{identifier}_{index}_text
+ * 2. Para perguntas existentes: identifier = ID da pergunta (ex: choice_5_0_text)
+ * 3. Para perguntas novas: identifier = índice do formset (ex: choice_0_0_text)
+ * 4. O backend busca por TODAS as chaves que começam com choice_{identifier}_
+ *    então não precisa ser sequencial (0, 1, 2...)
+ */
 
+// Contador de perguntas (para novas perguntas)
+let questionFormsetIndex = {{ question_formset.total_form_count|default:0 }};
+
+/**
+ * Adiciona uma nova pergunta ao formulário
+ */
 function addQuestion() {
     const container = document.getElementById('questionsContainer');
     const totalForms = document.getElementById('id_questions-TOTAL_FORMS');
+    
+    // Remove empty state se existir
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const newIndex = questionFormsetIndex;
+    
     const questionHtml = `
-        <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" data-question-index="${questionIndex}">
+        <div class="question-item p-6 bg-dark-700 rounded-xl border border-dark-600" 
+             data-question-index="${newIndex}" 
+             data-question-id=""
+             data-is-new="true">
             <div class="flex items-start justify-between mb-4">
-                <h3 class="text-lg font-medium text-white">Pergunta ${questionIndex + 1}</h3>
+                <h3 class="text-lg font-medium text-white question-title">Pergunta ${getVisibleQuestionCount() + 1}</h3>
                 <button type="button" onclick="removeQuestion(this)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -206,24 +242,26 @@ function addQuestion() {
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-2">Pergunta *</label>
-                    <textarea name="questions-${questionIndex}-text" 
+                    <textarea name="questions-${newIndex}-text" 
                               class="form-input" 
                               rows="2" 
                               placeholder="Digite a pergunta..."
                               required></textarea>
-                    <input type="hidden" name="questions-${questionIndex}-id" value="">
-                    <input type="hidden" name="questions-${questionIndex}-DELETE" value="false">
-                    <input type="hidden" name="questions-${questionIndex}-order" value="${questionIndex + 1}">
+                    <input type="hidden" name="questions-${newIndex}-id" value="">
+                    <input type="hidden" name="questions-${newIndex}-DELETE" value="false">
+                    <input type="hidden" name="questions-${newIndex}-order" value="${newIndex + 1}">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-3">Opções de Resposta *</label>
                     
-                    <div class="choices-container space-y-3" data-question-index="${questionIndex}">
-                        <div class="text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
+                    <div class="choices-container space-y-3" 
+                         data-question-index="${newIndex}"
+                         data-question-id=""
+                         data-question-identifier="${newIndex}">
+                        <div class="placeholder-text text-sm text-gray-500 italic text-center py-4">Adicione opções de resposta abaixo</div>
                     </div>
                     
-                    <!-- Botão Adicionar Opção -->
                     <button type="button" onclick="addChoice(this)" class="mt-3 w-full text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-1 py-2 border border-brand-500/30 rounded-lg hover:bg-brand-500/10">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -235,63 +273,78 @@ function addQuestion() {
         </div>
     `;
     
-    // Insere antes do botão "Adicionar Pergunta" (que está após o container)
-    const addQuestionBtn = container.parentElement.querySelector('button[onclick="addQuestion()"]');
-    if (addQuestionBtn) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = questionHtml;
-        const questionElement = tempDiv.firstElementChild;
-        addQuestionBtn.parentElement.insertBefore(questionElement, addQuestionBtn);
-    } else {
-        container.insertAdjacentHTML('beforeend', questionHtml);
-    }
+    container.insertAdjacentHTML('beforeend', questionHtml);
     
+    // Atualiza contador do formset
     totalForms.value = parseInt(totalForms.value) + 1;
-    questionIndex++;
+    questionFormsetIndex++;
+    
+    // Atualiza numeração
     updateQuestionNumbers();
 }
 
+/**
+ * Remove uma pergunta
+ */
 function removeQuestion(button) {
     const questionItem = button.closest('.question-item');
     const deleteInput = questionItem.querySelector('input[name*="-DELETE"]');
-    if (deleteInput) {
+    
+    if (deleteInput && questionItem.dataset.questionId) {
+        // Pergunta existente: marca para deletar
         deleteInput.value = 'on';
         questionItem.style.display = 'none';
     } else {
+        // Pergunta nova: remove do DOM
         questionItem.remove();
-        updateQuestionNumbers();
     }
+    
+    updateQuestionNumbers();
 }
 
+/**
+ * Adiciona uma nova opção de resposta
+ * 
+ * IMPORTANTE: O nome do campo segue o padrão choice_{identifier}_{index}_text
+ * onde identifier é o ID da pergunta (existente) ou índice do formset (nova)
+ */
 function addChoice(button) {
-    // Encontra o container de opções (irmão anterior do botão)
-    const choicesContainer = button.previousElementSibling;
-    if (!choicesContainer || !choicesContainer.classList.contains('choices-container')) {
-        // Se não encontrar, tenta encontrar pelo parent
-        const questionItem = button.closest('.question-item');
-        choicesContainer = questionItem ? questionItem.querySelector('.choices-container') : null;
-    }
+    const questionItem = button.closest('.question-item');
+    const choicesContainer = questionItem.querySelector('.choices-container');
     
     if (!choicesContainer) {
         console.error('Container de opções não encontrado');
         return;
     }
     
-    // IMPORTANTE: Para perguntas existentes, usa o ID. Para novas, usa o índice.
-    let questionIndex = choicesContainer.getAttribute('data-question-id');
-    if (!questionIndex || questionIndex === '') {
-        questionIndex = choicesContainer.getAttribute('data-question-index');
+    // Remove placeholder se existir
+    const placeholder = choicesContainer.querySelector('.placeholder-text');
+    if (placeholder) {
+        placeholder.remove();
     }
     
-    console.log('Adicionando opção - questionIndex:', questionIndex, 'questionId:', choicesContainer.getAttribute('data-question-id'), 'questionIndex attr:', choicesContainer.getAttribute('data-question-index'));
-    const choiceCount = choicesContainer.querySelectorAll('.choice-item').length;
+    // Determina o identificador da pergunta
+    // Para perguntas existentes: usa ID
+    // Para perguntas novas: usa índice do formset
+    let questionIdentifier = choicesContainer.dataset.questionId;
+    if (!questionIdentifier || questionIdentifier === '') {
+        questionIdentifier = choicesContainer.dataset.questionIndex;
+    }
+    
+    // Conta opções existentes (incluindo as do formset Django)
+    const existingChoices = choicesContainer.querySelectorAll('.choice-item');
+    const choiceIndex = existingChoices.length;
+    
+    console.log(`Adicionando opção: questionIdentifier=${questionIdentifier}, choiceIndex=${choiceIndex}`);
     
     const choiceHtml = `
-        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors">
-            <span class="text-sm text-gray-500 font-medium min-w-[2rem]">${choiceCount + 1}</span>
+        <div class="choice-item flex items-center gap-3 p-3 bg-dark-800 rounded-lg border border-dark-600 hover:border-dark-500 transition-colors" 
+             data-choice-index="${choiceIndex}"
+             data-is-dynamic="true">
+            <span class="choice-number text-sm text-gray-500 font-medium min-w-[2rem]">${choiceIndex + 1}</span>
             <div class="flex-1">
                 <input type="text" 
-                       name="choice_${questionIndex}_${choiceCount}_text" 
+                       name="choice_${questionIdentifier}_${choiceIndex}_text" 
                        class="form-input w-full" 
                        placeholder="Digite a opção de resposta..."
                        required
@@ -299,11 +352,10 @@ function addChoice(button) {
             </div>
             <label class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-dark-700 transition-colors">
                 <input type="checkbox" 
-                       name="choice_${questionIndex}_${choiceCount}_is_correct" 
+                       name="choice_${questionIdentifier}_${choiceIndex}_is_correct" 
                        class="form-checkbox">
                 <span class="text-xs text-gray-400">Correta</span>
             </label>
-            <input type="hidden" name="choice_${questionIndex}_${choiceCount}_order" value="${choiceCount}">
             <button type="button" onclick="removeChoice(this)" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -314,53 +366,85 @@ function addChoice(button) {
     
     choicesContainer.insertAdjacentHTML('beforeend', choiceHtml);
     
-    // Remove placeholder se existir
-    const placeholder = choicesContainer.querySelector('.text-gray-500.italic');
-    if (placeholder) {
-        placeholder.remove();
+    // Foca no novo input
+    const newInput = choicesContainer.querySelector('.choice-item:last-child input[type="text"]');
+    if (newInput) {
+        newInput.focus();
     }
     
-    // Atualiza números das opções
     updateChoiceNumbers(choicesContainer);
 }
 
+/**
+ * Remove uma opção de resposta
+ */
 function removeChoice(button) {
     const choiceItem = button.closest('.choice-item');
     const choicesContainer = choiceItem.closest('.choices-container');
-    choiceItem.remove();
     
-    // Atualiza números das opções
-    if (choicesContainer) {
-        updateChoiceNumbers(choicesContainer);
+    // Se é uma opção do formset Django, marca para deletar
+    const deleteInput = choiceItem.querySelector('input[name*="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'on';
+        choiceItem.style.display = 'none';
+    } else {
+        // Opção dinâmica: remove do DOM
+        choiceItem.remove();
     }
+    
+    updateChoiceNumbers(choicesContainer);
 }
 
+/**
+ * Atualiza a numeração das opções
+ */
 function updateChoiceNumbers(container) {
-    const choices = container.querySelectorAll('.choice-item');
+    const choices = container.querySelectorAll('.choice-item:not([style*="display: none"])');
     choices.forEach((choice, index) => {
-        const numberSpan = choice.querySelector('.text-gray-500.font-medium');
+        const numberSpan = choice.querySelector('.choice-number');
         if (numberSpan) {
             numberSpan.textContent = index + 1;
         }
     });
+    
+    // Se não sobrou nenhuma opção visível, mostra placeholder
+    if (choices.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'placeholder-text text-sm text-gray-500 italic text-center py-4';
+        placeholder.textContent = 'Adicione opções de resposta abaixo';
+        container.appendChild(placeholder);
+    }
 }
 
+/**
+ * Atualiza a numeração das perguntas
+ */
 function updateQuestionNumbers() {
     const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
     questions.forEach((question, index) => {
-        const title = question.querySelector('h3');
+        const title = question.querySelector('.question-title, h3');
         if (title) {
             title.textContent = `Pergunta ${index + 1}`;
         }
     });
 }
 
-function validateQuizForm(event) {
+/**
+ * Retorna quantidade de perguntas visíveis
+ */
+function getVisibleQuestionCount() {
+    return document.querySelectorAll('.question-item:not([style*="display: none"])').length;
+}
+
+/**
+ * Valida o formulário antes de enviar
+ */
+function validateAndPrepareForm(event) {
     const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
     
     if (questions.length === 0) {
-        alert('Adicione pelo menos uma pergunta ao quiz.');
         event.preventDefault();
+        alert('Adicione pelo menos uma pergunta ao quiz.');
         return false;
     }
     
@@ -368,11 +452,13 @@ function validateQuizForm(event) {
     let errorMessages = [];
     
     questions.forEach((question, qIndex) => {
+        const questionNumber = qIndex + 1;
+        
         // Valida texto da pergunta
         const questionText = question.querySelector('textarea[name*="-text"], input[name*="-text"]');
         if (!questionText || !questionText.value.trim()) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${qIndex + 1}: O texto da pergunta é obrigatório.`);
+            errorMessages.push(`Pergunta ${questionNumber}: O texto da pergunta é obrigatório.`);
             return;
         }
         
@@ -380,21 +466,22 @@ function validateQuizForm(event) {
         const choicesContainer = question.querySelector('.choices-container');
         if (!choicesContainer) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${qIndex + 1}: Adicione pelo menos 2 opções de resposta.`);
+            errorMessages.push(`Pergunta ${questionNumber}: Adicione opções de resposta.`);
             return;
         }
         
-        const choices = choicesContainer.querySelectorAll('.choice-item');
-        if (choices.length < 2) {
+        const visibleChoices = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])');
+        if (visibleChoices.length < 2) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${qIndex + 1}: Adicione pelo menos 2 opções de resposta.`);
+            errorMessages.push(`Pergunta ${questionNumber}: Adicione pelo menos 2 opções de resposta.`);
             return;
         }
         
         let hasCorrect = false;
         let emptyChoices = [];
         
-        choices.forEach((choice, cIndex) => {
+        visibleChoices.forEach((choice, cIndex) => {
+            // Busca input de texto (pode ser do formset Django ou dinâmico)
             const choiceInput = choice.querySelector('input[type="text"]');
             const choiceCheckbox = choice.querySelector('input[type="checkbox"]');
             
@@ -409,23 +496,36 @@ function validateQuizForm(event) {
         
         if (emptyChoices.length > 0) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${qIndex + 1}: Todas as opções devem ter texto preenchido. Opções vazias: ${emptyChoices.join(', ')}`);
+            errorMessages.push(`Pergunta ${questionNumber}: Preencha todas as opções. Vazias: ${emptyChoices.join(', ')}`);
         }
         
         if (!hasCorrect) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${qIndex + 1}: Marque pelo menos uma opção como correta.`);
+            errorMessages.push(`Pergunta ${questionNumber}: Marque pelo menos uma opção como correta.`);
         }
     });
     
     if (hasErrors) {
         event.preventDefault();
-        alert('Erros encontrados:\n\n' + errorMessages.join('\n'));
+        alert('Corrija os seguintes erros:\n\n' + errorMessages.join('\n'));
         return false;
     }
     
+    // Log para debug
+    console.log('Formulário validado com sucesso. Enviando...');
+    
     return true;
 }
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualiza numeração inicial
+    updateQuestionNumbers();
+    
+    // Atualiza numeração de opções em cada pergunta
+    document.querySelectorAll('.choices-container').forEach(container => {
+        updateChoiceNumbers(container);
+    });
+});
 </script>
 {% endblock %}
-
