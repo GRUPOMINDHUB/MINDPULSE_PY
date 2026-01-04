@@ -7,8 +7,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h1 class="text-3xl font-bold text-white mb-2">Colaboradores</h1>
-            <p class="text-gray-400">Gerencie os membros da sua equipe.</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Colaboradores</h1>
+            <p class="text-gray-600 dark:text-gray-400">Gerencie os membros da sua equipe.</p>
         </div>
         <a href="{% url 'accounts:collaborator_create' %}" class="btn-primary flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +22,7 @@
     <div class="card overflow-hidden">
         <table class="w-full">
             <thead>
-                <tr class="text-left text-gray-500 text-sm border-b border-dark-600">
+                <tr class="text-left text-gray-500 text-sm border-b border-gray-200 dark:border-dark-600">
                     <th class="pb-4 pl-6 font-medium">Colaborador</th>
                     <th class="pb-4 font-medium">Cargo</th>
                     <th class="pb-4 font-medium">Nascimento</th>
@@ -32,16 +32,16 @@
                     <th class="pb-4 pr-6 font-medium text-right">Ações</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-dark-600">
+            <tbody class="divide-y divide-gray-200 dark:divide-dark-600">
                 {% for uc in collaborators %}
-                <tr class="hover:bg-dark-700/50 transition-colors">
+                <tr class="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
                     <td class="py-4 pl-6">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                                 {{ uc.user.first_name.0 }}{{ uc.user.last_name.0 }}
                             </div>
                             <div>
-                                <p class="font-medium text-white">{{ uc.user.get_full_name }}</p>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ uc.user.get_full_name }}</p>
                                 <p class="text-sm text-gray-500">{{ uc.user.email }}</p>
                             </div>
                         </div>

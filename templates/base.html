@@ -201,6 +201,25 @@
             @apply card hover:border-brand-500/50 hover:shadow-brand-500/10 transition-all duration-300;
         }
         
+        /* Text utilities for Light/Dark mode */
+        .text-title {
+            @apply text-gray-900 dark:text-white;
+        }
+        .text-subtitle {
+            @apply text-gray-600 dark:text-gray-400;
+        }
+        .text-muted {
+            @apply text-gray-500 dark:text-gray-500;
+        }
+        .text-body {
+            @apply text-gray-700 dark:text-gray-300;
+        }
+        
+        /* Override text-white to be theme-aware in content areas */
+        .content-area .text-white {
+            @apply text-gray-900 dark:text-white;
+        }
+        
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }

@@ -6,8 +6,8 @@
 <div class="p-8">
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h1 class="text-3xl font-bold text-white mb-2">Gerenciar Feedbacks</h1>
-            <p class="text-gray-400">Acompanhe e responda os feedbacks da sua equipe.</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Gerenciar Feedbacks</h1>
+            <p class="text-gray-600 dark:text-gray-400">Acompanhe e responda os feedbacks da sua equipe.</p>
         </div>
     </div>
     
@@ -74,7 +74,7 @@
                 
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-2 flex-wrap">
-                        <h3 class="font-semibold text-white truncate">{{ feedback.subject }}</h3>
+                        <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ feedback.subject }}</h3>
                         
                         {% if feedback.status == 'pending' %}
                         <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded-full">Pendente</span>
@@ -119,7 +119,7 @@
             <svg class="w-20 h-20 text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
-            <h3 class="text-xl font-semibold text-white mb-2">Nenhum feedback encontrado</h3>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum feedback encontrado</h3>
             <p class="text-gray-500">Os feedbacks da equipe aparecerão aqui.</p>
         </div>
         {% endfor %}
