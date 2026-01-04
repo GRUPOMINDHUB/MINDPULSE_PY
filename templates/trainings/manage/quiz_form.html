@@ -235,13 +235,13 @@ function addQuestion() {
         </div>
     `;
     
-    // Insere antes do botão "Adicionar Pergunta"
-    const addQuestionBtn = document.querySelector('button[onclick="addQuestion()"]');
-    if (addQuestionBtn && addQuestionBtn.parentElement) {
-        addQuestionBtn.parentElement.insertBefore(
-            document.createRange().createContextualFragment(questionHtml),
-            addQuestionBtn
-        );
+    // Insere antes do botão "Adicionar Pergunta" (que está após o container)
+    const addQuestionBtn = container.parentElement.querySelector('button[onclick="addQuestion()"]');
+    if (addQuestionBtn) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = questionHtml;
+        const questionElement = tempDiv.firstElementChild;
+        addQuestionBtn.parentElement.insertBefore(questionElement, addQuestionBtn);
     } else {
         container.insertAdjacentHTML('beforeend', questionHtml);
     }
