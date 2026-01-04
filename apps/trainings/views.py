@@ -1007,10 +1007,56 @@ def quiz_edit(request, quiz_id):
             
             # Processa opções de cada pergunta
             validation_errors = []
-            for form in question_formset.forms:
+            for idx, form in enumerate(question_formset.forms):
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
                     question = form.instance
-                    if question.pk:
+                    question_text = form.cleaned_data.get('text', '').strip()
+                    
+                    if not question_text:
+                        continue
+                    
+                    # Processa opções dinâmicas do JavaScript (formato: choice_{questionIndex}_{choiceCount}_text)
+                    dynamic_choices = []
+                    choice_index = 0
+                    while True:
+                        choice_text_key = f'choice_{idx}_{choice_index}_text'
+                        choice_correct_key = f'choice_{idx}_{choice_index}_is_correct'
+                        
+                        if choice_text_key not in request.POST:
+                            break
+                        
+                        choice_text = request.POST.get(choice_text_key, '').strip()
+                        if choice_text:  # Só adiciona se tiver texto
+                            is_correct = request.POST.get(choice_correct_key) == 'on'
+                            dynamic_choices.append({
+                                'text': choice_text,
+                                'is_correct': is_correct
+                            })
+                        choice_index += 1
+                    
+                    # Se tem opções dinâmicas, valida e salva
+                    if dynamic_choices:
+                        if len(dynamic_choices) < 2:
+                            validation_errors.append(f'Pergunta "{question_text[:50]}": Adicione pelo menos 2 opções de resposta.')
+                            continue
+                        
+                        has_correct = any(c['is_correct'] for c in dynamic_choices)
+                        if not has_correct:
+                            validation_errors.append(f'Pergunta "{question_text[:50]}": Marque pelo menos uma opção como correta.')
+                            continue
+                        
+                        # Remove opções antigas e cria novas
+                        question.choices.all().delete()
+                        for order, choice_data in enumerate(dynamic_choices):
+                            Choice.objects.create(
+                                question=question,
+                                text=choice_data['text'],
+                                is_correct=choice_data['is_correct'],
+                                order=order
+                            )
+                    
+                    # Processa opções via formset (para perguntas existentes)
+                    elif question.pk:
                         choice_prefix = f'choices_{question.id}'
                         choice_formset = ChoiceFormSet(
                             request.POST,
@@ -1027,14 +1073,14 @@ def quiz_edit(request, quiz_id):
                                 if choice_form.cleaned_data and not choice_form.cleaned_data.get('DELETE', False):
                                     choice_text = choice_form.cleaned_data.get('text', '').strip()
                                     if not choice_text:
-                                        validation_errors.append(f'Pergunta {form.cleaned_data.get("text", "")[:50]}: Todas as opções devem ter texto preenchido.')
+                                        validation_errors.append(f'Pergunta "{question_text[:50]}": Todas as opções devem ter texto preenchido.')
                                         break
                                     if choice_form.cleaned_data.get('is_correct', False):
                                         has_correct = True
                                     valid_choices.append(choice_form)
                             
                             if not has_correct and valid_choices:
-                                validation_errors.append(f'Pergunta "{form.cleaned_data.get("text", "")[:50]}": Deve ter pelo menos uma resposta correta marcada.')
+                                validation_errors.append(f'Pergunta "{question_text[:50]}": Deve ter pelo menos uma resposta correta marcada.')
                             
                             if not validation_errors:
                                 for choice_form in valid_choices:
@@ -1046,6 +1092,9 @@ def quiz_edit(request, quiz_id):
                             for del_form in choice_formset.deleted_forms:
                                 if del_form.instance.pk:
                                     del_form.instance.delete()
+                    else:
+                        # Pergunta nova sem opções
+                        validation_errors.append(f'Pergunta "{question_text[:50]}": Adicione pelo menos 2 opções de resposta.')
             
             if validation_errors:
                 for error in validation_errors:
