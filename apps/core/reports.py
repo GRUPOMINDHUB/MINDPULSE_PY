@@ -582,14 +582,14 @@ def get_company_report_data(company, start_date, end_date):
             checklist__company=company,
             completed_at__gte=start_datetime,
             completed_at__lte=end_datetime
-        ).aggregate(total=Count('points_earned'))['total'] or 0
+        ).aggregate(total=Sum('points_earned'))['total'] or 0
         
         points_from_trainings = UserTrainingReward.objects.filter(
             user=user,
             training__company=company,
             earned_at__gte=start_datetime,
             earned_at__lte=end_datetime
-        ).aggregate(total=Count('points_earned'))['total'] or 0
+        ).aggregate(total=Sum('points_earned'))['total'] or 0
         
         points_earned = (points_from_checklists or 0) + (points_from_trainings or 0)
         
