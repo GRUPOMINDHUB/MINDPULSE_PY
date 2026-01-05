@@ -100,26 +100,40 @@ def _get_user_ranking(user, company):
 
 
 def _get_user_checklists(user, company, start_datetime, end_datetime):
-    """Extrai dados de checklists do usuário no período."""
-    # ChecklistCompletions no período
-    completions = ChecklistCompletion.objects.filter(
+    """Extrai dados de checklists do usuário (geral e no período)."""
+    # Completions no período
+    completions_period = ChecklistCompletion.objects.filter(
         user=user,
         checklist__company=company,
         completed_at__gte=start_datetime,
         completed_at__lte=end_datetime
     ).select_related('checklist')
+
+    # Completions totais (para estatísticas gerais)
+    completions_all = ChecklistCompletion.objects.filter(
+        user=user,
+        checklist__company=company,
+    ).select_related('checklist')
     
-    total_completed = completions.count()
+    total_completed_period = completions_period.count()
+    total_completed_all = completions_all.count()
     
-    # TaskDones no período (tarefas individuais)
-    task_dones = TaskDone.objects.filter(
+    # TaskDones no período
+    task_dones_period = TaskDone.objects.filter(
         user=user,
         task__checklist__company=company,
         completed_at__gte=start_datetime,
         completed_at__lte=end_datetime
     ).select_related('task', 'task__checklist')
+
+    # TaskDones totais
+    task_dones_all = TaskDone.objects.filter(
+        user=user,
+        task__checklist__company=company,
+    ).select_related('task', 'task__checklist')
     
-    total_tasks_completed = task_dones.count()
+    total_tasks_completed_period = task_dones_period.count()
+    total_tasks_completed_all = task_dones_all.count()
     
     # Contador de atrasos (verificar checklists que estavam atrasados no período)
     overdue_count = 0
@@ -136,8 +150,10 @@ def _get_user_checklists(user, company, start_datetime, end_datetime):
             overdue_count += 1
     
     return {
-        'total_completed': total_completed,
-        'total_tasks_completed': total_tasks_completed,
+        'total_completed_period': total_completed_period,
+        'total_tasks_completed_period': total_tasks_completed_period,
+        'total_completed_all': total_completed_all,
+        'total_tasks_completed_all': total_tasks_completed_all,
         'overdue_count': overdue_count,
         'completions': [
             {
@@ -145,7 +161,7 @@ def _get_user_checklists(user, company, start_datetime, end_datetime):
                 'date': comp.completed_at.strftime('%d/%m/%Y'),
                 'points': comp.points_earned,
             }
-            for comp in completions[:20]  # Limitar a 20 mais recentes
+            for comp in completions_period[:20]  # Limitar a 20 mais recentes do período
         ],
     }
 
