@@ -1,9 +1,15 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ checklist.title }} - Mindpulse{% endblock %}
 
+{% block extra_css %}
+<!-- Canvas Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+{% endblock %}
+
 {% block content %}
-<div class="p-8 max-w-3xl mx-auto">
+<div class="p-4 md:p-8 max-w-3xl mx-auto pb-24 md:pb-8">
     <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <a href="{% url 'checklists:list' %}" class="hover:text-white transition-colors">Checklists</a>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,11 +18,19 @@
         <span class="text-white">{{ checklist.title }}</span>
     </div>
     
-    <div class="card mb-6">
-        <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-                <h1 class="text-2xl font-bold text-white mb-2">{{ checklist.title }}</h1>
-                <div class="flex items-center gap-3 flex-wrap">
+    <!-- Header - Compacto no mobile -->
+    <div class="card mb-4 md:mb-6">
+        <div class="flex items-start justify-between mb-3 md:mb-4">
+            <div class="flex-1 min-w-0">
+                <h1 class="text-lg md:text-2xl font-bold text-white mb-2">{{ checklist.title }}</h1>
+                <!-- Mobile: Apenas Periodicidade -->
+                <div class="md:hidden">
+                    <span class="px-2 py-0.5 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full">
+                        {{ checklist.get_frequency_display }}
+                    </span>
+                </div>
+                <!-- Desktop: Todas as tags -->
+                <div class="hidden md:flex items-center gap-2 md:gap-3 flex-wrap">
                     {% if checklist.is_active %}
                     <span class="px-2.5 py-1 bg-green-500/20 border border-green-500/50 text-green-400 text-xs font-medium rounded-full flex items-center gap-1.5">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,17 +38,16 @@
                         </svg>
                         Ativo
                     </span>
-                    {% else %}
-                    <span class="px-2.5 py-1 bg-gray-500/20 border border-gray-500/50 text-gray-400 text-xs font-medium rounded-full">
-                        Inativo
-                    </span>
                     {% endif %}
                     
-                    {% for user in checklist.assigned_users.all %}
-                    <span class="bg-gray-700 text-white text-[10px] px-2 py-0.5 rounded-full mr-1">
-                        {{ user.get_full_name|default:user.email|upper }}
-                    </span>
-                    {% endfor %}
+                    <!-- Responsáveis - Apenas desktop -->
+                    <div class="flex items-center gap-1 flex-wrap">
+                        {% for user in checklist.assigned_users.all %}
+                        <span class="bg-gray-700 text-white text-[10px] px-2 py-0.5 rounded-full">
+                            {{ user.get_full_name|default:user.email|upper }}
+                        </span>
+                        {% endfor %}
+                    </div>
                     
                     <span class="px-2.5 py-1 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full">
                         {{ checklist.get_frequency_display }}
@@ -61,8 +74,9 @@
             </div>
         </div>
         
+        <!-- Descrição - Oculto no mobile -->
         {% if checklist.description %}
-        <p class="text-gray-400 mb-4">{{ checklist.description }}</p>
+        <p class="hidden md:block text-gray-400 mb-4">{{ checklist.description }}</p>
         {% endif %}
         
         <div class="flex items-center gap-4">
@@ -85,29 +99,32 @@
         </div>
     </div>
     
-    <div class="space-y-3">
+    <!-- Lista de Tarefas - Ocupa 90% da altura no mobile -->
+    <div class="space-y-2 md:space-y-3 max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-visible">
         {% if tasks %}
         {% for item in tasks %}
         <div class="card-hover flex items-center gap-4 task-item group" 
-             data-task-id="{{ item.task.id }}">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer
-                        {% if item.is_done %}bg-green-500 text-white{% else %}bg-dark-600 border-2 border-dark-500 hover:border-blue-500{% endif %}"
+             data-task-id="{{ item.task.id }}"
+             data-is-required="{% if item.task.is_required %}true{% else %}false{% endif %}">
+            <div class="w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer
+                        {% if item.is_done %}bg-green-500 text-white{% else %}bg-dark-600 border-2 border-dark-500 hover:border-brand-500{% endif %}"
                  id="checkbox-{{ item.task.id }}"
+                 data-task-id="{{ item.task.id }}"
                  onclick="toggleTask({{ item.task.id }})">
                 {% if item.is_done %}
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
                 {% endif %}
             </div>
             
             <div class="flex-1 min-w-0 cursor-pointer" onclick="toggleTask({{ item.task.id }})">
-                <h4 class="font-medium transition-all duration-200 {% if item.is_done %}text-gray-500 line-through{% else %}text-white{% endif %}"
+                <h4 class="text-sm md:text-base font-medium transition-all duration-200 {% if item.is_done %}text-gray-500 line-through opacity-50{% else %}text-white{% endif %}"
                     id="title-{{ item.task.id }}">
                     {{ item.task.title }}
                 </h4>
                 {% if item.task.description %}
-                <p class="text-sm text-gray-500 line-clamp-1" id="description-{{ item.task.id }}">{{ item.task.description }}</p>
+                <p class="text-xs md:text-sm text-gray-500 line-clamp-1" id="description-{{ item.task.id }}">{{ item.task.description }}</p>
                 {% endif %}
             </div>
             
@@ -130,17 +147,23 @@
         </div>
         {% endif %}
     </div>
-</div>
-
-<div id="rewardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-dark-800 border border-dark-600 rounded-3xl p-8 max-w-md w-full text-center animate-fade-in">
-        <div class="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span class="text-5xl">✅</span>
-        </div>
-        <h2 class="text-2xl font-bold text-white mb-2">Checklist Completo!</h2>
-        <p id="rewardMessage" class="text-gray-400 mb-6">Você ganhou pontos!</p>
-        <button onclick="closeRewardModal()" class="btn-primary w-full">
-            Continuar
+    
+    <!-- Botão Finalizar (Desktop) -->
+    <div class="hidden md:block mt-6">
+        <button onclick="finalizeChecklist()" 
+                id="finalizeBtnDesktop"
+                class="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            Finalizar Checklist
+        </button>
+    </div>
+    
+    <!-- Sticky Footer Button (Mobile) -->
+    <div class="fixed bottom-0 left-0 right-0 md:hidden bg-dark-800 border-t border-dark-600 p-4 z-40 transition-all duration-300"
+         id="stickyFooter">
+        <button onclick="finalizeChecklist()" 
+                id="finalizeBtn"
+                class="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            Finalizar Checklist
         </button>
     </div>
 </div>
@@ -148,11 +171,37 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/checklist-celebration.js' %}"></script>
 <script>
 const csrfToken = '{{ csrf_token }}';
 const checklistId = {{ checklist.pk }};
+let isProcessing = false;
+
+// Inicializa botão no carregamento da página
+document.addEventListener('DOMContentLoaded', function() {
+    const progressText = document.getElementById('progressText');
+    if (progressText) {
+        const initialProgress = parseInt(progressText.textContent) || 0;
+        updateFinalizeButton(initialProgress);
+    }
+});
 
 function toggleTask(taskId) {
+    // Prevenção de cliques duplos
+    if (isProcessing) {
+        return;
+    }
+    
+    const checkbox = document.getElementById(`checkbox-${taskId}`);
+    const title = document.getElementById(`title-${taskId}`);
+    
+    // Desabilita temporariamente
+    isProcessing = true;
+    if (checkbox) {
+        checkbox.style.pointerEvents = 'none';
+        checkbox.style.opacity = '0.6';
+    }
+    
     fetch(`/checklists/api/task/${taskId}/toggle/`, {
         method: 'POST',
         headers: {
@@ -163,39 +212,38 @@ function toggleTask(taskId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const checkbox = document.getElementById(`checkbox-${taskId}`);
-            const title = document.getElementById(`title-${taskId}`);
-            
             if (data.is_done) {
-                checkbox.className = 'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-green-500 text-white cursor-pointer';
-                checkbox.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-                title.classList.add('text-gray-500', 'line-through');
+                // Marca como concluído
+                checkbox.className = 'w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-green-500 text-white cursor-pointer';
+                checkbox.innerHTML = '<svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                title.classList.add('text-gray-500', 'line-through', 'opacity-50');
                 title.classList.remove('text-white');
             } else {
-                checkbox.className = 'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-dark-600 border-2 border-dark-500 hover:border-blue-500 cursor-pointer';
+                // Desmarca
+                checkbox.className = 'w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-dark-600 border-2 border-dark-500 hover:border-brand-500 cursor-pointer';
                 checkbox.innerHTML = '';
-                title.classList.remove('text-gray-500', 'line-through');
+                title.classList.remove('text-gray-500', 'line-through', 'opacity-50');
                 title.classList.add('text-white');
             }
             
-            // Update progress
-            document.getElementById('progressText').textContent = data.progress + '%';
-            document.getElementById('progressBar').style.width = data.progress + '%';
-            
-            // Atualiza cor da barra de progresso
+            // Atualiza progresso
+            const progressText = document.getElementById('progressText');
             const progressBar = document.getElementById('progressBar');
+            if (progressText) progressText.textContent = data.progress + '%';
+            if (progressBar) progressBar.style.width = data.progress + '%';
+            
+            // Verifica se completou o checklist
             if (data.is_checklist_completed && data.is_done) {
                 progressBar.classList.remove('from-blue-500', 'to-blue-400');
                 progressBar.classList.add('bg-green-500');
-                
-                if (data.reward_message) {
-                    showRewardModal(data.reward_message);
-                }
             } else {
                 // Se não está completo, volta para azul
                 progressBar.classList.remove('bg-green-500');
                 progressBar.classList.add('from-blue-500', 'to-blue-400');
             }
+            
+            // Atualiza botão finalizar baseado no progresso
+            updateFinalizeButton(data.progress);
         } else {
             alert(data.error || 'Erro ao processar tarefa');
         }
@@ -203,16 +251,74 @@ function toggleTask(taskId) {
     .catch(error => {
         console.error('Erro:', error);
         alert('Erro ao processar tarefa. Tente novamente.');
+    })
+    .finally(() => {
+        // Reabilita após processamento
+        isProcessing = false;
+        if (checkbox) {
+            checkbox.style.pointerEvents = 'auto';
+            checkbox.style.opacity = '1';
+        }
     });
 }
 
-function showRewardModal(message) {
-    document.getElementById('rewardMessage').textContent = message;
-    document.getElementById('rewardModal').classList.remove('hidden');
+// Atualiza botão finalizar baseado no progresso
+// Estados: 0% = apagado (desabilitado), 1-99% = amarelo, 100% = verde
+function updateFinalizeButton(progress) {
+    const finalizeBtn = document.getElementById('finalizeBtn'); // Mobile
+    const finalizeBtnDesktop = document.getElementById('finalizeBtnDesktop'); // Desktop
+    
+    const buttons = [finalizeBtn, finalizeBtnDesktop].filter(btn => btn !== null);
+    
+    buttons.forEach(btn => {
+        if (progress === 0) {
+            // Apagado: nenhuma tarefa marcada
+            btn.disabled = true;
+            btn.className = 'w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-dark-700 text-gray-400 border border-dark-600';
+            btn.innerHTML = 'Finalizar Checklist';
+        } else if (progress === 100) {
+            // Verde: tudo marcado
+            btn.disabled = false;
+            btn.className = 'w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-300 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg shadow-green-500/50';
+            btn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Checklist Completo!</span>';
+        } else {
+            // Amarelo: pelo menos 1 marcada, mas faltando
+            btn.disabled = false;
+            btn.className = 'w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-300 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg shadow-yellow-500/50';
+            btn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>Finalizar com Pendências</span>';
+        }
+    });
 }
 
-function closeRewardModal() {
-    document.getElementById('rewardModal').classList.add('hidden');
+// Função para finalizar checklist
+function finalizeChecklist() {
+    const finalizeBtn = document.getElementById('finalizeBtn');
+    const finalizeBtnDesktop = document.getElementById('finalizeBtnDesktop');
+    
+    // Verifica se algum botão está desabilitado
+    if ((finalizeBtn && finalizeBtn.disabled) || (finalizeBtnDesktop && finalizeBtnDesktop.disabled)) {
+        return;
+    }
+    
+    // Verifica o progresso atual
+    const progressText = document.getElementById('progressText');
+    const currentProgress = parseInt(progressText.textContent) || 0;
+    
+    // Se está 100% completo, celebra e redireciona
+    if (currentProgress === 100) {
+        // 🎉 CELEBRAÇÃO MULTISSENSORIAL 🎉
+        if (typeof celebrateCompletion === 'function') {
+            celebrateCompletion(); // Confetes + Som + Vibração
+        }
+        
+        // Redireciona após 1.5 segundos (tempo para ver confetes)
+        setTimeout(() => {
+            window.location.href = '{% url "checklists:list" %}';
+        }, 1500);
+    } else {
+        // Se não está completo, redireciona para página de confirmação
+        window.location.href = '{% url "checklists:finalize_confirm" checklist.pk %}';
+    }
 }
 
 </script>

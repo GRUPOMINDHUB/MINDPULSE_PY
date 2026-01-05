@@ -75,6 +75,44 @@
         </div>
     </div>
     
+    <!-- Card de Alertas Críticos -->
+    {% if checklist_alerts_count > 0 %}
+    <div class="card mb-8 border-l-4 border-red-500 bg-red-500/5 animate-pulse">
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start gap-4 flex-1">
+                <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-bold text-red-400 mb-2">⚠️ Alertas Críticos</h2>
+                    <p class="text-gray-300 mb-3">
+                        <strong>{{ checklist_alerts_count }}</strong> alerta{{ checklist_alerts_count|pluralize }} de tarefas pendentes reportado{{ checklist_alerts_count|pluralize }} hoje.
+                    </p>
+                    <div class="space-y-2">
+                        {% for alert in checklist_alerts %}
+                        <div class="bg-dark-700 rounded-lg p-3">
+                            <p class="text-sm text-white">
+                                <span class="font-semibold">{{ alert.user.get_full_name }}</span> reportou falta de: 
+                                <span class="text-red-300">{{ alert.task.title }}</span>
+                                <span class="text-gray-400 text-xs"> ({{ alert.checklist.title }})</span>
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'checklists:alerts_list' %}" class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-200">
+                        Ver Todos os Alertas
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <!-- Gráfico Status Checklists -->
         <div class="card">

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Alertas de Checklists - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-4 md:mb-6">
+        <div>
+            <h1 class="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2">Alertas Críticos</h1>
+            <p class="text-sm md:text-base text-gray-400">Tarefas pendentes reportadas pelos colaboradores</p>
+        </div>
+    </div>
+    
+    <!-- Mobile: Cards Compactos (Slim UI) -->
+    <div class="md:hidden space-y-3">
+        {% if alerts %}
+        {% for alert in alerts %}
+        <div class="card border-l-4 border-red-500 p-3">
+            <div class="flex items-start gap-2 mb-2">
+                <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-semibold text-white truncate">{{ alert.task.title }}</h3>
+                    <p class="text-xs text-gray-400">
+                        {{ alert.checklist.title }} • {{ alert.user.get_full_name|truncatechars:20 }} • {{ alert.created_at|date:"d/m H:i" }}
+                    </p>
+                </div>
+            </div>
+            
+            <button onclick="resolveAlert({{ alert.id }})" 
+                    class="w-full px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium transition-all duration-200">
+                Resolver
+            </button>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="card text-center py-8">
+            <svg class="w-12 h-12 text-gray-600 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h3 class="text-base font-semibold text-white mb-1">Nenhum alerta pendente</h3>
+            <p class="text-xs text-gray-400">Todos os alertas foram resolvidos!</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Desktop: Tabela Detalhada -->
+    <div class="hidden md:block">
+        {% if alerts %}
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-dark-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Checklist</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Colaborador</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Tarefas Pendentes</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Data/Hora</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-600">
+                        {% for alert in alerts %}
+                        <tr class="hover:bg-dark-700 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium text-white block">{{ alert.task.title }}</span>
+                                        <span class="text-xs text-gray-400">{{ alert.checklist.title }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-300">{{ alert.user.get_full_name }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-300 max-w-md">
+                                <p class="truncate" title="{{ alert.task.title }}">{{ alert.task.title }}</p>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-400">{{ alert.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <button onclick="resolveAlert({{ alert.id }})" 
+                                        class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all duration-200">
+                                    Resolver
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card text-center py-12">
+            <svg class="w-16 h-16 text-gray-600 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-white mb-2">Nenhum alerta pendente</h3>
+            <p class="text-gray-400">Todos os alertas foram resolvidos!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function resolveAlert(alertId) {
+    if (!confirm('Tem certeza que deseja marcar este alerta como resolvido?')) {
+        return;
+    }
+    
+    fetch(`/checklists/api/alert/${alertId}/resolve/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erro ao resolver alerta');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao resolver alerta. Tente novamente.');
+    });
+}
+</script>
+{% endblock %}
+

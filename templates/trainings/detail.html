@@ -3,9 +3,9 @@
 {% block title %}{{ training.title }} - Mindpulse{% endblock %}
 
 {% block content %}
-<div class="p-8">
-    <!-- Breadcrumb -->
-    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+<div class="p-4 md:p-8">
+    <!-- Breadcrumb (Mobile: oculto ou compacto) -->
+    <div class="hidden md:flex items-center gap-2 text-sm text-gray-500 mb-6">
         <a href="{% url 'trainings:list' %}" class="hover:text-white transition-colors">Treinamentos</a>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -14,118 +14,125 @@
     </div>
     
     <!-- Header -->
-    <div class="card mb-8">
-        <div class="flex flex-col md:flex-row gap-6">
-            <!-- Cover -->
-            <div class="w-full md:w-64 flex-shrink-0">
-                {% if training.cover_image %}
-                <img src="{{ training.cover_image.url }}" alt="{{ training.title }}" 
-                     class="w-full h-48 md:h-full object-cover rounded-xl">
-                {% else %}
-                <div class="w-full h-48 md:h-full bg-gradient-to-br from-brand-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                {% endif %}
+    <div class="mb-6 md:mb-8">
+        <!-- Cover (Mobile: Full Width) -->
+        <div class="mb-4 md:mb-0">
+            {% if training.cover_image %}
+            <img src="{{ training.cover_image.url }}" alt="{{ training.title }}" 
+                 class="w-full h-56 md:h-64 object-cover rounded-2xl md:rounded-xl">
+            {% else %}
+            <div class="w-full h-56 md:h-64 bg-gradient-to-br from-brand-500 to-purple-600 rounded-2xl md:rounded-xl flex items-center justify-center">
+                <svg class="w-16 h-16 md:w-20 md:h-20 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
             </div>
-            
-            <!-- Info -->
-            <div class="flex-1">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 class="text-3xl font-bold text-white mb-2">{{ training.title }}</h1>
-                        <div class="flex items-center gap-4 text-sm text-gray-500">
-                            <span class="flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                </svg>
-                                {{ training.total_videos }} vídeos
-                            </span>
-                            <span class="flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                {{ training.total_duration_formatted }}
-                            </span>
-                        </div>
-                    </div>
-                    
+            {% endif %}
+        </div>
+        
+        <!-- Card Info (Mobile: Compacto) -->
+        <div class="card">
+            <!-- Título e Status -->
+            <div class="mb-4">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <h1 class="text-2xl md:text-3xl font-bold text-white flex-1 leading-tight">{{ training.title }}</h1>
                     {% if progress >= 100 %}
-                    <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span class="px-3 py-1.5 md:px-4 md:py-2 bg-green-500/20 text-green-400 rounded-xl text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        Concluído
+                        <span class="hidden sm:inline">Concluído</span>
                     </span>
                     {% endif %}
                 </div>
                 
-                {% if training.description %}
-                <p class="text-gray-400 mb-4">{{ training.description }}</p>
-                {% endif %}
-                
-                {% if training.objective %}
-                <div class="bg-dark-700 rounded-xl p-4 mb-4">
-                    <p class="text-sm text-gray-500 mb-1">🎯 Objetivo</p>
-                    <p class="text-white">{{ training.objective }}</p>
+                <!-- Meta Info (Mobile: Compacto) -->
+                <div class="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-500">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        {{ training.total_videos }} vídeos
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ training.total_duration_formatted }}
+                    </span>
                 </div>
-                {% endif %}
-                
-                <!-- Progress -->
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between text-sm mb-2">
-                            <span class="text-gray-500">Progresso</span>
-                            <span class="text-white font-medium" id="progressText">{{ progress }}%</span>
-                        </div>
-                        <div class="h-3 bg-dark-600 rounded-full overflow-hidden">
-                            <div id="progressBar" class="h-full rounded-full transition-all duration-500 {% if progress >= 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
-                                 style="width: {{ progress }}%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center px-4 py-2 bg-brand-500/20 rounded-xl">
-                        <p class="text-2xl font-bold text-brand-500">+{{ training.reward_points }}</p>
-                        <p class="text-xs text-gray-500">pontos</p>
-                    </div>
+            </div>
+            
+            {% if training.description %}
+            <p class="text-sm md:text-base text-gray-400 mb-4 line-clamp-2 md:line-clamp-none">{{ training.description }}</p>
+            {% endif %}
+            
+            {% if training.objective %}
+            <div class="bg-dark-700 rounded-xl p-3 md:p-4 mb-4">
+                <p class="text-xs md:text-sm text-gray-500 mb-1.5 md:mb-1 flex items-center gap-1.5">
+                    <span>🎯</span>
+                    <span>Objetivo</span>
+                </p>
+                <p class="text-sm md:text-base text-white leading-relaxed">{{ training.objective }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Progress (Mobile: Stacked) -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between text-xs md:text-sm mb-2">
+                    <span class="text-gray-500">Progresso</span>
+                    <span class="text-white font-semibold" id="progressText">{{ progress }}%</span>
+                </div>
+                <div class="h-2.5 md:h-3 bg-dark-600 rounded-full overflow-hidden">
+                    <div id="progressBar" class="h-full rounded-full transition-all duration-500 {% if progress >= 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
+                         style="width: {{ progress }}%"></div>
+                </div>
+            </div>
+            
+            <!-- Pontos e Botão (Mobile: Stacked) -->
+            <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
+                <div class="text-center px-4 py-3 bg-brand-500/20 rounded-xl border border-brand-500/30">
+                    <p class="text-xl md:text-2xl font-bold text-brand-500">+{{ training.reward_points }}</p>
+                    <p class="text-xs text-gray-500">pontos</p>
                 </div>
                 
                 <!-- Botão Iniciar Treinamento -->
                 {% if content_items %}
-                <div class="mt-4">
-                    {% with first_item=content_items|first %}
-                    <a href="{% url 'trainings:content_player' training.slug first_item.type first_item.item.id %}" 
-                       class="btn-primary w-full md:w-auto inline-flex items-center justify-center gap-2 text-lg py-4 px-8">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        {% if progress == 0 %}Iniciar Treinamento{% elif progress >= 100 %}Revisar Treinamento{% else %}Continuar Treinamento{% endif %}
-                    </a>
-                    {% endwith %}
-                </div>
+                {% with first_item=content_items|first %}
+                <a href="{% url 'trainings:content_player' training.slug first_item.type first_item.item.id %}" 
+                   class="btn-primary w-full md:w-auto flex-1 md:flex-initial inline-flex items-center justify-center gap-2 text-base md:text-lg py-3 md:py-4 px-6 md:px-8 min-h-[48px]">
+                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {% if progress == 0 %}Iniciar Treinamento{% elif progress >= 100 %}Revisar Treinamento{% else %}Continuar Treinamento{% endif %}
+                </a>
+                {% endwith %}
                 {% endif %}
             </div>
         </div>
     </div>
     
     <!-- Lista de Conteúdo -->
-    <h2 class="text-xl font-semibold text-white mb-4">📚 Conteúdo do Treinamento</h2>
+    <div class="mb-4 md:mb-6">
+        <h2 class="text-lg md:text-xl font-semibold text-white mb-3 md:mb-4 flex items-center gap-2">
+            <span>📚</span>
+            <span>Conteúdo do Treinamento</span>
+        </h2>
+    </div>
     
     <div class="space-y-3">
         {% for item in content_items %}
         {% if item.type == 'video' %}
         <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
-           class="flex items-center gap-4 p-4 rounded-xl border group transition-all
-                  {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 hover:border-brand-500/50{% endif %}"
+           class="flex items-center gap-3 p-4 rounded-2xl border-2 transition-all min-h-[72px] active:scale-[0.98]
+                  {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 active:border-brand-500/50{% endif %}"
            data-content-id="{{ item.item.id }}"
            data-content-type="{{ item.type }}">
             <!-- Order Number -->
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-semibold text-sm md:text-base flex-shrink-0
                         {% if item.completed %}bg-green-500 text-white{% else %}bg-dark-600 text-gray-400{% endif %}">
                 {% if item.completed %}
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
                 {% else %}
@@ -133,38 +140,30 @@
                 {% endif %}
             </div>
             
-            <!-- Icon -->
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 
-                        {% if item.completed %}bg-green-500/20 text-green-400{% else %}bg-blue-500/20 text-blue-400{% endif %}">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-            </div>
-            
             <!-- Info -->
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium transition-colors truncate
-                           {% if item.completed %}text-green-400{% else %}text-white group-hover:text-brand-400{% endif %}">
-                    {{ item.item.title }}
-                </h3>
-                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">📹 {{ item.item.duration_formatted }}</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 
+                                {% if item.completed %}bg-green-500/20 text-green-400{% else %}bg-blue-500/20 text-blue-400{% endif %}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-base md:text-lg font-semibold transition-colors line-clamp-2
+                               {% if item.completed %}text-green-400{% else %}text-white{% endif %}">
+                        {{ item.item.title }}
+                    </h3>
+                </div>
+                <p class="text-xs md:text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %} ml-8">
+                    {{ item.item.duration_formatted }}
+                </p>
             </div>
             
-            <!-- Status -->
-            {% if item.completed %}
-            <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Concluído
-            </span>
-            {% endif %}
-            
             <!-- Play Button -->
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
-                        {% if item.completed %}bg-green-500/20 group-hover:bg-green-500/30{% else %}bg-brand-500/20 group-hover:bg-brand-500{% endif %}">
-                <svg class="w-5 h-5 transition-colors
-                           {% if item.completed %}text-green-400 group-hover:text-green-300{% else %}text-brand-500 group-hover:text-white{% endif %}" 
+            <div class="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-all
+                        {% if item.completed %}bg-green-500/20 active:bg-green-500/30{% else %}bg-brand-500/20 active:bg-brand-500{% endif %}">
+                <svg class="w-6 h-6 md:w-7 md:h-7 transition-colors
+                           {% if item.completed %}text-green-400{% else %}text-brand-500{% endif %}" 
                      fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
                 </svg>
@@ -172,15 +171,15 @@
         </a>
         {% else %}
         <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
-           class="flex items-center gap-4 p-4 rounded-xl border group transition-all
-                  {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 hover:border-brand-500/50{% endif %}"
+           class="flex items-center gap-3 p-4 rounded-2xl border-2 transition-all min-h-[72px] active:scale-[0.98]
+                  {% if item.completed %}bg-green-500/10 border-green-500/30{% else %}bg-dark-700 border-dark-600 active:border-brand-500/50{% endif %}"
            data-content-id="{{ item.item.id }}"
            data-content-type="{{ item.type }}">
             <!-- Order Number -->
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium
+            <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-semibold text-sm md:text-base flex-shrink-0
                         {% if item.completed %}bg-green-500 text-white{% else %}bg-dark-600 text-gray-400{% endif %}">
                 {% if item.completed %}
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
                 {% else %}
@@ -188,38 +187,30 @@
                 {% endif %}
             </div>
             
-            <!-- Icon -->
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 
-                        {% if item.completed %}bg-green-500/20 text-green-400{% else %}bg-purple-500/20 text-purple-400{% endif %}">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-            </div>
-            
             <!-- Info -->
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium transition-colors truncate
-                           {% if item.completed %}text-green-400{% else %}text-white group-hover:text-brand-400{% endif %}">
-                    {{ item.item.title }}
-                </h3>
-                <p class="text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">🧠 {{ item.item.total_questions }} pergunta{{ item.item.total_questions|pluralize }} • Nota mínima: {{ item.item.passing_score }}%</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 
+                                {% if item.completed %}bg-green-500/20 text-green-400{% else %}bg-purple-500/20 text-purple-400{% endif %}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-base md:text-lg font-semibold transition-colors line-clamp-2
+                               {% if item.completed %}text-green-400{% else %}text-white{% endif %}">
+                        {{ item.item.title }}
+                    </h3>
+                </div>
+                <p class="text-xs md:text-sm {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %} ml-8">
+                    {{ item.item.total_questions }} pergunta{{ item.item.total_questions|pluralize }} • Mín: {{ item.item.passing_score }}%
+                </p>
             </div>
             
-            <!-- Status -->
-            {% if item.completed %}
-            <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Aprovado
-            </span>
-            {% endif %}
-            
             <!-- Start Button -->
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
-                        {% if item.completed %}bg-green-500/20 group-hover:bg-green-500/30{% else %}bg-brand-500/20 group-hover:bg-brand-500{% endif %}">
-                <svg class="w-5 h-5 transition-colors
-                           {% if item.completed %}text-green-400 group-hover:text-green-300{% else %}text-brand-500 group-hover:text-white{% endif %}" 
+            <div class="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-all
+                        {% if item.completed %}bg-green-500/20 active:bg-green-500/30{% else %}bg-brand-500/20 active:bg-brand-500{% endif %}">
+                <svg class="w-6 h-6 md:w-7 md:h-7 transition-colors
+                           {% if item.completed %}text-green-400{% else %}text-brand-500{% endif %}" 
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                 </svg>

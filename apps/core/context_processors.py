@@ -28,5 +28,30 @@ def company_context(request):
         company_id = request.session.get('current_company_id')
         context['selected_company_id'] = int(company_id) if company_id else None
     
+    # Contagem de alertas não resolvidos (apenas para gestores)
+    if request.user.is_authenticated and (getattr(request, 'is_gestor', False) or request.user.is_superuser):
+        company = getattr(request, 'current_company', None)
+        if company:
+            try:
+                from apps.checklists.models import ChecklistAlert
+                from django.utils import timezone
+                from datetime import timedelta
+                
+                # Alertas não resolvidos de hoje
+                today = timezone.now().date()
+                alerts_count = ChecklistAlert.objects.filter(
+                    company=company,
+                    is_resolved=False,
+                    created_at__date=today
+                ).count()
+                
+                context['checklist_alerts_count'] = alerts_count
+            except Exception:
+                context['checklist_alerts_count'] = 0
+        else:
+            context['checklist_alerts_count'] = 0
+    else:
+        context['checklist_alerts_count'] = 0
+    
     return context
 

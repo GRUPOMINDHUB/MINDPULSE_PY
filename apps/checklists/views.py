@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 from django.db.models import Max, Q
 from django.urls import reverse
 
-from .models import Checklist, Task, TaskDone, ChecklistCompletion
+from .models import Checklist, Task, TaskDone, ChecklistCompletion, ChecklistAlert
 from .forms import ChecklistForm, TaskForm
 from apps.core.models import Company
 from apps.core.decorators import gestor_required, gestor_required_ajax
@@ -188,6 +188,12 @@ def checklist_detail(request, pk):
     except Exception:
         pass
     
+    # Identifica tarefas obrigatórias pendentes
+    missing_required_tasks = []
+    for item in tasks_with_status:
+        if item['task'].is_required and not item['is_done']:
+            missing_required_tasks.append(item['task'])
+    
     context = {
         'checklist': checklist,
         'tasks': tasks_with_status,
@@ -197,6 +203,7 @@ def checklist_detail(request, pk):
         'is_completed': progress == 100,
         'can_manage_tasks': can_manage_tasks,
         'assigned_user': assigned_user,
+        'missing_required_tasks': missing_required_tasks,
     }
     
     return render(request, 'checklists/detail.html', context)
@@ -249,6 +256,150 @@ def toggle_task(request, task_id):
         response_data['reward_message'] = f'Parabéns! Você completou o checklist e ganhou {checklist.points_per_completion} pontos!'
     
     return JsonResponse(response_data)
+
+
+@login_required
+def finalize_checklist_confirm(request, checklist_id):
+    """
+    Página de confirmação para finalizar checklist com pendências.
+    """
+    checklist = get_object_or_404(Checklist, pk=checklist_id)
+    
+    if not request.user.is_superuser:
+        if not request.current_company or checklist.company != request.current_company:
+            messages.error(request, 'Não autorizado.')
+            return redirect('checklists:list')
+    
+    period_key = checklist.get_current_period_key()
+    
+    # Identifica tarefas obrigatórias pendentes
+    done_tasks = TaskDone.objects.filter(
+        task__checklist=checklist,
+        user=request.user,
+        period_key=period_key
+    ).values_list('task_id', flat=True)
+    
+    missing_tasks = checklist.tasks.filter(
+        is_active=True,
+        is_required=True
+    ).exclude(id__in=done_tasks)
+    
+    # Calcula progresso
+    total_tasks = checklist.tasks.filter(is_active=True).count()
+    completed_tasks = done_tasks.count()
+    progress = int((completed_tasks / total_tasks * 100)) if total_tasks > 0 else 0
+    
+    context = {
+        'checklist': checklist,
+        'missing_tasks': missing_tasks,
+        'progress': progress,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+    }
+    
+    return render(request, 'checklists/finalize_confirm.html', context)
+
+
+@login_required
+@require_POST
+def finalize_checklist_with_alert(request, checklist_id):
+    """
+    Finaliza checklist e cria alerta se houver tarefas obrigatórias pendentes.
+    """
+    checklist = get_object_or_404(Checklist, pk=checklist_id)
+    
+    if not request.user.is_superuser:
+        if not request.current_company or checklist.company != request.current_company:
+            messages.error(request, 'Não autorizado.')
+            return redirect('checklists:list')
+    
+    period_key = checklist.get_current_period_key()
+    
+    # Identifica tarefas obrigatórias pendentes
+    done_tasks = TaskDone.objects.filter(
+        task__checklist=checklist,
+        user=request.user,
+        period_key=period_key
+    ).values_list('task_id', flat=True)
+    
+    missing_tasks = checklist.tasks.filter(
+        is_active=True,
+        is_required=True
+    ).exclude(id__in=done_tasks)
+    
+    if missing_tasks.exists():
+        # Cria um alerta para cada tarefa pendente
+        alerts_created = 0
+        for task in missing_tasks:
+            # Evita duplicatas usando get_or_create
+            alert, created = ChecklistAlert.objects.get_or_create(
+                checklist=checklist,
+                task=task,
+                user=request.user,
+                company=checklist.company,
+                period_key=period_key,
+                is_resolved=False,
+                defaults={}
+            )
+            if created:
+                alerts_created += 1
+        
+        messages.success(request, f'{alerts_created} alerta(s) criado(s) com sucesso. {len(missing_tasks)} tarefa(s) pendente(s) reportada(s) ao gestor.')
+    else:
+        messages.success(request, 'Checklist finalizado com sucesso!')
+    
+    return redirect('checklists:list')
+
+
+@login_required
+@gestor_required
+def checklist_alerts_list(request):
+    """
+    Lista de alertas de checklists para gestores.
+    ACCESS: GESTOR | ADMIN MASTER
+    """
+    company = request.current_company
+    if not company:
+        messages.error(request, 'Empresa não selecionada.')
+        return redirect('core:dashboard')
+    
+    alerts = ChecklistAlert.objects.filter(
+        company=company,
+        is_resolved=False
+    ).select_related('checklist', 'user').order_by('-created_at')
+    
+    context = {
+        'alerts': alerts,
+    }
+    
+    return render(request, 'checklists/alerts_list.html', context)
+
+
+@login_required
+@gestor_required
+@require_POST
+def resolve_alert(request, alert_id):
+    """
+    Marca alerta como resolvido.
+    ACCESS: GESTOR | ADMIN MASTER
+    """
+    from django.utils import timezone
+    
+    alert = get_object_or_404(ChecklistAlert, pk=alert_id)
+    
+    if not request.user.is_superuser:
+        if not request.current_company or alert.company != request.current_company:
+            return JsonResponse({'error': 'Não autorizado'}, status=403)
+    
+    alert.is_resolved = True
+    alert.resolved_at = timezone.now()
+    alert.resolved_by = request.user
+    alert.save()
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Alerta marcado como resolvido.'
+    })
 
 
 # ============================================================================

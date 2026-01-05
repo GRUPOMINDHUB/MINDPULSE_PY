@@ -188,6 +188,8 @@ def content_player(request, slug, content_type, content_id):
         current_question = None
         current_question_index = 0
         total_questions = 0
+        result_questions = []
+        wrong_question_numbers = []
         
         # Busca progresso do vídeo
         progress, _ = UserProgress.objects.get_or_create(
@@ -221,9 +223,47 @@ def content_player(request, slug, content_type, content_id):
         if result_id:
             attempt = get_object_or_404(UserQuizAttempt, pk=result_id, user=user, quiz=content)
             show_result = True
+            
+            # Prepara dados detalhados das respostas para o template
+            result_questions = []
+            wrong_question_numbers = []
+            for index, question in enumerate(questions, start=1):
+                # Pega a resposta selecionada pelo usuário
+                selected_choice_id = attempt.answers.get(str(question.id), None)
+                selected_choice = None
+                is_correct = False
+                
+                if selected_choice_id:
+                    try:
+                        # Busca a escolha no banco (mesma lógica do calculate_score)
+                        selected_choice = Choice.objects.get(id=selected_choice_id, question=question)
+                        # Verifica se é correta
+                        if selected_choice.is_correct:
+                            is_correct = True
+                    except Choice.DoesNotExist:
+                        # Escolha não existe, considera errada
+                        pass
+                    except Exception:
+                        # Outro erro, considera errada
+                        pass
+                
+                # Se não acertou, adiciona o número da pergunta errada (usando índice 1-based)
+                if not is_correct:
+                    wrong_question_numbers.append(index)
+                
+                result_questions.append({
+                    'question': question,
+                    'selected_choice': selected_choice,
+                    'is_correct': is_correct,
+                })
+            
+            # Ordena os números das perguntas erradas
+            wrong_question_numbers.sort()
         else:
             attempt = None
             show_result = False
+            result_questions = []
+            wrong_question_numbers = []
         
         progress = None  # Quiz não tem progresso de vídeo
     else:
@@ -272,8 +312,12 @@ def content_player(request, slug, content_type, content_id):
     # Adiciona variáveis específicas para facilitar acesso no template
     if content_type == 'quiz':
         context['quiz'] = content
+        if show_result:
+            context['result_questions'] = result_questions
+        context['wrong_question_numbers'] = wrong_question_numbers
     elif content_type == 'video':
         context['video'] = content
+        context['wrong_question_numbers'] = []
     
     return render(request, 'trainings/player.html', context)
 

@@ -129,9 +129,16 @@ class Checklist(CompanyBaseModel):
         """
         Verifica se o checklist possui tarefas obrigatórias pendentes de períodos passados.
         
+        IMPORTANTE: Um checklist nunca deve ser marcado como "Atrasado" se já foi finalizado.
+        
         Returns:
             bool: True se há tarefas obrigatórias não concluídas no período anterior
         """
+        # Se o checklist já foi completado no período atual, não está atrasado
+        period_key = self.get_current_period_key()
+        if self.is_completed_by(user, period_key):
+            return False
+        
         prev_period_key = self.get_previous_period_key()
         
         required_tasks = self.tasks.filter(is_active=True, is_required=True)
@@ -289,3 +296,69 @@ class ChecklistCompletion(TimeStampedModel):
     def __str__(self):
         return f'{self.user} - {self.checklist.title} ({self.period_key})'
 
+
+class ChecklistAlert(CompanyBaseModel):
+    """
+    Alerta de checklist com tarefa pendente.
+    Cada tarefa pendente gera um alerta separado.
+    Criado quando colaborador finaliza checklist com tarefas obrigatórias em falta.
+    """
+    checklist = models.ForeignKey(
+        Checklist,
+        on_delete=models.CASCADE,
+        related_name='alerts',
+        verbose_name='Checklist'
+    )
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='alerts',
+        verbose_name='Tarefa Pendente',
+        help_text='Tarefa obrigatória que não foi concluída'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='checklist_alerts',
+        verbose_name='Usuário'
+    )
+    
+    period_key = models.CharField(
+        'Chave do Período',
+        max_length=20,
+        help_text='Período em que o alerta foi criado'
+    )
+    
+    is_resolved = models.BooleanField(
+        'Resolvido',
+        default=False,
+        help_text='Marcado como resolvido pelo gestor'
+    )
+    
+    resolved_at = models.DateTimeField(
+        'Resolvido em',
+        null=True,
+        blank=True
+    )
+    
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_alerts',
+        verbose_name='Resolvido por'
+    )
+    
+    class Meta:
+        verbose_name = 'Alerta de Checklist'
+        verbose_name_plural = 'Alertas de Checklists'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company', 'is_resolved', '-created_at']),
+        ]
+        unique_together = ['checklist', 'task', 'user', 'period_key', 'is_resolved']
+    
+    def __str__(self):
+        status = 'Resolvido' if self.is_resolved else 'Pendente'
+        return f'{self.user.get_full_name()} - {self.checklist.title} ({status})'

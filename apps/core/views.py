@@ -13,7 +13,7 @@ from datetime import timedelta, datetime
 import calendar
 
 from apps.trainings.models import Training, UserProgress, UserTrainingReward
-from apps.checklists.models import Checklist, Task, TaskDone, ChecklistCompletion
+from apps.checklists.models import Checklist, Task, TaskDone, ChecklistCompletion, ChecklistAlert
 from apps.feedback.models import FeedbackTicket
 from apps.accounts.models import User, UserCompany, Warning
 from .models import Company, Role
@@ -258,12 +258,37 @@ def gestor_dashboard(request):
     # ===========================================
     today_key = PeriodKeyHelper.get_period_key(PeriodKeyHelper.FREQUENCY_DAILY)
     
-    # Total de tarefas ativas da empresa (todas as frequências)
+    # Total de tarefas ativas únicas da empresa (para referência)
     total_tasks_active = Task.objects.filter(
         checklist__company=company,
         checklist__is_active=True,
         is_active=True
     ).count()
+    
+    # Calcular total esperado de tarefas hoje (considerando colaboradores atribuídos)
+    checklists_active = Checklist.objects.filter(
+        company=company,
+        is_active=True
+    ).prefetch_related('tasks', 'assigned_users')
+    
+    total_expected_tasks = 0
+    for checklist in checklists_active:
+        # Contar tarefas ativas deste checklist
+        tasks_count = checklist.tasks.filter(is_active=True).count()
+        
+        # Contar quantos colaboradores devem fazer este checklist
+        if checklist.assigned_users.exists():
+            # Checklist atribuído a usuários específicos
+            assigned_count = checklist.assigned_users.filter(
+                user_companies__company=company,
+                user_companies__is_active=True
+            ).distinct().count()
+        else:
+            # Checklist global (todos os colaboradores)
+            assigned_count = total_users
+        
+        # Total esperado = tarefas * colaboradores
+        total_expected_tasks += tasks_count * assigned_count
     
     # Tarefas concluídas hoje (por todos os colaboradores)
     tasks_done_today = TaskDone.objects.filter(
@@ -271,11 +296,12 @@ def gestor_dashboard(request):
         period_key=today_key
     ).count()
     
-    # Performance: (Total de TaskDone hoje / Total de Task ativas) * 100
-    checklist_completion_rate = round(
-        (tasks_done_today / total_tasks_active * 100) if total_tasks_active > 0 else 0,
-        1
-    )
+    # Performance: (Total de TaskDone hoje / Total esperado) * 100, limitado a 100%
+    if total_expected_tasks > 0:
+        completion_rate = (tasks_done_today / total_expected_tasks * 100)
+        checklist_completion_rate = round(min(completion_rate, 100.0), 1)
+    else:
+        checklist_completion_rate = 0
     
     # ===========================================
     # PROGRESSO MÉDIO DA EQUIPE EM TREINAMENTOS
@@ -381,6 +407,22 @@ def gestor_dashboard(request):
             'progress': avg_progress
         })
     
+    # ===========================================
+    # ALERTAS DE CHECKLISTS (Tarefas Pendentes)
+    # ===========================================
+    today = timezone.now().date()
+    checklist_alerts = ChecklistAlert.objects.filter(
+        company=company,
+        is_resolved=False,
+        created_at__date=today
+    ).select_related('user', 'checklist', 'task').order_by('-created_at')[:5]
+    
+    checklist_alerts_count = ChecklistAlert.objects.filter(
+        company=company,
+        is_resolved=False,
+        created_at__date=today
+    ).count()
+    
     context = {
         'total_users': total_users,
         'total_trainings': total_trainings,
@@ -397,6 +439,8 @@ def gestor_dashboard(request):
         'birthdays_month': birthdays_month,
         'current_month': current_month,
         'current_month_name': current_month_name,
+        'checklist_alerts': checklist_alerts,
+        'checklist_alerts_count': checklist_alerts_count,
     }
     
     return render(request, 'core/gestor_dashboard.html', context)

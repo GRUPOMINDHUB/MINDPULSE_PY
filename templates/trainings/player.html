@@ -10,7 +10,11 @@
         height: 0;
         overflow: hidden;
         background: #000;
-        border-radius: 1rem;
+    }
+    @media (min-width: 768px) {
+        .video-container {
+            border-radius: 1rem;
+        }
     }
     .video-container video {
         position: absolute;
@@ -20,15 +24,20 @@
         height: 100%;
     }
     .quiz-container {
-        min-height: 400px;
+        min-height: 300px;
+    }
+    @media (min-width: 768px) {
+        .quiz-container {
+            min-height: 400px;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="p-8">
-    <!-- Breadcrumb -->
-    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+<div class="p-0 md:p-8">
+    <!-- Breadcrumb (Mobile: oculto) -->
+    <div class="hidden md:flex items-center gap-2 text-sm text-gray-500 mb-6 px-4 md:px-0">
         <a href="{% url 'trainings:list' %}" class="hover:text-white transition-colors">Treinamentos</a>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -40,12 +49,12 @@
         <span class="text-white">{% if content_type == 'video' %}{{ video.title }}{% else %}{{ quiz.title }}{% endif %}</span>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-0 md:gap-8">
         <!-- Player -->
         <div class="lg:col-span-2">
             {% if content_type == 'video' %}
-            <!-- VIDEO PLAYER -->
-            <div class="video-container mb-6" id="videoContainer">
+            <!-- VIDEO PLAYER (Mobile: 100vw) - Com espaçamento superior -->
+            <div class="video-container mb-4 md:mb-6 rounded-none md:rounded-2xl mt-4 md:mt-0" id="videoContainer" style="padding-bottom: 56.25%;">
                 <video id="videoPlayer" 
                        controls 
                        preload="metadata"
@@ -59,32 +68,32 @@
             </div>
             
             <!-- Video Info -->
-            <div class="card">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white mb-2">{{ video.title }}</h1>
-                        <p class="text-gray-500">{{ video.duration_formatted }} • {{ training.title }}</p>
+            <div class="card mx-4 md:mx-0">
+                <div class="flex items-start justify-between mb-3 md:mb-4">
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-lg md:text-2xl font-bold text-white mb-1 md:mb-2 line-clamp-2">{{ video.title }}</h1>
+                        <p class="text-xs md:text-sm text-gray-500">{{ video.duration_formatted }} • {{ training.title }}</p>
                     </div>
                     
-                    <div id="completionBadge" class="{% if not progress.completed %}hidden{% endif %}">
-                        <span class="px-4 py-2 bg-green-500/20 text-green-400 rounded-xl text-sm font-medium flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div id="completionBadge" class="{% if not progress.completed %}hidden{% endif %} flex-shrink-0 ml-2">
+                        <span class="px-2 md:px-4 py-1 md:py-2 bg-green-500/20 text-green-400 rounded-xl text-xs md:text-sm font-medium flex items-center gap-1 md:gap-2">
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
-                            Concluído
+                            <span class="hidden md:inline">Concluído</span>
                         </span>
                     </div>
                 </div>
                 
                 {% if video.description %}
-                <p class="text-gray-400">{{ video.description }}</p>
+                <p class="text-sm md:text-base text-gray-400 line-clamp-3 md:line-clamp-none">{{ video.description }}</p>
                 {% endif %}
             </div>
             {% else %}
             <!-- QUIZ PLAYER -->
             {% if show_result %}
             <!-- RESULTADO DO QUIZ -->
-            <div class="card quiz-result mb-6">
+            <div class="card quiz-result mb-6 mt-4 md:mt-0 mx-4 md:mx-0">
                 <div class="text-center mb-6">
                     <div class="mb-4">
                         {% if attempt.is_passed %}
@@ -115,120 +124,78 @@
                     </div>
                 </div>
                 
-                <!-- Detalhes das Respostas -->
+                <!-- Detalhes das Respostas - Apenas se houver erros -->
+                {% if wrong_question_numbers %}
                 <div class="mt-6">
-                    <h3 class="text-xl font-semibold text-white mb-4">Detalhes das Respostas</h3>
-                    
-                    <div class="space-y-4">
-                        {% for item in result_questions %}
-                        <div class="p-4 bg-dark-700 rounded-xl border {% if item.is_correct %}border-green-500/50{% else %}border-red-500/50{% endif %}">
-                            <div class="mb-3">
-                                <div class="flex items-center gap-2 mb-2">
-                                    {% if item.is_correct %}
-                                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    <span class="text-green-400 font-medium">Correta</span>
-                                    {% else %}
-                                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                    <span class="text-red-400 font-medium">Incorreta</span>
-                                    {% endif %}
-                                </div>
-                                <p class="text-white font-medium">{{ item.question.text }}</p>
-                            </div>
-                            
-                            <div class="space-y-2">
-                                {% for choice in item.question.choices.all %}
-                                {% if item.selected_choice and choice.id == item.selected_choice.id %}
-                                <div class="p-3 rounded-lg {% if choice.is_correct %}bg-green-500/20 border border-green-500/50{% else %}bg-red-500/20 border border-red-500/50{% endif %}">
-                                    <div class="flex items-center gap-2">
-                                        {% if choice.is_correct %}
-                                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                        {% endif %}
-                                        <span class="text-xs font-medium {% if choice.is_correct %}text-green-400{% else %}text-red-400{% endif %}">
-                                            Sua resposta
-                                        </span>
-                                        <span class="{% if choice.is_correct %}text-green-300{% else %}text-red-300{% endif %}">
-                                            {{ choice.text }}
-                                        </span>
-                                    </div>
-                                </div>
-                                {% elif choice.is_correct %}
-                                <div class="p-3 rounded-lg bg-green-500/20 border border-green-500/50">
-                                    <div class="flex items-center gap-2">
-                                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                        <span class="text-green-300">
-                                            {{ choice.text }}
-                                        </span>
-                                    </div>
-                                </div>
-                                {% else %}
-                                <div class="p-3 rounded-lg bg-dark-800 border border-dark-600">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-gray-400">
-                                            {{ choice.text }}
-                                        </span>
-                                    </div>
-                                </div>
-                                {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
+                    <p class="text-base md:text-lg text-red-400 font-medium">
+                        Você errou a pergunta{% if wrong_question_numbers|length > 1 %}s{% endif %} 
+                        {% for num in wrong_question_numbers %}
+                        {{ num }}{% if not forloop.last %}{% if forloop.revcounter0 == 1 %} e {% else %}, {% endif %}{% endif %}
+                        {% endfor %}.
+                    </p>
                 </div>
+                {% endif %}
                 
-                <!-- Botões de Ação -->
-                <div class="flex items-center justify-between gap-4 mt-6 pt-6 border-t border-dark-600">
-                    <a href="{% url 'trainings:content_player' training.slug 'quiz' quiz.id %}" 
-                       class="btn-secondary flex items-center gap-2 flex-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                <!-- Botões de Ação (Anterior + Continuar) -->
+                <div class="flex items-center justify-between gap-2 mt-6 pt-6 border-t border-dark-600 px-4 md:px-0">
+                    {% if prev_content %}
+                    <a href="{% url 'trainings:content_player' training.slug prev_content.type prev_content.item.id %}" 
+                       class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-brand-500/50 text-white transition-all duration-200 flex-1 md:flex-initial justify-center">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
-                        Refazer Quiz
+                        <span class="text-sm md:text-base font-medium">Anterior</span>
                     </a>
+                    {% else %}
+                    <div class="flex-1 md:flex-none"></div>
+                    {% endif %}
                     
                     {% if next_content %}
                     <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}" 
-                       class="btn-primary flex items-center gap-2 flex-1">
-                        Continuar
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                        <span class="text-sm md:text-base">Continuar</span>
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </a>
                     {% else %}
                     <a href="{% url 'trainings:detail' training.slug %}" 
-                       class="btn-primary flex items-center gap-2 flex-1">
-                        Finalizar Treinamento
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                        <span class="text-sm md:text-base">Finalizar</span>
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                     </a>
                     {% endif %}
                 </div>
+                
+                <!-- Botão Refazer Quiz (Abaixo, Centralizado) -->
+                <div class="mt-4 px-4 md:px-0">
+                    <a href="{% url 'trainings:content_player' training.slug 'quiz' quiz.id %}" 
+                       class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-gray-500 text-white transition-all duration-200 w-full md:w-auto md:mx-auto">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span class="text-sm md:text-base font-medium">Refazer Quiz</span>
+                    </a>
+                </div>
             </div>
             {% else %}
-            <!-- QUIZ NORMAL -->
-            <div class="card quiz-container mb-6">
-                <div class="flex items-start justify-between mb-6">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white mb-2">{{ quiz.title }}</h1>
-                        <p class="text-gray-500">{{ training.title }}</p>
+            <!-- QUIZ NORMAL (Mobile: fullscreen) -->
+            <div class="card quiz-container mb-4 md:mb-6 mx-4 md:mx-0 mt-4 md:mt-0">
+                <div class="flex items-start justify-between mb-4 md:mb-6">
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-lg md:text-2xl font-bold text-white mb-1 md:mb-2 line-clamp-2">{{ quiz.title }}</h1>
+                        <p class="text-xs md:text-sm text-gray-500">{{ training.title }}</p>
                     </div>
                     
-                    <div class="text-sm text-gray-400">
-                        Pergunta {{ current_question_index|add:1 }} de {{ total_questions }}
+                    <div class="text-xs md:text-sm text-gray-400 flex-shrink-0 ml-2">
+                        {{ current_question_index|add:1 }}/{{ total_questions }}
                     </div>
                 </div>
                 
                 {% if quiz.description %}
-                <p class="text-gray-400 mb-6">{{ quiz.description }}</p>
+                <p class="text-sm md:text-base text-gray-400 mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">{{ quiz.description }}</p>
                 {% endif %}
                 
                 {% if current_question %}
@@ -237,52 +204,52 @@
                     <input type="hidden" name="question_index" value="{{ current_question_index }}">
                     <input type="hidden" name="answers_json" id="answersJson">
                     
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold text-white mb-4">
+                    <div class="mb-4 md:mb-6">
+                        <h3 class="text-base md:text-lg font-semibold text-white mb-3 md:mb-4">
                             {{ current_question.text }}
                         </h3>
                         
-                        <div class="space-y-3">
+                        <div class="space-y-2 md:space-y-3">
                             {% for choice in current_question.choices.all %}
-                            <label class="flex items-start gap-3 p-4 bg-dark-700 rounded-lg border border-dark-600 hover:border-brand-500/50 cursor-pointer transition-all group">
+                            <label class="flex items-start gap-3 p-4 md:p-4 bg-dark-700 rounded-lg border border-dark-600 active:border-brand-500/50 cursor-pointer transition-all min-h-[60px] md:min-h-0">
                                 <input type="radio" 
                                        name="question_{{ current_question.id }}" 
                                        value="{{ choice.id }}" 
-                                       class="mt-1 form-radio" 
+                                       class="mt-1 form-radio flex-shrink-0" 
                                        required>
-                                <span class="text-gray-300 flex-1 group-hover:text-white transition-colors">{{ choice.text }}</span>
+                                <span class="text-sm md:text-base text-gray-300 flex-1 pt-0.5">{{ choice.text }}</span>
                             </label>
                             {% endfor %}
                         </div>
                     </div>
                     
-                    <div class="flex items-center justify-between pt-6 border-t border-dark-600">
+                    <div class="flex items-center justify-between pt-4 md:pt-6 border-t border-dark-600 gap-2">
                         {% if current_question_index > 0 %}
                         <button type="button" 
                                 onclick="goToQuestion({{ current_question_index|add:-1 }})"
-                                class="btn-secondary flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-brand-500/50 text-white transition-all duration-200 flex-1 md:flex-initial justify-center">
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                             </svg>
-                            Anterior
+                            <span class="text-sm md:text-base font-medium">Pergunta anterior</span>
                         </button>
                         {% else %}
-                        <div></div>
+                        <div class="flex-1 md:flex-none"></div>
                         {% endif %}
                         
                         {% if current_question_index < total_questions|add:-1 %}
                         <button type="button" 
                                 onclick="goToQuestion({{ current_question_index|add:1 }})"
-                                class="btn-primary flex items-center gap-2">
-                            Próxima Pergunta
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                            <span class="text-sm md:text-base">Próxima pergunta</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
                         {% else %}
-                        <button type="submit" class="btn-primary flex items-center gap-2">
-                            Finalizar Quiz
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button type="submit" class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                            <span class="text-sm md:text-base">Finalizar Quiz</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
                         </button>
@@ -298,36 +265,37 @@
             {% endif %}
             {% endif %}
             
-            <!-- Navigation -->
-            <div class="flex items-center justify-between mt-6">
+            <!-- Navigation (Botões Elegantes) - Apenas para vídeo ou quiz sem resultado -->
+            {% if content_type == 'video' or not show_result %}
+            <div class="flex items-center justify-between mt-4 md:mt-6 px-4 md:px-0 gap-2">
                 {% if prev_content %}
                 <a href="{% url 'trainings:content_player' training.slug prev_content.type prev_content.item.id %}" 
-                   class="btn-secondary flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-dark-700 hover:bg-dark-600 border border-dark-600 hover:border-brand-500/50 text-white transition-all duration-200 flex-1 md:flex-initial justify-center">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
-                    < Anterior
+                    <span class="text-sm md:text-base font-medium">Anterior</span>
                 </a>
                 {% else %}
-                <div></div>
+                <div class="flex-1 md:flex-none"></div>
                 {% endif %}
                 
                 {% if content_type == 'video' %}
                     {% if progress.completed %}
                         {% if next_content %}
                         <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}" 
-                           class="btn-primary flex items-center gap-2"
+                           class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium"
                            id="nextBtn">
-                            Próximo {% if next_content.type == 'video' %}Vídeo{% else %}Quiz{% endif %}
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span class="text-sm md:text-base">Próximo</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </a>
                         {% else %}
                         <a href="{% url 'trainings:detail' training.slug %}" 
-                           class="btn-primary flex items-center gap-2">
-                            Finalizar
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                            <span class="text-sm md:text-base">Finalizar</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
                         </a>
@@ -335,18 +303,18 @@
                     {% else %}
                         {% if next_content %}
                         <button type="button" 
-                                class="btn-secondary flex items-center gap-2 cursor-not-allowed opacity-50"
+                                class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-dark-700 border border-dark-600 text-gray-500 cursor-not-allowed opacity-50 flex-1 md:flex-initial justify-center"
                                 id="nextBtn"
                                 disabled
                                 data-next-url="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}"
                                 title="Assista 90% do vídeo para desbloquear o próximo">
-                            Próximo {% if next_content.type == 'video' %}Vídeo{% else %}Quiz{% endif %}
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span class="text-sm md:text-base font-medium">Próximo</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </button>
                         {% else %}
-                        <div></div>
+                        <div class="flex-1 md:flex-none"></div>
                         {% endif %}
                     {% endif %}
                 {% else %}
@@ -354,48 +322,46 @@
                     {% if not show_result %}
                         {% if next_content %}
                         <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}" 
-                           class="btn-primary flex items-center gap-2">
-                            Próximo {% if next_content.type == 'video' %}Vídeo{% else %}Quiz{% endif %}
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                            <span class="text-sm md:text-base">Próximo</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </a>
                         {% else %}
                         <a href="{% url 'trainings:detail' training.slug %}" 
-                           class="btn-primary flex items-center gap-2">
-                            Finalizar
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium">
+                            <span class="text-sm md:text-base">Finalizar</span>
+                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
                         </a>
                         {% endif %}
-                    {% else %}
-                        <!-- Quando mostra resultado, os botões estão dentro do card do resultado -->
-                        <div></div>
                     {% endif %}
                 {% endif %}
             </div>
+            {% endif %}
         </div>
         
-        <!-- Sidebar - Lista de Conteúdo -->
-        <div class="card h-fit max-h-[calc(100vh-200px)] overflow-y-auto">
-            <h3 class="text-lg font-semibold text-white mb-4 sticky top-0 bg-dark-800 pb-4">
+        <!-- Sidebar - Lista de Conteúdo (Mobile: oculta ou colapsável) -->
+        <div class="hidden lg:block card h-fit max-h-[calc(100vh-200px)] overflow-y-auto">
+            <h3 class="text-base md:text-lg font-semibold text-white mb-3 md:mb-4 sticky top-0 bg-dark-800 pb-3 md:pb-4">
                 📚 Conteúdo do Treinamento
             </h3>
             
             <div class="space-y-2">
                 {% for item in all_content %}
                 <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
-                   class="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 
+                   class="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-xl transition-all duration-200 
                           {% if item.type == content_type and item.item.id == content.id %}bg-brand-500/20 border border-brand-500/50
                           {% elif item.completed %}bg-green-500/10 border border-green-500/30
-                          {% else %}hover:bg-dark-700{% endif %}">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 
+                          {% else %}active:bg-dark-700{% endif %}">
+                    <div class="w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs md:text-sm
                                 {% if item.type == content_type and item.item.id == content.id %}bg-brand-500 text-white
                                 {% elif item.completed %}bg-green-500 text-white
                                 {% else %}bg-dark-600 text-gray-500{% endif %}">
                         {% if item.completed %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                         {% else %}
@@ -403,13 +369,13 @@
                         {% endif %}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate 
+                        <p class="text-xs md:text-sm font-medium line-clamp-2 md:truncate 
                                   {% if item.type == content_type and item.item.id == content.id %}text-brand-400
                                   {% elif item.completed %}text-green-400
                                   {% else %}text-white{% endif %}">
                             {% if item.type == 'video' %}📹{% else %}🧠{% endif %} {{ item.item.title }}
                         </p>
-                        <p class="text-xs {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">
+                        <p class="text-[10px] md:text-xs {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %}">
                             {% if item.type == 'video' %}{{ item.item.duration_formatted }}{% else %}{{ item.item.total_questions }} pergunta{{ item.item.total_questions|pluralize }}{% endif %}
                         </p>
                     </div>
@@ -418,11 +384,88 @@
             </div>
         </div>
     </div>
+    
+    <!-- Lista de Conteúdo (Mobile: Abaixo do Player) -->
+    <div class="lg:hidden mt-6 px-4 pb-6">
+        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📚</span>
+            <span>Conteúdo do Treinamento</span>
+        </h3>
+        
+        <div class="space-y-2">
+            {% for item in all_content %}
+            <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
+               class="flex items-center gap-2.5 p-3 rounded-xl border transition-all active:scale-[0.98]
+                      {% if item.type == content_type and item.item.id == content.id %}bg-brand-500/20 border-brand-500/50
+                      {% elif item.completed %}bg-green-500/10 border-green-500/30
+                      {% else %}bg-dark-700 border-dark-600 active:border-brand-500/50{% endif %}">
+                <!-- Order Number -->
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-medium text-xs flex-shrink-0
+                            {% if item.type == content_type and item.item.id == content.id %}bg-brand-500 text-white
+                            {% elif item.completed %}bg-green-500 text-white
+                            {% else %}bg-dark-600 text-gray-400{% endif %}">
+                    {% if item.completed %}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    {% else %}
+                    {{ item.order }}
+                    {% endif %}
+                </div>
+                
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <div class="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 
+                                    {% if item.completed %}bg-green-500/20 text-green-400{% elif item.type == 'video' %}bg-blue-500/20 text-blue-400{% else %}bg-purple-500/20 text-purple-400{% endif %}">
+                            {% if item.type == 'video' %}
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            {% else %}
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <h3 class="text-sm font-medium transition-colors truncate
+                                   {% if item.type == content_type and item.item.id == content.id %}text-brand-400
+                                   {% elif item.completed %}text-green-400
+                                   {% else %}text-white{% endif %}">
+                            {{ item.item.title }}
+                        </h3>
+                    </div>
+                    <p class="text-[10px] {% if item.completed %}text-green-400/70{% else %}text-gray-500{% endif %} ml-7 mt-0.5">
+                        {% if item.type == 'video' %}{{ item.item.duration_formatted }}{% else %}{{ item.item.total_questions }} pergunta{{ item.item.total_questions|pluralize }} • Mín: {{ item.item.passing_score }}%{% endif %}
+                    </p>
+                </div>
+                
+                <!-- Action Button -->
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
+                            {% if item.completed %}bg-green-500/20 active:bg-green-500/30{% else %}bg-brand-500/20 active:bg-brand-500{% endif %}">
+                    {% if item.type == 'video' %}
+                    <svg class="w-4 h-4 transition-colors
+                               {% if item.completed %}text-green-400{% else %}text-brand-500{% endif %}" 
+                         fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-4 h-4 transition-colors
+                               {% if item.completed %}text-green-400{% else %}text-brand-500{% endif %}" 
+                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                    </svg>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 
 <!-- Modal de Recompensa -->
 <div id="rewardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-dark-800 border border-dark-600 rounded-3xl p-8 max-w-md w-full text-center animate-fade-in">
+    <div class="bg-dark-800 border border-dark-600 rounded-3xl p-6 md:p-8 max-w-[90vw] md:max-w-md w-full text-center animate-fade-in">
         <div class="w-24 h-24 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6 pulse-glow">
             <span class="text-5xl">🏆</span>
         </div>
