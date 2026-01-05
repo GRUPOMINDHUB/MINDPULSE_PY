@@ -1,20 +1,21 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ title }} - Mindpulse{% endblock %}
 
 {% block content %}
-<div class="p-8 max-w-3xl mx-auto">
+<div class="p-4 sm:p-6 md:p-8 max-w-3xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
+        <div class="flex items-center gap-2 sm:gap-4">
             <a href="{% url 'trainings:manage_list' %}" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-all">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
             </a>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ title }}</h1>
         </div>
-        <a href="{% url 'trainings:manage_list' %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200">
+        <a href="{% url 'trainings:manage_list' %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200 text-sm sm:text-base">
             ← Voltar
         </a>
     </div>
@@ -79,47 +80,76 @@
             <!-- Usuários Atribuídos -->
             {% if 'assigned_users' in form.fields %}
             <div>
-                <label for="id_assigned_users" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                     Usuários Atribuídos
                     <span class="text-xs text-gray-500 font-normal">(opcional)</span>
                 </label>
-                <div class="relative">
-                    <select name="assigned_users" id="id_assigned_users" 
-                            class="form-select bg-[#1A1A1A] border border-[#333333] text-white rounded-lg" 
-                            multiple 
-                            size="6">
-                        {% for user in form.assigned_users.field.queryset %}
-                        <option value="{{ user.id }}" 
-                                {% if user.id in form.assigned_users.value or user.id|stringformat:"s" in form.assigned_users.value %}selected{% endif %}>
-                            {{ user.get_full_name }} ({{ user.email }})
-                        </option>
-                        {% empty %}
-                        <option disabled id="no-users-option">
-                            {% if user.is_superuser %}
-                            Selecione uma empresa para ver os usuários disponíveis
-                            {% else %}
-                            Nenhum usuário disponível nesta empresa
-                            {% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mt-2 flex items-start gap-2">
-                    <div class="flex-1">
-                        <p class="text-xs text-gray-500">
-                            <strong>Dica:</strong> Segure <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Ctrl</kbd> (Windows) ou <kbd class="px-1.5 py-0.5 bg-dark-600 rounded text-xs">Cmd</kbd> (Mac) para selecionar múltiplos usuários. Deixe vazio para tornar o treinamento <strong class="text-brand-400">global</strong> (todos os colaboradores da empresa).
-                        </p>
+                
+                <!-- Multi-Select Dropdown Component -->
+                <div class="multi-select-dropdown" id="assigned_users_dropdown">
+                    <!-- Hidden input para Django form -->
+                    <input type="hidden" name="assigned_users" id="id_assigned_users_hidden" value="[]">
+                    
+                    <!-- Trigger Button -->
+                    <div class="multi-select-dropdown__trigger">
+                        <span class="multi-select-dropdown__trigger-text" data-placeholder="Selecione os colaboradores">
+                            Selecione os colaboradores
+                        </span>
+                        <svg class="multi-select-dropdown__trigger-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="multi-select-dropdown__dropdown">
+                        <!-- Search Input -->
+                        <div class="multi-select-dropdown__search">
+                            <input type="text" 
+                                   class="multi-select-dropdown__search-input" 
+                                   placeholder="Buscar colaborador..."
+                                   autocomplete="off">
+                        </div>
+                        
+                        <!-- Select All -->
+                        <div class="multi-select-dropdown__select-all">
+                            <input type="checkbox" 
+                                   class="multi-select-dropdown__select-all-checkbox"
+                                   id="select_all_assigned_users">
+                            <label for="select_all_assigned_users" class="multi-select-dropdown__select-all-label">
+                                Selecionar todos
+                            </label>
+                        </div>
+                        
+                        <!-- Options List -->
+                        <div class="multi-select-dropdown__options">
+                            {% for user in form.assigned_users.field.queryset %}
+                            <div class="multi-select-dropdown__option">
+                                <input type="checkbox" 
+                                       class="multi-select-dropdown__option-checkbox"
+                                       value="{{ user.id }}"
+                                       id="user_{{ user.id }}"
+                                       {% if user.id in form.assigned_users.value or user.id|stringformat:"s" in form.assigned_users.value %}checked{% endif %}>
+                                <label for="user_{{ user.id }}" class="multi-select-dropdown__option-label">
+                                    {{ user.get_full_name }} ({{ user.email }})
+                                </label>
+                            </div>
+                            {% empty %}
+                            <div class="multi-select-dropdown__empty">
+                                {% if user.is_superuser %}
+                                Selecione uma empresa para ver os usuários disponíveis
+                                {% else %}
+                                Nenhum usuário disponível nesta empresa
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
-                <div id="selected-users-badges" class="mt-3 flex flex-wrap gap-2">
-                    {% for user in form.assigned_users.field.queryset %}
-                        {% if user.id in form.assigned_users.value or user.id|stringformat:"s" in form.assigned_users.value %}
-                        <span class="px-3 py-1 bg-brand-500/20 border border-brand-500/50 text-brand-400 rounded-lg text-xs font-medium">
-                            {{ user.get_full_name }}
-                        </span>
-                        {% endif %}
-                    {% endfor %}
-                </div>
+                
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Deixe vazio para tornar o treinamento <strong class="text-brand-500">global</strong> (todos os colaboradores da empresa).
+                </p>
+                
                 {% if form.assigned_users.errors %}
                 <p class="mt-1 text-sm text-red-400">{{ form.assigned_users.errors.0 }}</p>
                 {% endif %}
@@ -131,14 +161,14 @@
                 <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Imagem de Capa</label>
                 {% if training.cover_image %}
                 <div class="mb-3">
-                    <img src="{{ training.cover_image.url }}" alt="Capa atual" class="w-48 h-32 object-cover rounded-xl">
+                    <img src="{{ training.cover_image.url }}" alt="Capa atual" class="w-full sm:w-48 h-auto sm:h-32 object-cover rounded-xl">
                 </div>
                 {% endif %}
                 <input type="file" name="cover_image" accept="image/*"
                        class="form-input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer">
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <!-- Pontos de Recompensa -->
                 <div>
                     <label for="id_reward_points" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Pontos de Recompensa</label>
@@ -157,7 +187,7 @@
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <!-- Disponível a partir de -->
                 <div>
                     <label for="id_available_from" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Disponível a partir de</label>
@@ -176,7 +206,7 @@
             </div>
             
             <!-- Checkboxes -->
-            <div class="flex items-center gap-6">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="is_active" 
                            {% if form.is_active.value %}checked{% endif %}
@@ -194,16 +224,49 @@
         </div>
         
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-dark-600">
-            <a href="{% url 'trainings:manage_list' %}" class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200">
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4 mt-6 sm:mt-8 pt-6 border-t border-gray-200 dark:border-dark-600">
+            <a href="{% url 'trainings:manage_list' %}" class="w-full sm:w-auto px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200 text-center">
                 Cancelar
             </a>
-            <button type="submit" class="btn-primary">
+            <button type="submit" class="w-full sm:w-auto btn-primary">
                 {% if training %}Salvar Alterações{% else %}Criar Treinamento{% endif %}
             </button>
         </div>
     </form>
 </div>
 
+{% if 'assigned_users' in form.fields %}
+<script src="{% static 'js/multi-select-dropdown.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar o multi-select dropdown
+    const dropdownElement = document.getElementById('assigned_users_dropdown');
+    if (dropdownElement) {
+        const dropdown = new MultiSelectDropdown(dropdownElement);
+        
+        // Antes de submeter o form, atualizar o campo hidden com os valores selecionados
+        const form = dropdownElement.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const selectedValues = dropdown.getSelectedValues();
+                const hiddenInput = document.getElementById('id_assigned_users_hidden');
+                if (hiddenInput) {
+                    // Criar inputs hidden individuais para cada valor selecionado
+                    // (Django espera múltiplos inputs com o mesmo name)
+                    hiddenInput.remove(); // Remove o input hidden JSON
+                    
+                    selectedValues.forEach(value => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'assigned_users';
+                        input.value = value;
+                        form.appendChild(input);
+                    });
+                }
+            });
+        }
+    }
+});
+</script>
+{% endif %}
 {% endblock %}
-
