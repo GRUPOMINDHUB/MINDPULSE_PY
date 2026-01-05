@@ -202,7 +202,7 @@
                     </div>
                     {% if alert.overdue_checklists %}
                     <div class="mt-2 space-y-1">
-                        {% for checklist_title in alert.overdue_checklists %}
+                        {% for checklist_title in alert.overdue_checklists|slice:":3" %}
                         <p class="text-xs text-gray-600 dark:text-gray-400 truncate">• {{ checklist_title }}</p>
                         {% endfor %}
                         {% if alert.overdue_count > 3 %}
@@ -219,32 +219,32 @@
                 {% endfor %}
             </div>
         </div>
+    </div>
+    
+    <!-- Progresso por Treinamento -->
+    <div class="card mt-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">📚 Progresso por Treinamento</h2>
+            <a href="{% url 'trainings:manage_list' %}" class="text-brand-500 hover:text-brand-400 text-sm">Gerenciar →</a>
+        </div>
         
-        <!-- Progresso por Treinamento -->
-        <div class="card">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">📚 Progresso por Treinamento</h2>
-                <a href="{% url 'trainings:manage_list' %}" class="text-brand-500 hover:text-brand-400 text-sm">Gerenciar →</a>
-            </div>
-            
-            <div class="space-y-4 max-h-[400px] overflow-y-auto">
-                {% for item in training_chart_data %}
-                <div class="p-4 bg-dark-700 rounded-xl">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-medium text-white">{{ item.name }}</h3>
-                        <span class="text-sm font-semibold text-brand-500">{{ item.progress }}%</span>
-                    </div>
-                    <div class="h-2 bg-dark-500 rounded-full overflow-hidden">
-                        <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ item.progress }}%"></div>
-                    </div>
+        <div class="space-y-4 max-h-[400px] overflow-y-auto">
+            {% for item in training_chart_data %}
+            <div class="p-4 bg-dark-700 dark:bg-dark-700 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-medium text-white truncate">{{ item.name }}</h3>
+                    <span class="text-sm font-semibold text-brand-500 ml-2 flex-shrink-0">{{ item.progress }}%</span>
                 </div>
-                {% empty %}
-                <div class="text-center py-8 text-gray-500">
-                    <div class="text-4xl mb-2">📹</div>
-                    <p>Nenhum treinamento cadastrado</p>
+                <div class="h-2 bg-dark-500 dark:bg-dark-500 rounded-full overflow-hidden">
+                    <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ item.progress }}%"></div>
                 </div>
-                {% endfor %}
             </div>
+            {% empty %}
+            <div class="text-center py-8 text-gray-500">
+                <div class="text-4xl mb-2">📹</div>
+                <p>Nenhum treinamento cadastrado</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
