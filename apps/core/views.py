@@ -893,3 +893,41 @@ def _generate_pdf(request, company, start_date, end_date, user=None):
         messages.error(request, 'Erro ao gerar PDF. Tente novamente.')
         return redirect('core:report_management')
 
+
+def _generate_collective_pdf(request, company, start_date, end_date):
+    """
+    Gera PDF do relatório coletivo usando xhtml2pdf.
+    """
+    try:
+        from xhtml2pdf import pisa
+    except ImportError:
+        messages.error(request, 'Biblioteca xhtml2pdf não está instalada.')
+        return redirect('core:report_management')
+    
+    # Extrair dados do relatório coletivo
+    report_data = get_company_report_data(company, start_date, end_date)
+    
+    # Renderizar template HTML
+    template = get_template('core/reports/pdf_collective.html')
+    html = template.render({'report_data': report_data, 'request': request})
+    
+    # Gerar PDF
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        # Formatar data para o nome do arquivo
+        month_names = {
+            1: 'Janeiro', 2: 'Fevereiro', 3: 'Marco', 4: 'Abril',
+            5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+            9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+        }
+        month_name = month_names.get(start_date.month, str(start_date.month))
+        filename = f'relatorio_coletivo_{company.slug}_{month_name}_{start_date.year}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    else:
+        messages.error(request, 'Erro ao gerar PDF coletivo. Tente novamente.')
+        return redirect('core:report_management')
+
