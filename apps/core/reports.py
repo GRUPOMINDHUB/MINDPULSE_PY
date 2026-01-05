@@ -2,7 +2,7 @@
 Serviço de Relatórios - Extração de dados para relatórios consolidados.
 """
 
-from django.db.models import Count, Q, Avg
+from django.db.models import Count, Q, Avg, Sum
 from django.utils import timezone
 from datetime import datetime, timedelta
 
