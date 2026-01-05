@@ -162,6 +162,14 @@ else:
     MEDIA_ROOT = BASE_DIR / 'media'
 
 # =============================================================================
+# FILE UPLOAD SETTINGS - Para vídeos maiores
+# =============================================================================
+# Aumenta limites para upload de arquivos grandes (vídeos)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500 MB (em bytes)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500 MB (em bytes)
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+# =============================================================================
 # CRISPY FORMS
 # =============================================================================
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'tailwind'
