@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from apps.accounts.models import User, Warning
 from apps.checklists.models import Checklist, TaskDone, ChecklistCompletion
-from apps.trainings.models import Training, UserProgress, UserQuizAttempt
+from apps.trainings.models import Training, UserProgress, UserQuizAttempt, UserTrainingReward
 from apps.core.utils import PeriodKeyHelper
 
 
