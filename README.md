@@ -1,175 +1,234 @@
-# 🚀 Mindpulse
+# 🚀 Mindpulse - Plataforma de Gestão de Equipes
 
-**Plataforma SaaS Multi-tenant para Gestão de Equipes**
+Sistema completo de gestão de equipes, treinamentos, checklists e feedbacks com arquitetura multi-tenant.
 
-Sistema completo para gerenciamento de treinamentos, checklists e feedback de colaboradores, com foco em gamificação e produtividade.
+## 📋 Versão 1.0
 
-![Django](https://img.shields.io/badge/Django-5.1.4-092E20?style=for-the-badge&logo=django)
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+**Data de Release:** Janeiro 2026
 
----
+### ✨ Funcionalidades Principais
 
-## 📋 Funcionalidades
+#### 👥 Gestão de Usuários e Empresas
+- Sistema multi-tenant com isolamento completo de dados
+- Três níveis de acesso: Admin Master, Gestor e Colaborador
+- Cadastro completo de colaboradores com dados pessoais e localização
+- Geração automática de matrícula
+- Sistema de advertências disciplinares (Oral, Escrita, Suspensão)
 
-### 🏢 Multi-tenancy
-- Isolamento completo de dados por empresa (`company_id`)
-- Cada empresa tem seus próprios usuários, treinamentos, checklists e feedbacks
+#### 📚 Treinamentos
+- Criação e gerenciamento de treinamentos
+- Upload de vídeos com thumbnails automáticos
+- Sistema de quizzes com múltipla escolha
+- Progresso individual por colaborador
+- Sistema de recompensas e pontos
+- Ordenação de conteúdo (vídeos e quizzes) via drag-and-drop
 
-### 👥 Níveis de Acesso
-| Nível | Permissões |
-|-------|------------|
-| **Admin Master** | Acesso global a todas as empresas, gestão completa |
-| **Gestor** | Gerencia conteúdo da sua unidade |
-| **Colaborador** | Visualiza e executa tarefas da sua empresa |
+#### ✅ Checklists
+- Checklists com frequências configuráveis (Diária, Semanal, Mensal)
+- Tarefas com pontos e prazos
+- Atribuição individual ou coletiva
+- Sistema de conclusão por período
+- Alertas de atraso
 
-### 🎬 Treinamentos
-- Upload de vídeos com tracking de progresso
-- Sistema de gamificação com pontos e badges
-- Controle de conclusão automático (90% assistido)
+#### 💬 Feedback
+- Sistema de tickets de feedback
+- Análise de sentimento (Great, Good, Neutral, Bad, Sad)
+- Respostas e acompanhamento
+- Filtros por status e sentimento
 
-### 📋 Checklists
-- Frequências configuráveis: Diário, Semanal, Quinzenal, Mensal
-- Sistema de `period_key` para controle de execução
-- Pontuação por conclusão
+#### 📊 Relatórios Inteligentes
+- **Relatório Individual:** Perfil completo do colaborador com ranking, checklists, treinamentos, quizzes e advertências
+- **Relatório Coletivo (Geral da Loja):**
+  - KPIs consolidados (Checklists, Treinamentos, Disciplina)
+  - Índice de Atenção (Top 3 colaboradores problemáticos)
+  - O Pódio (Top 3 por pontos)
+  - Tabela de performance completa por colaborador
+  - Gráficos de comparação de performance
+  - Exportação para PDF (A4 landscape)
 
-### 💬 Feedback
-- Seletor de sentimento com emojis
-- Categorização (Sugestão, Problema, Elogio, etc.)
-- Sistema de comentários e respostas
+#### 🎨 Interface Moderna
+- Design responsivo (mobile-first)
+- Dark Mode e Light Mode com persistência
+- Tema customizável por empresa
+- Navegação intuitiva com sidebar
+- Gráficos interativos (Chart.js)
 
-### 📊 Dashboards
-- **Admin Master**: Visão comparativa global entre lojas
-- **Gestor**: Ranking de colaboradores e status do dia
-- **Colaborador**: Metas e progresso pessoal
+## 🛠️ Tecnologias
 
----
+- **Backend:** Django 5.1.4
+- **Frontend:** Tailwind CSS (via CDN)
+- **Banco de Dados:** SQLite (desenvolvimento) / PostgreSQL (produção)
+- **PDF:** xhtml2pdf 0.2.17
+- **JavaScript:** Chart.js 4.4.0
+- **Outras:** Pillow, moviepy, django-extensions
 
-## 🎨 Design
+## 📦 Instalação
 
-- **Dark Mode** com paleta oficial:
-  - Background: `#1A1A1A`
-  - Brand (Vermelho): `#F83531`
-  - Texto: `#FFFFFF`
-- UI moderna com Tailwind CSS
-- Animações suaves e micro-interações
-
----
-
-## 🛠️ Instalação
-
-### Requisitos
-- Python 3.11+
+### Pré-requisitos
+- Python 3.10 ou superior
 - pip
+- Git
 
-### Setup Rápido (Windows)
+### Passos
 
+1. **Clone o repositório:**
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/mindpulse.git
-cd mindpulse
-
-# Execute o setup automático
-setup.bat
+git clone https://github.com/GRUPOMINDHUB/MINDPULSE_PY.git
+cd MINDPULSE_PY
 ```
 
-### Setup Manual
-
+2. **Crie e ative um ambiente virtual:**
 ```bash
-# Crie o ambiente virtual
 python -m venv venv
-
-# Ative o ambiente
-# Windows:
+# Windows
 venv\Scripts\activate
-# Linux/Mac:
+# Linux/Mac
 source venv/bin/activate
+```
 
-# Instale as dependências
+3. **Instale as dependências:**
+```bash
 pip install -r requirements.txt
+```
 
-# Crie o arquivo .env
-cp env.example .env
-
-# Execute as migrações
+4. **Configure o banco de dados:**
+```bash
 python manage.py migrate
+```
 
-# Crie um superusuário
+5. **Crie um superusuário:**
+```bash
 python manage.py createsuperuser
+```
 
-# Inicie o servidor
+6. **Execute o servidor:**
+```bash
 python manage.py runserver
 ```
 
-Acesse: http://127.0.0.1:8000
+7. **Acesse o sistema:**
+```
+http://127.0.0.1:8000
+```
 
----
+## 🚀 Início Rápido
+
+### Windows
+Execute o arquivo `iniciar_servidor.bat` ou `start.bat`
+
+### Linux/Mac
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+## 👤 Níveis de Acesso
+
+### Admin Master
+- Acesso total ao sistema
+- Gerenciamento de empresas
+- Visualização de todas as empresas
+- Criação de usuários administrativos
+
+### Gestor
+- Gerenciamento da sua unidade/empresa
+- Criação de colaboradores
+- Gerenciamento de treinamentos e checklists
+- Visualização de relatórios coletivos e individuais
+- Sistema de advertências
+
+### Colaborador
+- Visualização de treinamentos atribuídos
+- Execução de checklists
+- Envio de feedbacks
+- Visualização do próprio perfil e progresso
+
+## 📊 Relatórios
+
+### Relatório Individual
+Acesse: **Relatórios** → Selecione um colaborador → **Visualizar na Tela** ou **Baixar PDF**
+
+**Conteúdo:**
+- Perfil completo (nome, idade, telefone, cidade, bairro)
+- Ranking e pontos
+- Checklists (concluídos no período e totais)
+- Treinamentos (progresso e status)
+- Quizzes (média de notas e tentativas)
+- Advertências (histórico completo)
+
+### Relatório Coletivo (Geral da Loja)
+Acesse: **Relatórios** → Deixe o colaborador em branco → **Visualizar na Tela** ou **Baixar PDF**
+
+**Conteúdo:**
+- **KPIs Consolidados:**
+  - Média de Checklists (%)
+  - Média de Treinamentos (%)
+  - Total de Advertências por tipo
+- **Índice de Atenção:** Top 3 colaboradores com mais problemas
+- **O Pódio:** Top 3 colaboradores por pontos
+- **Tabela de Performance:** Todos os colaboradores com KPIs detalhados
+- **Gráficos:** Comparação visual de performance
+
+## 🎨 Personalização
+
+### Tema Dark/Light Mode
+Acesse: **Configurações** → Alterne entre Dark e Light Mode
+
+### Cores da Empresa
+Admin Master pode configurar cores primárias por empresa no painel de administração.
 
 ## 📁 Estrutura do Projeto
 
 ```
-mindpulse/
+MINDPULSE_PY/
 ├── apps/
-│   ├── accounts/      # Autenticação e usuários
-│   ├── checklists/    # Módulo de checklists
-│   ├── core/          # Models base, middleware, decorators
-│   ├── feedback/      # Sistema de feedback
-│   └── trainings/     # Módulo de treinamentos
-├── templates/         # Templates HTML
-├── static/            # Arquivos estáticos
-├── mindpulse/         # Configurações Django
-└── requirements.txt   # Dependências
+│   ├── accounts/          # Usuários, autenticação, advertências
+│   ├── checklists/        # Checklists e tarefas
+│   ├── core/              # Empresas, roles, relatórios, dashboards
+│   ├── feedback/          # Sistema de feedback
+│   └── trainings/         # Treinamentos, vídeos, quizzes
+├── templates/             # Templates HTML
+├── static/                # Arquivos estáticos (CSS, JS)
+├── media/                 # Uploads (vídeos, imagens)
+├── mindpulse/            # Configurações do Django
+├── requirements.txt      # Dependências Python
+└── manage.py             # Script de gerenciamento Django
 ```
 
----
+## 🔒 Segurança
 
-## 🔧 Configuração
+- Isolamento completo de dados por empresa (multi-tenant)
+- Autenticação obrigatória para todas as rotas
+- Validação de permissões por nível de acesso
+- CSRF protection ativado
+- Sanitização de inputs
 
-### Variáveis de Ambiente (.env)
+## 📝 Notas de Versão
 
-```env
-DEBUG=True
-SECRET_KEY=sua-chave-secreta
-USE_SQLITE=True
+### Versão 1.0 (Janeiro 2026)
+- ✅ Sistema completo de gestão de equipes
+- ✅ Treinamentos com vídeos e quizzes
+- ✅ Checklists com frequências configuráveis
+- ✅ Sistema de feedback com análise de sentimento
+- ✅ Relatórios individuais e coletivos
+- ✅ Exportação para PDF
+- ✅ Dark/Light Mode
+- ✅ Interface responsiva
+- ✅ Sistema de advertências disciplinares
+- ✅ Ranking e gamificação
 
-# Para produção com PostgreSQL
-# USE_SQLITE=False
-# DB_NAME=mindpulse_db
-# DB_USER=postgres
-# DB_PASSWORD=sua-senha
-# DB_HOST=localhost
-# DB_PORT=5432
+## 🤝 Contribuindo
 
-# Google Cloud Storage (opcional)
-# USE_GCS=True
-# GCS_BUCKET_NAME=seu-bucket
-# GCS_PROJECT_ID=seu-projeto
-```
+Este é um projeto privado do GRUPOMINDHUB. Para contribuições, entre em contato com a equipe de desenvolvimento.
 
----
+## 📄 Licença
 
-## 🚀 Deploy
+Proprietário - GRUPOMINDHUB
 
-### Google Cloud Run (Recomendado)
+## 📞 Suporte
 
-1. Configure o Google Cloud SQL (PostgreSQL)
-2. Configure o Google Cloud Storage para mídia
-3. Use o Dockerfile incluído
-4. Configure as variáveis de ambiente no Cloud Run
+Para suporte técnico, entre em contato com a equipe de desenvolvimento.
 
 ---
 
-## 📝 Licença
-
-Este projeto é proprietário. Todos os direitos reservados.
-
----
-
-## 👨‍💻 Desenvolvido por
-
-**Mindpulse Team** - 2024
-
----
-
-*Gestão inteligente de equipes* ⚡
-
+**Desenvolvido com ❤️ pela equipe Mindpulse**
