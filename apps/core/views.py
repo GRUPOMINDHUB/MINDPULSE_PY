@@ -666,15 +666,46 @@ def company_add_user(request, pk):
                     # Cria o usuário
                     user = form.save(commit=False)
                     password = form.cleaned_data['password']
+                    
+                    # Salva campos adicionais (phone, neighborhood, city, birth_date)
+                    user.phone = form.cleaned_data.get('phone', '')
+                    user.neighborhood = form.cleaned_data.get('neighborhood', '')
+                    user.city = form.cleaned_data.get('city', '')
+                    user.birth_date = form.cleaned_data.get('birth_date')
+                    
                     user.set_password(password)
                     user.save()
                     
                     # Vincula à empresa com o cargo selecionado
                     role = form.cleaned_data.get('role')
+                    
+                    # Gera matrícula automaticamente (EMPRESA-ANO-SEQUENCIAL)
+                    import datetime
+                    year = datetime.datetime.now().year
+                    company_prefix = company.slug[:3].upper() if company.slug else 'EMP'
+                    
+                    # Busca última matrícula do ano
+                    last_employee = UserCompany.objects.filter(
+                        company=company,
+                        employee_id__startswith=f'{company_prefix}-{year}-'
+                    ).order_by('-employee_id').first()
+                    
+                    if last_employee and last_employee.employee_id:
+                        try:
+                            last_seq = int(last_employee.employee_id.split('-')[-1])
+                            new_seq = last_seq + 1
+                        except (ValueError, IndexError):
+                            new_seq = 1
+                    else:
+                        new_seq = 1
+                    
+                    employee_id = f'{company_prefix}-{year}-{new_seq:04d}'
+                    
                     UserCompany.objects.create(
                         user=user,
                         company=company,
                         role=role,
+                        employee_id=employee_id,
                         is_active=True
                     )
                 
