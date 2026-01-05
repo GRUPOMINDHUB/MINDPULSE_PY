@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Coletivo - {{ report_data.company.name }}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #1a1a1a;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #F83531;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #F83531;
+            font-size: 24pt;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 12pt;
+            margin: 5px 0;
+        }
+        
+        .kpi-container {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .kpi-card {
+            display: table-cell;
+            width: 33.33%;
+            padding: 15px;
+            border: 2px solid #F83531;
+            border-radius: 8px;
+            text-align: center;
+            vertical-align: top;
+            margin: 0 10px;
+        }
+        
+        .kpi-card h3 {
+            color: #1a1a1a;
+            font-size: 14pt;
+            margin: 0 0 10px 0;
+        }
+        
+        .kpi-card .value {
+            font-size: 32pt;
+            font-weight: bold;
+            color: #F83531;
+            margin: 10px 0;
+        }
+        
+        .kpi-card .label {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .section {
+            margin: 25px 0;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            color: #F83531;
+            font-size: 18pt;
+            border-bottom: 2px solid #F83531;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .attention-box {
+            background: #fff5f5;
+            border: 2px solid #F83531;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .attention-box h3 {
+            color: #F83531;
+            font-size: 16pt;
+            margin: 0 0 10px 0;
+        }
+        
+        .attention-item {
+            display: inline-block;
+            width: 30%;
+            padding: 10px;
+            margin: 5px;
+            background: #fff;
+            border: 1px solid #F83531;
+            border-radius: 5px;
+            vertical-align: top;
+        }
+        
+        .podium {
+            display: table;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .podium-item {
+            display: table-cell;
+            width: 33.33%;
+            padding: 20px;
+            text-align: center;
+            vertical-align: bottom;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 0 10px;
+        }
+        
+        .podium-item.first {
+            border-color: #FFD700;
+            background: #fffef0;
+        }
+        
+        .podium-item.second {
+            border-color: #C0C0C0;
+            background: #fafafa;
+        }
+        
+        .podium-item.third {
+            border-color: #CD7F32;
+            background: #fff8f0;
+        }
+        
+        .podium-item .medal {
+            font-size: 40pt;
+            margin-bottom: 10px;
+        }
+        
+        .podium-item .name {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .podium-item .points {
+            font-size: 24pt;
+            font-weight: bold;
+            color: #F83531;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 9pt;
+        }
+        
+        table thead {
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        table thead th {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #333;
+            font-weight: bold;
+        }
+        
+        table tbody tr {
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table tbody tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+        
+        table tbody tr:hover {
+            background: #e8e8e8;
+        }
+        
+        table tbody td {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+        }
+        
+        table tbody td.highlight {
+            background: #fff5f5;
+            color: #F83531;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        .warning-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #F83531;
+            color: white;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        
+        .overdue-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📊 Relatório Coletivo</h1>
+        <p><strong>{{ report_data.company.name }}</strong></p>
+        <p>
+            Período: {{ report_data.start_date|date:"d/m/Y" }} até {{ report_data.end_date|date:"d/m/Y" }}
+        </p>
+        <p style="font-size: 9pt; color: #999;">
+            Gerado em: {{ report_data.generated_at|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+    
+    <!-- KPIs Consolidados -->
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <h3>✅ Checklists</h3>
+            <div class="value">{{ report_data.checklist_average }}%</div>
+            <div class="label">
+                {{ report_data.total_tasks_completed }} tarefas concluídas<br>
+                {{ report_data.total_completions }} checklists completos
+            </div>
+        </div>
+        
+        <div class="kpi-card">
+            <h3>🎓 Treinamentos</h3>
+            <div class="value">{{ report_data.training_average }}%</div>
+            <div class="label">
+                Progresso médio da equipe<br>
+                Média de conclusão de vídeos e quizzes
+            </div>
+        </div>
+        
+        <div class="kpi-card">
+            <h3>⚠️ Disciplina</h3>
+            <div class="value">{{ report_data.total_warnings }}</div>
+            <div class="label">
+                Advertências no período<br>
+                Oral: {{ report_data.warnings_by_type.ORAL }} | 
+                Escrita: {{ report_data.warnings_by_type.ESCRITA }} | 
+                Suspensão: {{ report_data.warnings_by_type.SUSPENSAO }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Índice de Atenção -->
+    {% if report_data.attention_list %}
+    <div class="section">
+        <div class="attention-box">
+            <h3>🚨 Índice de Atenção</h3>
+            <p style="margin-bottom: 15px; color: #666;">
+                Colaboradores que requerem atenção imediata (atrasos em checklists e advertências)
+            </p>
+            {% for item in report_data.attention_list %}
+            <div class="attention-item">
+                <strong>{{ item.name }}</strong><br>
+                <span style="color: #F83531; font-weight: bold;">{{ item.attention_score }} pts</span><br>
+                Atrasos: {{ item.checklist_overdue }}<br>
+                Advertências: {{ item.warnings_count }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- O Pódio (Top 3) -->
+    {% if report_data.top_3 %}
+    <div class="section">
+        <h2>🏆 O Pódio (Top 3)</h2>
+        <div class="podium">
+            {% for item in report_data.top_3 %}
+            <div class="podium-item {% if forloop.counter == 1 %}first{% elif forloop.counter == 2 %}second{% else %}third{% endif %}">
+                <div class="medal">
+                    {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}
+                </div>
+                <div class="name">{{ item.name }}</div>
+                <div class="points">{{ item.points_earned }} pts</div>
+                <div style="margin-top: 10px; font-size: 10pt; color: #666;">
+                    Checklists: {{ item.checklist_percentage }}%<br>
+                    Treinamentos: {{ item.training_percentage }}%<br>
+                    Quizzes: {{ item.quiz_average }}%
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Tabela Geral de Performance -->
+    <div class="section">
+        <h2>📋 Tabela de Performance por Colaborador</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Colaborador</th>
+                    <th>Checklists (%)</th>
+                    <th>Treinamentos (%)</th>
+                    <th>Quizzes (%)</th>
+                    <th>Advertências</th>
+                    <th>Pontos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in report_data.performance_data %}
+                <tr>
+                    <td>
+                        <strong>{{ item.name }}</strong><br>
+                        <span style="font-size: 8pt; color: #666;">{{ item.email }}</span>
+                    </td>
+                    <td>
+                        {{ item.checklist_percentage }}%
+                        {% if item.checklist_overdue > 0 %}
+                        <br><span class="overdue-badge">{{ item.checklist_overdue }} atraso{{ item.checklist_overdue|pluralize }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.training_percentage }}%</td>
+                    <td>{{ item.quiz_average }}%</td>
+                    <td>
+                        {% if item.warnings_count > 0 %}
+                        <span class="warning-badge">{{ item.warnings_count }}</span>
+                        {% else %}
+                        0
+                        {% endif %}
+                    </td>
+                    <td class="{% if forloop.counter <= 3 %}highlight{% endif %}">{{ item.points_earned }} pts</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p>Relatório gerado pelo sistema Mindpulse - {{ report_data.company.name }}</p>
+        <p>Período: {{ report_data.start_date|date:"d/m/Y" }} até {{ report_data.end_date|date:"d/m/Y" }} | 
+           Total de colaboradores: {{ report_data.total_users }}</p>
+    </div>
+</body>
+</html>
+

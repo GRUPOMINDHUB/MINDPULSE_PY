@@ -20,7 +20,7 @@ from .models import Company, Role
 from .forms import CompanyForm, RoleForm
 from .utils import PeriodKeyHelper
 from .decorators import admin_master_required, gestor_required
-from .reports import get_report_data
+from .reports import get_report_data, get_company_report_data
 
 
 def home(request):

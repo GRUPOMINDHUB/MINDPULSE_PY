@@ -369,3 +369,270 @@ def _get_company_summary(company, start_datetime, end_datetime):
         ).count(),
     }
 
+
+def get_company_report_data(company, start_date, end_date):
+    """
+    Extrai dados consolidados para relatório coletivo da loja.
+    
+    Args:
+        company: Empresa para filtrar dados
+        start_date: Data de início do período
+        end_date: Data de fim do período
+    
+    Returns:
+        dict: Dicionário com dados agregados da loja
+    """
+    # Converter para datetime se necessário
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    if isinstance(end_date, str):
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    # Converter para datetime para filtros
+    start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+    end_datetime = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
+    
+    # Buscar todos os colaboradores ativos da empresa
+    company_users = User.objects.filter(
+        user_companies__company=company,
+        user_companies__is_active=True
+    ).distinct().prefetch_related('user_companies')
+    
+    # ===========================================
+    # KPIs CONSOLIDADOS DA LOJA
+    # ===========================================
+    
+    # 1. MÉDIA DE CHECKLIST: % total de tarefas concluídas vs. esperadas
+    total_checklists = Checklist.objects.filter(
+        company=company,
+        is_active=True
+    ).prefetch_related('tasks', 'assigned_users')
+    
+    total_tasks_expected = 0
+    total_tasks_completed = 0
+    total_completions = 0
+    
+    for checklist in total_checklists:
+        tasks = checklist.tasks.filter(is_active=True)
+        total_tasks_expected += tasks.count() * company_users.count()
+        
+        # Contar tarefas concluídas no período
+        task_dones = TaskDone.objects.filter(
+            task__in=tasks,
+            completed_at__gte=start_datetime,
+            completed_at__lte=end_datetime
+        ).count()
+        total_tasks_completed += task_dones
+        
+        # Contar checklist completions no período
+        completions = ChecklistCompletion.objects.filter(
+            checklist=checklist,
+            completed_at__gte=start_datetime,
+            completed_at__lte=end_datetime
+        ).count()
+        total_completions += completions
+    
+    checklist_average = round((total_tasks_completed / total_tasks_expected * 100) if total_tasks_expected > 0 else 0, 1)
+    
+    # 2. MÉDIA DE TREINAMENTO: % médio de conclusão de vídeos e quizzes
+    trainings = Training.objects.filter(
+        company=company,
+        is_active=True
+    ).prefetch_related('videos', 'quizzes', 'assigned_users')
+    
+    total_progress_sum = 0
+    total_users_with_trainings = 0
+    
+    for training in trainings:
+        total_videos = training.videos.filter(is_active=True).count()
+        total_quizzes = training.quizzes.filter(is_active=True).count()
+        total_content = total_videos + total_quizzes
+        
+        if total_content == 0:
+            continue
+        
+        # Para cada usuário, calcular progresso no treinamento
+        for user in company_users:
+            completed_videos = UserProgress.objects.filter(
+                user=user,
+                video__training=training,
+                completed=True
+            ).count()
+            
+            passed_quizzes = 0
+            for quiz in training.quizzes.filter(is_active=True):
+                if UserQuizAttempt.objects.filter(
+                    user=user,
+                    quiz=quiz,
+                    is_passed=True
+                ).exists():
+                    passed_quizzes += 1
+            
+            if total_content > 0:
+                progress = ((completed_videos + passed_quizzes) / total_content) * 100
+                total_progress_sum += progress
+                total_users_with_trainings += 1
+    
+    training_average = round((total_progress_sum / total_users_with_trainings) if total_users_with_trainings > 0 else 0, 1)
+    
+    # 3. TOTAL DE ADVERTÊNCIAS: Contagem por tipo no período
+    warnings_period = Warning.objects.filter(
+        company=company,
+        created_at__gte=start_datetime,
+        created_at__lte=end_datetime
+    ).select_related('user', 'issuer')
+    
+    warnings_by_type = {
+        'ORAL': warnings_period.filter(warning_type='ORAL').count(),
+        'ESCRITA': warnings_period.filter(warning_type='ESCRITA').count(),
+        'SUSPENSAO': warnings_period.filter(warning_type='SUSPENSAO').count(),
+    }
+    total_warnings = sum(warnings_by_type.values())
+    
+    # ===========================================
+    # TABELA DE PERFORMANCE POR COLABORADOR
+    # ===========================================
+    performance_data = []
+    
+    for user in company_users:
+        # Checklists: % Concluído e dias de atraso
+        user_checklists = Checklist.objects.filter(
+            company=company,
+            is_active=True
+        ).filter(
+            Q(assigned_users=user) | Q(assigned_users__isnull=True)
+        ).distinct()
+        
+        user_tasks_expected = 0
+        user_tasks_completed = 0
+        user_overdue_count = 0
+        
+        for checklist in user_checklists:
+            tasks = checklist.tasks.filter(is_active=True)
+            user_tasks_expected += tasks.count()
+            
+            task_dones = TaskDone.objects.filter(
+                task__in=tasks,
+                user=user,
+                completed_at__gte=start_datetime,
+                completed_at__lte=end_datetime
+            ).count()
+            user_tasks_completed += task_dones
+            
+            if checklist.is_overdue_for_user(user):
+                user_overdue_count += 1
+        
+        checklist_percentage = round((user_tasks_completed / user_tasks_expected * 100) if user_tasks_expected > 0 else 0, 1)
+        
+        # Treinamentos: % Progresso e Quizzes (média de notas)
+        user_trainings = Training.objects.filter(
+            company=company,
+            is_active=True
+        ).filter(
+            Q(assigned_users=user) | Q(assigned_users__isnull=True)
+        ).distinct()
+        
+        user_training_progress_sum = 0
+        user_training_count = 0
+        user_quiz_scores = []
+        
+        for training in user_trainings:
+            total_videos = training.videos.filter(is_active=True).count()
+            total_quizzes = training.quizzes.filter(is_active=True).count()
+            total_content = total_videos + total_quizzes
+            
+            if total_content == 0:
+                continue
+            
+            completed_videos = UserProgress.objects.filter(
+                user=user,
+                video__training=training,
+                completed=True
+            ).count()
+            
+            passed_quizzes = 0
+            for quiz in training.quizzes.filter(is_active=True):
+                attempts = UserQuizAttempt.objects.filter(
+                    user=user,
+                    quiz=quiz,
+                    completed_at__gte=start_datetime,
+                    completed_at__lte=end_datetime
+                )
+                if attempts.exists():
+                    avg_score = attempts.aggregate(avg=Avg('score'))['avg'] or 0
+                    user_quiz_scores.append(avg_score)
+                
+                if attempts.filter(is_passed=True).exists():
+                    passed_quizzes += 1
+            
+            progress = ((completed_videos + passed_quizzes) / total_content) * 100
+            user_training_progress_sum += progress
+            user_training_count += 1
+        
+        training_percentage = round((user_training_progress_sum / user_training_count) if user_training_count > 0 else 0, 1)
+        quiz_average = round((sum(user_quiz_scores) / len(user_quiz_scores)) if user_quiz_scores else 0, 1)
+        
+        # Advertências: Quantidade no período
+        user_warnings_count = warnings_period.filter(user=user).count()
+        
+        # Pontos: Saldo de pontos ganhos no intervalo
+        # Calcular pontos ganhos no período (checklist completions + training rewards)
+        points_from_checklists = ChecklistCompletion.objects.filter(
+            user=user,
+            checklist__company=company,
+            completed_at__gte=start_datetime,
+            completed_at__lte=end_datetime
+        ).aggregate(total=Count('points_earned'))['total'] or 0
+        
+        points_from_trainings = UserTrainingReward.objects.filter(
+            user=user,
+            training__company=company,
+            earned_at__gte=start_datetime,
+            earned_at__lte=end_datetime
+        ).aggregate(total=Count('points_earned'))['total'] or 0
+        
+        points_earned = (points_from_checklists or 0) + (points_from_trainings or 0)
+        
+        performance_data.append({
+            'user': user,
+            'name': user.get_full_name(),
+            'email': user.email,
+            'checklist_percentage': checklist_percentage,
+            'checklist_overdue': user_overdue_count,
+            'training_percentage': training_percentage,
+            'quiz_average': quiz_average,
+            'warnings_count': user_warnings_count,
+            'points_earned': points_earned,
+            'attention_score': user_overdue_count * 10 + user_warnings_count * 5,  # Score para índice de atenção
+        })
+    
+    # Ordenar por pontos ganhos no período (maior primeiro)
+    performance_data.sort(key=lambda x: x['points_earned'], reverse=True)
+    
+    # Top 3 (Pódio)
+    top_3 = performance_data[:3] if len(performance_data) >= 3 else performance_data
+    
+    # Índice de Atenção: Top 3 com mais problemas (atrasos + advertências)
+    attention_list = sorted(
+        performance_data,
+        key=lambda x: x['attention_score'],
+        reverse=True
+    )[:3]
+    
+    return {
+        'company': company,
+        'start_date': start_date,
+        'end_date': end_date,
+        'generated_at': timezone.now(),
+        'checklist_average': checklist_average,
+        'training_average': training_average,
+        'total_warnings': total_warnings,
+        'warnings_by_type': warnings_by_type,
+        'total_completions': total_completions,
+        'total_tasks_completed': total_tasks_completed,
+        'performance_data': performance_data,
+        'top_3': top_3,
+        'attention_list': attention_list,
+        'total_users': company_users.count(),
+    }
+
