@@ -445,6 +445,10 @@ const lastPosition = parseInt(video.dataset.lastPosition) || 0;
 let updateInterval;
 let hasCompleted = {{ progress.completed|yesno:"true,false" }};
 
+// Garante que o vídeo não está mudo
+video.muted = false;
+video.volume = 1.0;
+
 // Resume from last position
 if (lastPosition > 0 && lastPosition < duration * 0.9) {
     video.currentTime = lastPosition;
