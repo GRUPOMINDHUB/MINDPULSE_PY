@@ -253,11 +253,3 @@ class MultiSelectDropdown {
 
 // Exportar para uso global
 window.MultiSelectDropdown = MultiSelectDropdown;
-
-// Inicializar todos os multi-select dropdowns quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
-    const dropdowns = document.querySelectorAll('.multi-select-dropdown');
-    dropdowns.forEach(dropdown => {
-        new MultiSelectDropdown(dropdown);
-    });
-});
