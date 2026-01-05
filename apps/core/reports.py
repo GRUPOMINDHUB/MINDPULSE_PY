@@ -483,9 +483,9 @@ def get_company_report_data(company, start_date, end_date):
     ).select_related('user', 'issuer')
     
     warnings_by_type = {
-        'ORAL': warnings_period.filter(warning_type='ORAL').count(),
-        'ESCRITA': warnings_period.filter(warning_type='ESCRITA').count(),
-        'SUSPENSAO': warnings_period.filter(warning_type='SUSPENSAO').count(),
+        'oral': warnings_period.filter(warning_type='oral').count(),
+        'escrita': warnings_period.filter(warning_type='escrita').count(),
+        'suspensao': warnings_period.filter(warning_type='suspensao').count(),
     }
     total_warnings = sum(warnings_by_type.values())
     
