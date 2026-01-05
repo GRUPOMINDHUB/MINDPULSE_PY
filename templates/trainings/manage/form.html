@@ -236,35 +236,38 @@
 </div>
 
 {% if 'assigned_users' in form.fields %}
+<link rel="stylesheet" href="{% static 'css/multi-select-dropdown.css' %}">
 <script src="{% static 'js/multi-select-dropdown.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar o multi-select dropdown
     const dropdownElement = document.getElementById('assigned_users_dropdown');
-    if (dropdownElement) {
-        const dropdown = new MultiSelectDropdown(dropdownElement);
-        
-        // Antes de submeter o form, atualizar o campo hidden com os valores selecionados
-        const form = dropdownElement.closest('form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                const selectedValues = dropdown.getSelectedValues();
-                const hiddenInput = document.getElementById('id_assigned_users_hidden');
-                if (hiddenInput) {
-                    // Criar inputs hidden individuais para cada valor selecionado
-                    // (Django espera múltiplos inputs com o mesmo name)
-                    hiddenInput.remove(); // Remove o input hidden JSON
-                    
-                    selectedValues.forEach(value => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'assigned_users';
-                        input.value = value;
-                        form.appendChild(input);
-                    });
-                }
+    if (!dropdownElement) return;
+    
+    // Inicializar o dropdown
+    const dropdown = new MultiSelectDropdown(dropdownElement);
+    
+    // Antes de submeter o form, criar inputs hidden individuais para Django
+    const form = dropdownElement.closest('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selectedValues = dropdown.getSelectedValues();
+            const hiddenInput = document.getElementById('id_assigned_users_hidden');
+            
+            // Remover inputs hidden antigos com name="assigned_users"
+            document.querySelectorAll('input[name="assigned_users"]').forEach(input => {
+                if (input.type === 'hidden') input.remove();
             });
-        }
+            
+            // Criar inputs hidden individuais para cada valor selecionado
+            // (Django espera múltiplos inputs com o mesmo name)
+            selectedValues.forEach(value => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'assigned_users';
+                input.value = value;
+                form.appendChild(input);
+            });
+        });
     }
 });
 </script>
