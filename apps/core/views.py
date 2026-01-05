@@ -830,18 +830,34 @@ def report_management(request):
     
     if action == 'download':
         # Gerar PDF
-        return _generate_pdf(request, company, start_date, end_date, user)
+        if user:
+            return _generate_pdf(request, company, start_date, end_date, user)
+        else:
+            return _generate_collective_pdf(request, company, start_date, end_date)
     else:
         # Visualizar na tela
-        report_data = get_report_data(company, start_date, end_date, user)
-        return render(request, 'core/reports/view.html', {
-            'report_data': report_data,
-            'users': users,
-            'selected_user_id': user_id if user else '',
-            'start_date': start_date.strftime('%Y-%m-%d'),
-            'end_date': end_date.strftime('%Y-%m-%d'),
-            'selected_period': period,
-        })
+        if user:
+            # Relatório Individual
+            report_data = get_report_data(company, start_date, end_date, user)
+            return render(request, 'core/reports/view.html', {
+                'report_data': report_data,
+                'users': users,
+                'selected_user_id': user_id if user else '',
+                'start_date': start_date.strftime('%Y-%m-%d'),
+                'end_date': end_date.strftime('%Y-%m-%d'),
+                'selected_period': period,
+            })
+        else:
+            # Relatório Coletivo
+            report_data = get_company_report_data(company, start_date, end_date)
+            return render(request, 'core/reports/view_collective.html', {
+                'report_data': report_data,
+                'users': users,
+                'selected_user_id': '',
+                'start_date': start_date.strftime('%Y-%m-%d'),
+                'end_date': end_date.strftime('%Y-%m-%d'),
+                'selected_period': period,
+            })
 
 
 def _generate_pdf(request, company, start_date, end_date, user=None):
