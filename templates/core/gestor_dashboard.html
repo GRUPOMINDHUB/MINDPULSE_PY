@@ -79,13 +79,17 @@
         <!-- Gráfico Status Checklists -->
         <div class="card">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">📋 Status dos Checklists de Hoje</h2>
-            <canvas id="checklistChart" height="250"></canvas>
+            <div style="position: relative; height: 250px;">
+                <canvas id="checklistChart"></canvas>
+            </div>
         </div>
         
         <!-- Gráfico Sentimento -->
         <div class="card">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">😊 Sentimento da Equipe</h2>
-            <canvas id="sentimentChart" height="250"></canvas>
+            <div style="position: relative; height: 250px;">
+                <canvas id="sentimentChart"></canvas>
+            </div>
         </div>
     </div>
     
@@ -314,7 +318,8 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
+            aspectRatio: 1.5,
             plugins: {
                 legend: {
                     display: false
