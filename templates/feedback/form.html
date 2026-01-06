@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Enviar Feedback - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-2xl mx-auto bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Header Slim - Mobile apenas botão voltar -->
+    <div class="mb-4 md:mb-6">
+        <div class="flex items-center gap-3 mb-4 md:mb-6">
+            <a href="{% url 'feedback:list' %}" 
+               class="p-2 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="flex-1">
+                <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white">Enviar Feedback</h1>
+                <p class="hidden md:block text-sm text-slate-600 dark:text-gray-400 mt-1">Compartilhe sua opinião com a gestão</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Formulário -->
+    <form method="post" enctype="multipart/form-data" 
+          class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-2xl p-4 md:p-6 shadow-sm">
+        {% csrf_token %}
+        
+        <!-- Erros -->
+        {% if form.errors or form.non_field_errors %}
+        <div class="mb-4 md:mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
+            <h3 class="text-red-600 dark:text-red-400 font-semibold mb-2 text-sm">Erros no formulário:</h3>
+            <ul class="text-red-700 dark:text-red-300 text-xs md:text-sm space-y-1">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>• {{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>• {{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Sentimento -->
+        <div class="mb-6 md:mb-8">
+            <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-3 md:mb-4">Como você está se sentindo?</label>
+            <div class="flex items-center justify-center gap-2 md:gap-4">
+                {% for value, label in form.sentiment.field.choices %}
+                <label class="cursor-pointer group flex flex-col items-center">
+                    <input type="radio" name="sentiment" value="{{ value }}" 
+                           class="sr-only peer"
+                           {% if form.sentiment.value == value %}checked{% endif %}>
+                    <div class="w-12 h-12 md:w-16 md:h-16 rounded-xl bg-slate-100 dark:bg-dark-700 border-2 border-transparent flex items-center justify-center text-2xl md:text-3xl
+                                peer-checked:ring-2 peer-checked:ring-brand-500 peer-checked:bg-brand-100 dark:peer-checked:bg-brand-500/20 peer-checked:border-brand-500
+                                hover:bg-slate-200 dark:hover:bg-dark-600 transition-all duration-200 transform group-hover:scale-105">
+                        {% if value == 'great' %}😊
+                        {% elif value == 'good' %}🙂
+                        {% elif value == 'neutral' %}😐
+                        {% elif value == 'bad' %}😕
+                        {% else %}😢{% endif %}
+                    </div>
+                    <p class="text-xs text-center text-slate-600 dark:text-gray-400 mt-1.5 md:mt-2 peer-checked:text-brand-600 dark:peer-checked:text-brand-400 font-medium">
+                        {% if value == 'great' %}Ótimo
+                        {% elif value == 'good' %}Bom
+                        {% elif value == 'neutral' %}Neutro
+                        {% elif value == 'bad' %}Ruim
+                        {% else %}Triste{% endif %}
+                    </p>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Categoria -->
+        <div class="mb-4 md:mb-6">
+            <label for="id_category" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Categoria</label>
+            <select name="category" id="id_category" 
+                    class="w-full px-4 py-3 md:py-3.5 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-slate-900 dark:text-white text-base focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]">
+                {% for value, label in form.category.field.choices %}
+                <option value="{{ value }}" {% if form.category.value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Assunto -->
+        <div class="mb-4 md:mb-6">
+            <label for="id_subject" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Assunto *</label>
+            <input type="text" name="subject" id="id_subject" 
+                   value="{{ form.subject.value|default:'' }}"
+                   class="w-full px-4 py-3 md:py-3.5 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                   placeholder="Resumo do seu feedback"
+                   required>
+            {% if form.subject.errors %}
+            <p class="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400">{{ form.subject.errors.0 }}</p>
+            {% endif %}
+        </div>
+        
+        <!-- Mensagem -->
+        <div class="mb-4 md:mb-6">
+            <label for="id_message" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Mensagem *</label>
+            <textarea name="message" id="id_message" 
+                      class="w-full px-4 py-3 md:py-3.5 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                      rows="6"
+                      placeholder="Descreva seu feedback em detalhes..."
+                      required>{{ form.message.value|default:'' }}</textarea>
+            {% if form.message.errors %}
+            <p class="mt-1 text-xs md:text-sm text-red-600 dark:text-red-400">{{ form.message.errors.0 }}</p>
+            {% endif %}
+        </div>
+        
+        <!-- Anexo -->
+        <div class="mb-4 md:mb-6">
+            <label for="id_attachment" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Anexo (opcional)</label>
+            <input type="file" name="attachment" id="id_attachment"
+                   class="w-full px-4 py-3 md:py-3.5 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm text-slate-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer file:hover:bg-brand-600 transition-all duration-200 min-h-[44px]">
+        </div>
+        
+        <!-- Anônimo -->
+        <div class="mb-6 md:mb-8">
+            <label class="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" name="is_anonymous" 
+                       {% if form.is_anonymous.value %}checked{% endif %}
+                       class="mt-1 w-5 h-5 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-dark-700 border-slate-300 dark:border-dark-600 cursor-pointer">
+                <div>
+                    <span class="block text-sm font-medium text-slate-700 dark:text-gray-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Enviar anonimamente</span>
+                    <p class="text-xs text-slate-600 dark:text-gray-400 mt-1">Sua identidade não será revelada aos gestores</p>
+                </div>
+            </label>
+        </div>
+        
+        <!-- Botões de Ação -->
+        <div class="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-end gap-3 pt-4 md:pt-6 border-t border-slate-200 dark:border-dark-700">
+            <a href="{% url 'feedback:list' %}" 
+               class="flex items-center justify-center px-6 py-3 md:py-3.5 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium min-h-[44px]">
+                Cancelar
+            </a>
+            <button type="submit" 
+                    class="flex items-center justify-center px-6 py-3 md:py-3.5 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-brand-500/25 min-h-[44px]">
+                Enviar Feedback
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">📊 Relatório Consolidado</h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Período: {{ report_data.start_date|date:"d/m/Y" }} até {{ report_data.end_date|date:"d/m/Y" }}
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'core:report_management' %}" 
+                   class="btn-secondary border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700">
+                    Voltar
+                </a>
+                <form method="GET" action="{% url 'core:report_management' %}" class="inline">
+                    <input type="hidden" name="start_date" value="{{ start_date }}">
+                    <input type="hidden" name="end_date" value="{{ end_date }}">
+                    <input type="hidden" name="user" value="{{ selected_user_id }}">
+                    <input type="hidden" name="action" value="download">
+                    <button type="submit" 
+                            class="btn-primary flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Baixar PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    {% if report_data.user %}
+    <!-- Relatório Individual -->
+    <div class="space-y-6">
+        <!-- Perfil do Colaborador -->
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">👤 Perfil</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Nome</p>
+                    <p class="text-base font-medium text-gray-900 dark:text-white">{{ report_data.profile.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                    <p class="text-base font-medium text-gray-900 dark:text-white">{{ report_data.profile.email }}</p>
+                </div>
+                {% if report_data.profile.age %}
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Idade</p>
+                    <p class="text-base font-medium text-gray-900 dark:text-white">{{ report_data.profile.age }} anos</p>
+                </div>
+                {% endif %}
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Telefone</p>
+                    <p class="text-base font-medium text-gray-900 dark:text-white">{{ report_data.profile.phone }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Cidade</p>
+                    <p class="text-base font-medium text-gray-900 dark:text-white">{{ report_data.profile.city }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Bairro</p>
+                    <p class="text-base font-medium text-gray-900 dark:text-white">{{ report_data.profile.neighborhood }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ranking -->
+        {% if report_data.ranking %}
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🏆 Ranking</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center p-4 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl border border-yellow-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Posição</p>
+                    <p class="text-3xl font-bold text-yellow-400">{{ report_data.ranking.position }}º</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">de {{ report_data.ranking.total_users }} colaboradores</p>
+                </div>
+                <div class="text-center p-4 bg-gradient-to-br from-brand-500/20 to-brand-600/20 rounded-xl border border-brand-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Pontos Totais</p>
+                    <p class="text-3xl font-bold text-brand-400">{{ report_data.ranking.total_points }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Checklists -->
+        {% if report_data.checklists %}
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">✅ Checklists</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="p-4 bg-green-500/20 rounded-xl border border-green-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Checklists Concluídos (Período)</p>
+                    <p class="text-2xl font-bold text-green-400">{{ report_data.checklists.total_completed_period }}</p>
+                    {% if report_data.checklists.total_completed_all %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Total geral: {{ report_data.checklists.total_completed_all }}</p>
+                    {% endif %}
+                </div>
+                <div class="p-4 bg-blue-500/20 rounded-xl border border-blue-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Tarefas Concluídas (Período)</p>
+                    <p class="text-2xl font-bold text-blue-400">{{ report_data.checklists.total_tasks_completed_period }}</p>
+                    {% if report_data.checklists.total_tasks_completed_all %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Total geral: {{ report_data.checklists.total_tasks_completed_all }}</p>
+                    {% endif %}
+                </div>
+                <div class="p-4 bg-red-500/20 rounded-xl border border-red-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Atrasos Atuais</p>
+                    <p class="text-2xl font-bold text-red-400">{{ report_data.checklists.overdue_count }}</p>
+                </div>
+            </div>
+            
+            {% if report_data.checklists.completions %}
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Últimas Conclusões</h3>
+                <div class="space-y-2">
+                    {% for completion in report_data.checklists.completions %}
+                    <div class="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ completion.checklist }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500">{{ completion.date }} - {{ completion.points }} pontos</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Treinamentos -->
+        {% if report_data.trainings %}
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🎓 Treinamentos</h2>
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Progresso Médio</p>
+                <p class="text-3xl font-bold text-brand-400">{{ report_data.trainings.avg_progress }}%</p>
+            </div>
+            
+            {% if report_data.trainings.trainings %}
+            <div class="space-y-4">
+                {% for training in report_data.trainings.trainings %}
+                <div class="p-4 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-base font-medium text-gray-900 dark:text-white">{{ training.title }}</h3>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold {% if training.is_completed %}bg-green-500/20 text-green-400{% else %}bg-yellow-500/20 text-yellow-400{% endif %}">
+                            {{ training.progress }}%
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-dark-600 rounded-full h-2 mb-2">
+                        <div class="bg-brand-500 h-2 rounded-full" style="width: {{ training.progress }}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-500">
+                        {{ training.completed_videos }}/{{ training.total_videos }} vídeos • 
+                        {{ training.passed_quizzes }}/{{ training.total_quizzes }} quizzes
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Quizzes -->
+        {% if report_data.quizzes %}
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📝 Quizzes</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="p-4 bg-blue-500/20 rounded-xl border border-blue-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Média de Notas (Geral)</p>
+                    <p class="text-2xl font-bold text-blue-400">{{ report_data.quizzes.avg_score }}%</p>
+                    {% if report_data.quizzes.avg_score_period %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">No período: {{ report_data.quizzes.avg_score_period }}%</p>
+                    {% endif %}
+                </div>
+                <div class="p-4 bg-green-500/20 rounded-xl border border-green-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Aprovados (Geral)</p>
+                    <p class="text-2xl font-bold text-green-400">{{ report_data.quizzes.total_passed }}</p>
+                    {% if report_data.quizzes.total_passed_period %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">No período: {{ report_data.quizzes.total_passed_period }}</p>
+                    {% endif %}
+                </div>
+                <div class="p-4 bg-gray-500/20 rounded-xl border border-gray-500/50">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Tentativas (Geral)</p>
+                    <p class="text-2xl font-bold text-gray-400">{{ report_data.quizzes.total_attempts }}</p>
+                    {% if report_data.quizzes.total_attempts_period %}
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">No período: {{ report_data.quizzes.total_attempts_period }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if report_data.quizzes.attempts %}
+            <div class="mt-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Últimas Tentativas</h3>
+                <div class="space-y-2">
+                    {% for attempt in report_data.quizzes.attempts %}
+                    <div class="p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ attempt.quiz_title }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500">{{ attempt.training_title }} • {{ attempt.date }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold {% if attempt.is_passed %}text-green-400{% else %}text-red-400{% endif %}">
+                                    {{ attempt.score }}%
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500">
+                                    {{ attempt.correct_answers }}/{{ attempt.total_questions }} corretas
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Advertências -->
+        {% if report_data.warnings %}
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">⚠️ Advertências</h2>
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Advertências (Histórico Completo)</p>
+                <p class="text-3xl font-bold text-red-400">{{ report_data.warnings.total }}</p>
+            </div>
+            
+            {% if report_data.warnings.warnings %}
+            <div class="space-y-2">
+                {% for warning in report_data.warnings.warnings %}
+                <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400">
+                            {{ warning.type }}
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-500">{{ warning.date }}</span>
+                    </div>
+                    <p class="text-sm text-gray-900 dark:text-white mt-2">{{ warning.reason }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Aplicado por: {{ warning.issuer }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Relatório Geral da Empresa -->
+    <div class="card">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📊 Resumo da Empresa</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-blue-500/20 rounded-xl border border-blue-500/50">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Usuários</p>
+                <p class="text-2xl font-bold text-blue-400">{{ report_data.summary.total_users }}</p>
+            </div>
+            <div class="p-4 bg-green-500/20 rounded-xl border border-green-500/50">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Checklists</p>
+                <p class="text-2xl font-bold text-green-400">{{ report_data.summary.total_checklists }}</p>
+            </div>
+            <div class="p-4 bg-purple-500/20 rounded-xl border border-purple-500/50">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Treinamentos</p>
+                <p class="text-2xl font-bold text-purple-400">{{ report_data.summary.total_trainings }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

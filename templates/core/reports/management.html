@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatórios - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">📊 Relatórios</h1>
+        <p class="text-gray-600 dark:text-gray-400">Gere relatórios consolidados por período e colaborador</p>
+    </div>
+    
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Formulário de Filtros -->
+    <div class="card">
+        <form method="GET" action="{% url 'core:report_management' %}" class="space-y-6">
+            <!-- Período -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Período</label>
+                
+                <!-- Atalhos de Período -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <button type="button" onclick="setPeriod('week')" 
+                            class="btn-secondary border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700">
+                        Semana Atual
+                    </button>
+                    <button type="button" onclick="setPeriod('month')" 
+                            class="btn-secondary border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700">
+                        Mês Atual
+                    </button>
+                    <button type="button" onclick="setPeriod('quarter')" 
+                            class="btn-secondary border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700">
+                        Últimos 3 Meses
+                    </button>
+                </div>
+                
+                <!-- Datas Customizadas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="start_date" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Data Início</label>
+                        <input type="date" name="start_date" id="start_date" 
+                               value="{{ start_date|default:'' }}"
+                               class="form-input" required>
+                    </div>
+                    
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Data Fim</label>
+                        <input type="date" name="end_date" id="end_date" 
+                               value="{{ end_date|default:'' }}"
+                               class="form-input" required>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="period" id="period" value="">
+            </div>
+            
+            <!-- Colaborador -->
+            <div>
+                <label for="user" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Colaborador <span class="text-gray-500 dark:text-gray-500 text-xs">(Opcional - deixe em branco para relatório geral)</span>
+                </label>
+                <select name="user" id="user" class="form-select">
+                    <option value="">Todos os colaboradores</option>
+                    {% for user_item in users %}
+                    <option value="{{ user_item.id }}">{{ user_item.get_full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Ações -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-dark-600">
+                <button type="submit" name="action" value="view" 
+                        class="btn-primary flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Visualizar na Tela
+                </button>
+                
+                <button type="submit" name="action" value="download" 
+                        class="btn-secondary border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Baixar PDF
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function setPeriod(period) {
+    document.getElementById('period').value = period;
+    
+    const today = new Date();
+    let startDate, endDate = today.toISOString().split('T')[0];
+    
+    if (period === 'week') {
+        const dayOfWeek = today.getDay();
+        const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+        startDate = new Date(today.setDate(diff)).toISOString().split('T')[0];
+    } else if (period === 'month') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    } else if (period === 'quarter') {
+        const threeMonthsAgo = new Date(today);
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        startDate = new Date(threeMonthsAgo.getFullYear(), threeMonthsAgo.getMonth(), 1).toISOString().split('T')[0];
+    }
+    
+    document.getElementById('start_date').value = startDate;
+    document.getElementById('end_date').value = endDate;
+}
+</script>
+{% endblock %}
+

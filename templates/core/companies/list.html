@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Empresas - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Empresas</h1>
+            <p class="text-gray-600 dark:text-gray-400">Gerencie as empresas cadastradas na plataforma.</p>
+        </div>
+        <a href="{% url 'core:company_create' %}" class="btn-primary flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Nova Empresa
+        </a>
+    </div>
+    
+    <!-- Tabela de Empresas -->
+    <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-dark-700 border-b border-gray-200 dark:border-dark-600">
+                    <tr>
+                        <th class="px-6 py-4 text-left">
+                            <a href="?sort={% if current_sort == 'name' %}-name{% else %}name{% endif %}" 
+                               class="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-brand-400 transition-colors">
+                                Nome
+                                {% if current_sort == 'name' %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                                </svg>
+                                {% elif current_sort == '-name' %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-400">Status</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-400">Usuários</th>
+                        <th class="px-6 py-4 text-left">
+                            <a href="?sort={% if current_sort == '-created_at' %}created_at{% else %}-created_at{% endif %}" 
+                               class="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-brand-400 transition-colors">
+                                Data de Criação
+                                {% if current_sort == '-created_at' %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                                {% elif current_sort == 'created_at' %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                                </svg>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-right text-sm font-semibold text-gray-400">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-600">
+                    {% for company in companies %}
+                    <tr class="hover:bg-dark-700 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-4">
+                                <!-- Logo/Inicial -->
+                                {% if company.logo %}
+                                <img src="{{ company.logo.url }}" alt="{{ company.name }}" 
+                                     class="w-12 h-12 rounded-xl object-cover">
+                                {% else %}
+                                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white"
+                                     style="background-color: {{ company.primary_color }}">
+                                    {{ company.name.0 }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <a href="{% url 'core:company_detail' company.pk %}" 
+                                       class="font-semibold text-gray-900 dark:text-white hover:text-brand-400 transition-colors">
+                                        {{ company.name }}
+                                    </a>
+                                    <p class="text-xs text-gray-500 mt-1">{{ company.slug }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if company.is_active %}
+                            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Ativa</span>
+                            {% else %}
+                            <span class="px-3 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded-full">Inativa</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-white font-medium">{{ company.active_users_count }}</span>
+                            <span class="text-gray-500 text-sm"> / {{ company.max_users }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-gray-400 text-sm">
+                            {{ company.created_at|date:"d/m/Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'core:company_users' company.pk %}" 
+                                   class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-lg transition-all duration-200">
+                                    👥 Usuários
+                                </a>
+                                <a href="{% url 'core:company_detail' company.pk %}" 
+                                   class="px-4 py-2 bg-dark-600 hover:bg-dark-500 text-white text-sm font-medium rounded-lg transition-all duration-200">
+                                    Ver Detalhes
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center">
+                            <div class="text-gray-500">
+                                <svg class="w-20 h-20 mx-auto mb-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhuma empresa cadastrada</h3>
+                                <p class="text-sm mb-6">Crie a primeira empresa para começar.</p>
+                                <a href="{% url 'core:company_create' %}" class="btn-primary inline-flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Criar Empresa
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

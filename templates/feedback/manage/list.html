@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Feedbacks - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Gerenciar Feedbacks</h1>
+            <p class="text-gray-600 dark:text-gray-400">Acompanhe e responda os feedbacks da sua equipe.</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="card text-center">
+            <p class="text-3xl font-bold text-[#F83531]">{{ stats.total }}</p>
+            <p class="text-sm text-gray-500">Total</p>
+        </div>
+        <div class="card text-center">
+            <p class="text-3xl font-bold text-[#F83531]">{{ stats.pending }}</p>
+            <p class="text-sm text-gray-500">Pendentes</p>
+        </div>
+        <div class="card text-center">
+            <p class="text-3xl font-bold text-[#F83531]">{{ stats.in_progress }}</p>
+            <p class="text-sm text-gray-500">Em Andamento</p>
+        </div>
+        <div class="card text-center">
+            <p class="text-3xl font-bold text-[#F83531]">{{ stats.resolved }}</p>
+            <p class="text-sm text-gray-500">Resolvidos</p>
+        </div>
+    </div>
+    
+    <div class="card mb-6">
+        <form method="get" class="flex flex-wrap items-center gap-4">
+            <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">Todos os Status</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pendente</option>
+                <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>Em Andamento</option>
+                <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Resolvido</option>
+                <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Fechado</option>
+            </select>
+            
+            <select name="sentiment" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">Todos os Sentimentos</option>
+                <option value="great" {% if sentiment_filter == 'great' %}selected{% endif %}>😊 Ótimo</option>
+                <option value="good" {% if sentiment_filter == 'good' %}selected{% endif %}>🙂 Bom</option>
+                <option value="neutral" {% if sentiment_filter == 'neutral' %}selected{% endif %}>😐 Neutro</option>
+                <option value="bad" {% if sentiment_filter == 'bad' %}selected{% endif %}>😕 Ruim</option>
+                <option value="sad" {% if sentiment_filter == 'sad' %}selected{% endif %}>😢 Triste</option>
+            </select>
+            
+            <select name="category" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="">Todas as Categorias</option>
+                <option value="suggestion" {% if category_filter == 'suggestion' %}selected{% endif %}>Sugestão</option>
+                <option value="complaint" {% if category_filter == 'complaint' %}selected{% endif %}>Reclamação</option>
+                <option value="question" {% if category_filter == 'question' %}selected{% endif %}>Dúvida</option>
+                <option value="praise" {% if category_filter == 'praise' %}selected{% endif %}>Elogio</option>
+                <option value="other" {% if category_filter == 'other' %}selected{% endif %}>Outro</option>
+            </select>
+            
+            {% if status_filter or sentiment_filter or category_filter %}
+            <a href="{% url 'feedback:manage_list' %}" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">
+                Limpar filtros
+            </a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <div class="space-y-4">
+        {% for feedback in feedbacks %}
+        <div class="card-hover {% if feedback.sentiment == 'sad' or feedback.sentiment == 'bad' %}border-red-500/30{% endif %}">
+            <div class="flex items-start gap-4">
+                <div class="text-4xl">{{ feedback.sentiment_emoji }}</div>
+                
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ feedback.subject }}</h3>
+                        
+                        {% if feedback.status == 'pending' %}
+                        <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-medium rounded-full">Pendente</span>
+                        {% elif feedback.status == 'in_progress' %}
+                        <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-medium rounded-full">Em Andamento</span>
+                        {% elif feedback.status == 'resolved' %}
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">Resolvido</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 bg-gray-500/20 text-gray-400 text-xs font-medium rounded-full">Fechado</span>
+                        {% endif %}
+                        
+                        {% if not feedback.is_anonymous %}
+                        <span class="bg-gray-700 text-white text-[10px] px-2 py-0.5 rounded-full">
+                            {{ feedback.user.get_full_name|default:feedback.user.email|upper }}
+                        </span>
+                        {% else %}
+                        <span class="bg-gray-700 text-white text-[10px] px-2 py-0.5 rounded-full">
+                            ANÔNIMO
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="text-sm text-gray-500 line-clamp-2 mb-2">{{ feedback.message|truncatewords:30 }}</p>
+                    
+                    <div class="flex items-center gap-4 text-xs text-gray-600">
+                        <span class="px-2 py-0.5 bg-dark-600 rounded-full">{{ feedback.get_category_display }}</span>
+                        <span>{{ feedback.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                
+                <a href="{% url 'feedback:respond' feedback.pk %}" 
+                   class="btn-primary text-sm py-2 px-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    </svg>
+                    Responder
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card text-center py-16">
+            <svg class="w-20 h-20 text-gray-400 dark:text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum feedback encontrado</h3>
+            <p class="text-gray-500">Os feedbacks da equipe aparecerão aqui.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

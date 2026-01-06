@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ training.title }} - Gerenciar - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Header Slim -->
+    <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mb-4 md:mb-6">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <a href="{% url 'trainings:manage_list' %}" 
+               class="p-2 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200 flex-shrink-0">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="flex-1 min-w-0">
+                <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white truncate">{{ training.title }}</h1>
+                <p class="hidden md:block text-sm text-slate-600 dark:text-gray-400 mt-1">Gerencie os vídeos e quizzes deste treinamento</p>
+            </div>
+        </div>
+        <a href="{% url 'trainings:edit' training.pk %}" 
+           class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-brand-100 dark:bg-brand-500/20 border border-brand-300 dark:border-brand-500/50 text-brand-600 dark:text-brand-400 rounded-xl font-medium transition-all duration-200 hover:bg-brand-200 dark:hover:bg-brand-500/30 min-h-[44px]">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            <span class="hidden sm:inline">Editar Treinamento</span>
+            <span class="sm:hidden">Editar</span>
+        </a>
+    </div>
+    
+    <!-- Barra de Progresso Slim (Total do Treinamento) -->
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-3 md:p-4 mb-4 md:mb-6 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-700 dark:text-gray-300">Conteúdo Total</span>
+            <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ content_items|length }} item{{ content_items|length|pluralize }}</span>
+        </div>
+        <div class="w-full bg-slate-200 dark:bg-dark-700 rounded-full h-2">
+            <div class="bg-brand-500 h-2 rounded-full transition-all duration-300" style="width: 0%;"></div>
+        </div>
+        <p class="text-xs text-slate-600 dark:text-gray-400 mt-1">Estatísticas de progresso não disponíveis na gestão</p>
+    </div>
+    
+    <div class="space-y-4 md:space-y-6">
+        <!-- Conteúdo do Treinamento -->
+        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
+                <h2 class="text-lg md:text-xl font-semibold text-slate-900 dark:text-white">
+                    📚 Conteúdo ({{ content_items|length }})
+                </h2>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button onclick="toggleVideoForm()" 
+                            class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-all duration-200 font-medium min-h-[44px]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Adicionar Vídeo</span>
+                    </button>
+                    <a href="{% url 'trainings:quiz_create' training.pk %}" 
+                       class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-all duration-200 font-medium min-h-[44px]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Adicionar Quiz</span>
+                    </a>
+                </div>
+            </div>
+                
+            <!-- Formulário de Upload (Oculto por padrão) -->
+            <div id="videoFormContainer" class="hidden mb-4 md:mb-6 p-4 md:p-6 bg-slate-50 dark:bg-dark-900/50 rounded-xl border border-slate-200 dark:border-dark-700">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base md:text-lg font-semibold text-slate-900 dark:text-white">➕ Adicionar Vídeo</h3>
+                    <button onclick="toggleVideoForm()" class="p-2 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form method="post" action="{% url 'trainings:video_create' training.pk %}" enctype="multipart/form-data" class="space-y-4" id="videoUploadForm" onsubmit="handleVideoUpload(event)">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="id_title" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Título *</label>
+                        <input type="text" name="title" id="id_title" 
+                               class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                               placeholder="Título do vídeo"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label for="id_video_file" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Arquivo de Vídeo *</label>
+                        <input type="file" name="video_file" id="id_video_file" 
+                               accept="video/mp4,video/webm,video/quicktime"
+                               class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer min-h-[44px]"
+                               required>
+                        <p class="mt-1 text-xs text-slate-600 dark:text-gray-400">Formatos: MP4, WebM, MOV (máx. 500MB)</p>
+                    </div>
+                    
+                    <div>
+                        <label for="id_description" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Descrição</label>
+                        <textarea name="description" id="id_description" 
+                                  class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                                  rows="2"
+                                  placeholder="Descrição opcional"></textarea>
+                    </div>
+                    
+                    <!-- Feedback de Upload -->
+                    <div id="uploadFeedback" class="hidden p-3 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 rounded-lg">
+                        <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400">
+                            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            <span class="text-sm font-medium">O vídeo está sendo processado...</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-gray-400 mt-1">Aguarde enquanto extraímos a duração e geramos o thumbnail.</p>
+                    </div>
+                    
+                    <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-dark-700">
+                        <button type="button" onclick="toggleVideoForm()" class="px-4 py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium min-h-[44px]">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="uploadBtn" class="px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-all duration-200 font-medium shadow-lg shadow-brand-500/25 min-h-[44px] flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            Fazer Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+                
+            <!-- Lista Unificada de Conteúdo (Slim) -->
+            <div class="space-y-2 md:space-y-3" id="contentList">
+                {% for item in content_items %}
+                <div class="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border border-slate-200 dark:border-dark-700 {% if item.type == 'video' %}bg-blue-50/50 dark:bg-blue-500/5 border-l-4 border-l-blue-500{% else %}bg-purple-50/50 dark:bg-purple-500/5 border-l-4 border-l-purple-500{% endif %} group transition-all duration-200" 
+                     data-content-type="{{ item.type }}" 
+                     data-content-id="{{ item.item.id }}">
+                    <!-- Drag Handle (Mobile-Friendly) -->
+                    <div class="cursor-move flex-shrink-0 w-10 h-10 flex items-center justify-center text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors touch-manipulation">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Ícone de Tipo (Vídeo ou Quiz) -->
+                    <div class="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                                {% if item.type == 'video' %}bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400
+                                {% else %}bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400{% endif %}">
+                        {% if item.type == 'video' %}
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        {% else %}
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Info Slim -->
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-medium text-slate-900 dark:text-white text-sm md:text-base truncate">{{ item.item.title }}</h4>
+                        <p class="text-xs md:text-sm text-slate-600 dark:text-gray-400 truncate">
+                            {% if item.type == 'video' %}
+                                📹 {{ item.item.duration_formatted|default:"--:--" }}
+                            {% else %}
+                                🧠 {{ item.item.questions.count }} pergunta{{ item.item.questions.count|pluralize }} • Nota mínima: {{ item.item.passing_score }}%
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <!-- Status (Oculto no mobile se ativo) -->
+                    {% if not item.item.is_active %}
+                    <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 text-xs font-medium rounded-full flex-shrink-0">
+                        Inativo
+                    </span>
+                    {% endif %}
+                    
+                    <!-- Actions (Menu de Três Pontos) -->
+                    <div class="flex-shrink-0 relative">
+                        <button onclick="toggleContentMenu({{ item.item.id }})" 
+                                class="p-2 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                            </svg>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div id="contentMenu{{ item.item.id }}" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-lg shadow-lg z-10">
+                            <div class="py-1">
+                                {% if item.type == 'video' %}
+                                <a href="{% url 'trainings:video_edit' item.item.id %}" 
+                                   class="block px-4 py-2.5 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors min-h-[44px] flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Editar
+                                </a>
+                                <button onclick="confirmDeleteVideo({{ item.item.id }}, '{{ item.item.title|escapejs }}'); closeContentMenu({{ item.item.id }});" 
+                                        class="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors min-h-[44px] flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Excluir
+                                </button>
+                                {% else %}
+                                <a href="{% url 'trainings:quiz_edit' item.item.id %}" 
+                                   class="block px-4 py-2.5 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors min-h-[44px] flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Editar
+                                </a>
+                                <button onclick="confirmDeleteQuiz({{ item.item.id }}, '{{ item.item.title|escapejs }}'); closeContentMenu({{ item.item.id }});" 
+                                        class="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors min-h-[44px] flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Excluir
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12 text-slate-600 dark:text-gray-400">
+                    <svg class="w-16 h-16 mx-auto mb-4 opacity-50 text-slate-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    <p class="text-sm md:text-base">Nenhum conteúdo adicionado ainda.</p>
+                    <p class="text-xs md:text-sm mt-1 text-slate-500 dark:text-gray-400">Adicione vídeos ou quizzes para começar.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão de Vídeo -->
+<div id="deleteVideoModal" class="hidden fixed inset-0 bg-slate-900/50 dark:bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-2xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-2">Confirmar Exclusão</h3>
+        <p class="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-6">
+            Tem certeza que deseja excluir o vídeo "<span id="deleteVideoModalTitle" class="font-semibold text-slate-900 dark:text-white"></span>"? Esta ação não pode ser desfeita.
+        </p>
+        <div class="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-end gap-3">
+            <button onclick="closeDeleteVideoModal()" 
+                    class="px-4 py-2.5 md:py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium min-h-[44px]">
+                Cancelar
+            </button>
+            <button id="confirmDeleteVideoBtn"
+                    class="px-4 py-2.5 md:py-3 bg-[#F83531] hover:bg-[#E02E2A] text-white rounded-xl transition-all duration-200 font-medium shadow-lg shadow-red-500/25 min-h-[44px]">
+                Excluir
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão de Quiz -->
+<div id="deleteQuizModal" class="hidden fixed inset-0 bg-slate-900/50 dark:bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-2xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-2">Confirmar Exclusão</h3>
+        <p class="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-6">
+            Tem certeza que deseja excluir o quiz "<span id="deleteQuizModalTitle" class="font-semibold text-slate-900 dark:text-white"></span>"? Esta ação não pode ser desfeita.
+        </p>
+        <div class="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-end gap-3">
+            <button onclick="closeDeleteQuizModal()" 
+                    class="px-4 py-2.5 md:py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium min-h-[44px]">
+                Cancelar
+            </button>
+            <form id="deleteQuizForm" method="post" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="px-4 py-2.5 md:py-3 bg-[#F83531] hover:bg-[#E02E2A] text-white rounded-xl transition-all duration-200 font-medium shadow-lg shadow-red-500/25 min-h-[44px]">
+                    Excluir
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SortableJS para drag and drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<script>
+let videoToDelete = null;
+let quizToDelete = null;
+
+// Toggle formulário de vídeo
+function toggleVideoForm() {
+    const container = document.getElementById('videoFormContainer');
+    const isHidden = container.classList.contains('hidden');
+    
+    if (isHidden) {
+        container.classList.remove('hidden');
+        container.style.animation = 'slideDown 0.3s ease-out';
+    } else {
+        container.style.animation = 'slideUp 0.3s ease-out';
+        setTimeout(() => {
+            container.classList.add('hidden');
+        }, 300);
+    }
+}
+
+// Toggle menu de conteúdo
+function toggleContentMenu(contentId) {
+    const allMenus = document.querySelectorAll('[id^="contentMenu"]');
+    allMenus.forEach(menu => {
+        if (menu.id !== `contentMenu${contentId}`) {
+            menu.classList.add('hidden');
+        }
+    });
+    
+    const menu = document.getElementById(`contentMenu${contentId}`);
+    menu.classList.toggle('hidden');
+}
+
+function closeContentMenu(contentId) {
+    const menu = document.getElementById(`contentMenu${contentId}`);
+    if (menu) menu.classList.add('hidden');
+}
+
+// Fechar menus ao clicar fora
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[id^="contentMenu"]') && !e.target.closest('button[onclick*="toggleContentMenu"]')) {
+        document.querySelectorAll('[id^="contentMenu"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+
+// Confirmar exclusão de vídeo
+function confirmDeleteVideo(videoId, videoTitle) {
+    videoToDelete = videoId;
+    const modal = document.getElementById('deleteVideoModal');
+    const titleSpan = document.getElementById('deleteVideoModalTitle');
+    
+    titleSpan.textContent = videoTitle;
+    modal.classList.remove('hidden');
+    
+    const confirmBtn = document.getElementById('confirmDeleteVideoBtn');
+    confirmBtn.onclick = function() {
+        deleteVideo(videoId);
+    };
+}
+
+function closeDeleteVideoModal() {
+    document.getElementById('deleteVideoModal').classList.add('hidden');
+    videoToDelete = null;
+}
+
+function deleteVideo(videoId) {
+    if (!videoId) return;
+    
+    fetch(`/trainings/manage/video/${videoId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // Haptic feedback no mobile
+            if ('vibrate' in navigator) {
+                navigator.vibrate(50);
+            }
+            location.reload();
+        } else {
+            alert('Erro ao excluir vídeo');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir vídeo. Tente novamente.');
+    });
+}
+
+// Confirmar exclusão de quiz
+function confirmDeleteQuiz(quizId, quizTitle) {
+    quizToDelete = quizId;
+    const modal = document.getElementById('deleteQuizModal');
+    const titleSpan = document.getElementById('deleteQuizModalTitle');
+    const form = document.getElementById('deleteQuizForm');
+    
+    titleSpan.textContent = quizTitle;
+    form.action = `/trainings/manage/quiz/${quizId}/delete/`;
+    modal.classList.remove('hidden');
+}
+
+function closeDeleteQuizModal() {
+    document.getElementById('deleteQuizModal').classList.add('hidden');
+    quizToDelete = null;
+}
+
+// Fechar modais ao clicar fora
+document.getElementById('deleteVideoModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteVideoModal();
+    }
+});
+
+document.getElementById('deleteQuizModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteQuizModal();
+    }
+});
+
+function handleVideoUpload(event) {
+    const form = event.target;
+    const feedback = document.getElementById('uploadFeedback');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    feedback.classList.remove('hidden');
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Processando...';
+}
+
+// Inicializa drag and drop para conteúdo unificado
+document.addEventListener('DOMContentLoaded', function() {
+    const contentList = document.getElementById('contentList');
+    
+    if (contentList) {
+        const sortable = Sortable.create(contentList, {
+            handle: '.cursor-move',
+            animation: 150,
+            ghostClass: 'opacity-50',
+            onEnd: function(evt) {
+                const content = [];
+                const items = contentList.querySelectorAll('[data-content-type]');
+                
+                items.forEach((item, index) => {
+                    const contentType = item.getAttribute('data-content-type');
+                    const contentId = parseInt(item.getAttribute('data-content-id'));
+                    content.push({
+                        type: contentType,
+                        id: contentId,
+                        order: index + 1
+                    });
+                });
+                
+                // Envia para o servidor
+                fetch('{% url "trainings:update_content_order" training.pk %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ content: content })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Haptic feedback no mobile
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate(50);
+                        }
+                    } else {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    location.reload();
+                });
+            }
+        });
+        
+        // Touch manipulation para melhor UX mobile
+        document.querySelectorAll('.cursor-move').forEach(handle => {
+            handle.style.touchAction = 'none';
+            handle.style.userSelect = 'none';
+            handle.style.webkitUserSelect = 'none';
+        });
+    }
+});
+
+// Adiciona estilos de animação
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 1000px;
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 1000px;
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

@@ -1,0 +1,635 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mindpulse - Plataforma de Gestão de Equipes">
+    <title>{% block title %}Mindpulse{% endblock %}</title>
+    
+    <!-- Theme Detection - Executa antes do render para evitar flash -->
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                // Usa preferência do sistema
+                if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    document.documentElement.classList.add('dark');
+                }
+            }
+        })();
+    </script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS via CDN (Production: use build process) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff5f5',
+                            100: '#ffe3e3',
+                            200: '#ffc9c9',
+                            300: '#ffa8a8',
+                            400: '#ff5a5a',
+                            500: '#F83531',
+                            600: '#d62d29',
+                            700: '#b52522',
+                            800: '#941e1b',
+                            900: '#731715',
+                        },
+                        dark: {
+                            900: '#0f0f0f',
+                            800: '#1A1A1A',
+                            700: '#242424',
+                            600: '#2e2e2e',
+                            500: '#3a3a3a',
+                        },
+                        light: {
+                            50: '#fafafa',
+                            100: '#f5f5f5',
+                            200: '#e5e5e5',
+                            300: '#d4d4d4',
+                            400: '#a3a3a3',
+                            500: '#737373',
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Outfit', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom scrollbar - Dark Mode */
+        .dark ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #1A1A1A;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #3a3a3a;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #F83531;
+        }
+        
+        /* Custom scrollbar - Light Mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f5f5;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4d4d4;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #F83531;
+        }
+        
+        /* Form inputs - Dark Mode */
+        .dark .form-input {
+            @apply w-full px-5 py-4 bg-dark-700 border border-dark-600 rounded-lg text-base text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all duration-300;
+        }
+        .dark .form-select {
+            @apply w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200;
+        }
+        .dark .form-select option {
+            background-color: #242424;
+            color: #FFFFFF;
+        }
+        .dark input, .dark select, .dark textarea {
+            color: #FFFFFF !important;
+            background-color: #242424 !important;
+        }
+        
+        /* Form inputs - Light Mode */
+        .form-input {
+            @apply w-full px-5 py-4 bg-white border border-gray-300 rounded-lg text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all duration-300;
+        }
+        .form-select {
+            @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200;
+        }
+        .form-select option {
+            background-color: #ffffff;
+            color: #111827;
+        }
+        input, select, textarea {
+            color: #111827 !important;
+            background-color: #ffffff !important;
+        }
+        
+        .form-select[multiple] {
+            min-height: 120px;
+        }
+        .form-select[multiple] option {
+            padding: 8px 12px;
+            margin: 2px 0;
+        }
+        .form-select[multiple] option:checked {
+            background-color: #F83531;
+            color: #FFFFFF;
+        }
+        input::placeholder {
+            color: #9ca3af !important;
+        }
+        .dark input::placeholder {
+            color: #6b7280 !important;
+        }
+        .form-checkbox {
+            @apply w-5 h-5 rounded text-brand-500 focus:ring-brand-500;
+        }
+        .dark .form-checkbox {
+            @apply bg-dark-700 border-dark-500 focus:ring-offset-dark-800;
+        }
+        
+        /* Buttons */
+        .btn-primary {
+            @apply px-6 py-4 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold rounded-2xl hover:from-brand-600 hover:to-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-all duration-300 shadow-lg shadow-brand-500/25;
+        }
+        .btn-secondary {
+            @apply px-6 py-3 font-medium rounded-xl focus:outline-none focus:ring-2 transition-all duration-200;
+        }
+        .dark .btn-secondary {
+            @apply bg-dark-600 text-white hover:bg-dark-500 focus:ring-dark-500;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-400;
+        }
+        .btn-ghost {
+            @apply px-4 py-2 rounded-lg transition-all duration-200;
+        }
+        .dark .btn-ghost {
+            @apply text-gray-400 hover:text-white hover:bg-dark-600;
+        }
+        .btn-ghost {
+            @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100;
+        }
+        
+        /* Cards */
+        .card {
+            @apply rounded-2xl p-6 shadow-xl transition-colors duration-300;
+        }
+        .dark .card {
+            @apply bg-dark-800 border border-dark-600;
+        }
+        .card {
+            @apply bg-white border border-gray-200;
+        }
+        .card-hover {
+            @apply card hover:border-brand-500/50 hover:shadow-brand-500/10 transition-all duration-300;
+        }
+        
+        /* Text utilities for Light/Dark mode */
+        .text-title {
+            @apply text-gray-900 dark:text-white;
+        }
+        .text-subtitle {
+            @apply text-gray-600 dark:text-gray-400;
+        }
+        .text-muted {
+            @apply text-gray-500 dark:text-gray-500;
+        }
+        .text-body {
+            @apply text-gray-700 dark:text-gray-300;
+        }
+        
+        /* Override text-white to be theme-aware in content areas */
+        .content-area .text-white {
+            @apply text-gray-900 dark:text-white;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(248, 53, 49, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(248, 53, 49, 0.5); }
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        /* Responsividade Mobile */
+        @media (max-width: 767px) {
+            /* Ajustar padding do conteúdo principal no mobile */
+            main > div {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            /* Modais e popups responsivos */
+            .modal, .popup, [role="dialog"] {
+                max-width: 95vw !important;
+                width: 100% !important;
+                margin: 1rem auto !important;
+            }
+            
+            /* Tabelas responsivas */
+            table {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-light-100 dark:bg-dark-900 text-gray-900 dark:text-white min-h-screen font-sans antialiased transition-colors duration-300">
+    {% block body %}
+    <!-- Header Mobile (visível apenas no mobile) -->
+    {% if user.is_authenticated %}
+    <header class="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-600 z-50 flex items-center px-4 transition-colors duration-300">
+        <!-- Botão Hambúrguer (Lado Esquerdo) -->
+        <button id="mobile-open-sidebar" 
+                onclick="openSidebar()" 
+                class="p-2 text-gray-700 dark:text-white hover:text-brand-500 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all duration-200 flex-shrink-0"
+                aria-label="Abrir menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        
+        <!-- Logo e Nome (Centro - Flexível) -->
+        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2 flex-1 justify-center min-w-0">
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <span class="text-lg font-bold bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent whitespace-nowrap">
+                Mindpulse
+            </span>
+        </a>
+        
+        <!-- Botão Fechar (Lado Direito - Inicialmente Oculto) -->
+        <button id="mobile-close-sidebar" 
+                onclick="closeSidebar()" 
+                class="hidden p-2 text-gray-700 dark:text-white hover:text-brand-500 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all duration-200 flex-shrink-0"
+                aria-label="Fechar menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        
+        <!-- Espaçador invisível para manter o logo centralizado quando o botão X está oculto -->
+        <div id="header-spacer" class="w-10 flex-shrink-0"></div>
+    </header>
+    {% endif %}
+    
+    <!-- Overlay (Backdrop) -->
+    {% if user.is_authenticated %}
+    <div id="sidebarOverlay" 
+         onclick="closeSidebar()"
+         class="hidden fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 md:hidden"></div>
+    {% endif %}
+    
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        {% if user.is_authenticated %}
+        <aside id="sidebar" class="w-72 bg-white dark:bg-dark-800 border-r border-gray-200 dark:border-dark-600 flex flex-col fixed top-0 left-0 h-full z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <!-- Logo -->
+            <div class="p-6 border-b border-gray-200 dark:border-dark-600 transition-colors duration-300">
+                <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center pulse-glow">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-brand-400 to-brand-500 bg-clip-text text-transparent">
+                        Mindpulse
+                    </span>
+                </a>
+                
+                <!-- Seletor Global de Empresa (Apenas Admin Master) -->
+                {% if user.is_superuser and companies %}
+                <form method="post" action="{% url 'core:switch_company' %}" id="companySelectorForm">
+                    {% csrf_token %}
+                    <select name="company_id" id="companySelector" 
+                            onchange="document.getElementById('companySelectorForm').submit();"
+                            class="w-full px-3 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 hover:border-gray-400 dark:hover:border-dark-500">
+                        <option value="" {% if not selected_company_id %}selected{% endif %}>
+                            🌍 Todas as Empresas
+                        </option>
+                        {% for company in companies %}
+                        <option value="{{ company.id }}" {% if selected_company_id and selected_company_id|stringformat:"s" == company.id|stringformat:"s" %}selected{% endif %}>
+                            {{ company.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="{% url 'core:dashboard' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                
+                <a href="{% url 'trainings:list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'trainings' in request.path and 'manage' not in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Treinamentos</span>
+                </a>
+                
+                <a href="{% url 'checklists:list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'checklists' in request.path and 'manage' not in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    <span>Checklists</span>
+                </a>
+                
+                <a href="{% url 'feedback:list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'feedback' in request.path and 'manage' not in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span>Feedback</span>
+                </a>
+                
+                {% if is_gestor or user.is_superuser %}
+                <!-- Separador para Gestão (oculto para Colaborador) -->
+                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-dark-600">
+                    <p class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Gestão</p>
+                </div>
+                
+                <a href="{% url 'checklists:manage_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'manage' in request.path and 'checklists' in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01M7 8h.01"/>
+                    </svg>
+                    <span>Gerenciar Checklists</span>
+                </a>
+                
+                <a href="{% url 'checklists:alerts_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-slate-900 dark:hover:text-white transition-all duration-200 {% if 'alerts' in request.path and 'checklists' in request.path %}bg-gray-100 dark:bg-dark-700 text-slate-900 dark:text-white border-l-4 border-brand-500{% endif %} relative">
+                    <svg class="w-5 h-5 text-slate-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Alertas Críticos</span>
+                    {% if checklist_alerts_count > 0 %}
+                    <span class="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center">
+                        {{ checklist_alerts_count }}
+                    </span>
+                    {% endif %}
+                </a>
+                
+                <a href="{% url 'trainings:manage_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'manage' in request.path and 'trainings' in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Gerenciar Treinamentos</span>
+                </a>
+                
+                <a href="{% url 'feedback:manage_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'manage' in request.path and 'feedback' in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span>Gerenciar Feedbacks</span>
+                </a>
+                
+                <a href="{% url 'accounts:warning_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'warning' in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Advertências</span>
+                </a>
+                
+                <a href="{% url 'accounts:collaborators_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if request.resolver_match.url_name == 'collaborators_list' or request.resolver_match.url_name == 'collaborator_create' %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span>Colaboradores</span>
+                </a>
+                
+                <a href="{% url 'core:report_management' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if 'relatorios' in request.path %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Relatórios</span>
+                </a>
+                {% endif %}
+                
+                {% if user.is_superuser %}
+                <!-- Separador para Admin Master -->
+                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-dark-600">
+                    <p class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Administração</p>
+                </div>
+                
+                <a href="{% url 'core:company_list' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-brand-500 dark:hover:text-brand-400 transition-all duration-200 {% if '/empresas/' in request.path %}bg-gray-100 dark:bg-dark-700 text-brand-500 dark:text-brand-400 border-l-4 border-brand-500{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <span>Empresas</span>
+                </a>
+                {% endif %}
+                
+                <!-- Configurações (todos os usuários) -->
+                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-dark-600">
+                    <a href="{% url 'accounts:settings' %}" onclick="closeSidebarOnMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 {% if request.resolver_match.url_name == 'settings' %}bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white border-l-4 border-brand-500{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Configurações</span>
+                    </a>
+                </div>
+            </nav>
+            
+                <!-- Notificação de Alertas (Apenas Gestores) -->
+                {% if is_gestor or user.is_superuser %}
+                {% if checklist_alerts_count > 0 %}
+                <div class="px-4 py-2 border-t border-gray-200 dark:border-dark-600">
+                    <a href="{% url 'checklists:alerts_list' %}" class="flex items-center gap-3 p-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-all duration-200 group">
+                        <div class="relative">
+                            <svg class="w-6 h-6 text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold animate-pulse">
+                                {{ checklist_alerts_count }}
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300">
+                                {{ checklist_alerts_count }} Alerta{{ checklist_alerts_count|pluralize }}
+                            </p>
+                            <p class="text-xs text-slate-600 dark:text-gray-500">Tarefas pendentes</p>
+                        </div>
+                    </a>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                <!-- User Profile -->
+                <div class="p-4 border-t border-gray-200 dark:border-dark-600">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {{ user.first_name.0 }}{{ user.last_name.0 }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.get_full_name }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+                        </div>
+                        <a href="{% url 'accounts:logout' %}" class="p-2 text-gray-400 hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-all duration-200" title="Sair">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+        </aside>
+        {% endif %}
+        
+        <!-- Main Content -->
+        <main class="{% if user.is_authenticated %}ml-0 md:ml-72{% endif %} flex-1 min-h-screen {% if user.is_authenticated %}pt-16 md:pt-0{% endif %} px-4 md:px-0 transition-all duration-300">
+            {% if messages %}
+            <div class="fixed top-4 right-4 z-50 space-y-2">
+                {% for message in messages %}
+                <div class="animate-fade-in px-6 py-4 rounded-xl shadow-xl {% if message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% elif message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% endblock %}
+    
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Auto-hide messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.animate-fade-in');
+            messages.forEach(msg => {
+                setTimeout(() => {
+                    msg.style.opacity = '0';
+                    msg.style.transform = 'translateX(100px)';
+                    setTimeout(() => msg.remove(), 300);
+                }, 4000);
+            });
+        });
+        
+        // Elementos do controle mobile
+        let sidebar, overlay, openBtn, closeBtn, spacer, body;
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            sidebar = document.getElementById('sidebar');
+            overlay = document.getElementById('sidebarOverlay');
+            openBtn = document.getElementById('mobile-open-sidebar');
+            closeBtn = document.getElementById('mobile-close-sidebar');
+            spacer = document.getElementById('header-spacer');
+            body = document.body;
+            
+            // Garantir estado inicial fechado no mobile
+            if (window.innerWidth < 768 && sidebar && overlay) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                if (openBtn) openBtn.classList.remove('hidden');
+                if (closeBtn) closeBtn.classList.add('hidden');
+                if (spacer) spacer.classList.remove('hidden');
+            }
+        });
+        
+        // Abrir Sidebar (Mobile)
+        function openSidebar() {
+            if (window.innerWidth >= 768) return; // Apenas no mobile
+            
+            if (sidebar && overlay) {
+                // Abrir sidebar
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                body.classList.add('overflow-hidden');
+                
+                // Alternar botões e espaçador
+                if (openBtn) openBtn.classList.add('hidden');
+                if (closeBtn) closeBtn.classList.remove('hidden');
+                if (spacer) spacer.classList.add('hidden');
+            }
+        }
+        
+        // Fechar Sidebar (Mobile)
+        function closeSidebar() {
+            if (window.innerWidth >= 768) return; // Apenas no mobile
+            
+            if (sidebar && overlay) {
+                // Fechar sidebar
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                body.classList.remove('overflow-hidden');
+                
+                // Alternar botões e espaçador
+                if (openBtn) openBtn.classList.remove('hidden');
+                if (closeBtn) closeBtn.classList.add('hidden');
+                if (spacer) spacer.classList.remove('hidden');
+            }
+        }
+        
+        // Fechar sidebar automaticamente ao clicar em link (apenas no mobile)
+        function closeSidebarOnMobile() {
+            if (window.innerWidth < 768) {
+                closeSidebar();
+            }
+        }
+        
+        // Ajustar ao redimensionar a janela
+        window.addEventListener('resize', function() {
+            if (!sidebar || !overlay) return;
+            
+            if (window.innerWidth >= 768) {
+                // Desktop: sidebar sempre visível
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.add('hidden');
+                body.classList.remove('overflow-hidden');
+                
+                // Ocultar botões mobile
+                if (openBtn) openBtn.classList.add('hidden');
+                if (closeBtn) closeBtn.classList.add('hidden');
+                if (spacer) spacer.classList.add('hidden');
+            } else {
+                // Mobile: garantir estado fechado
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                body.classList.remove('overflow-hidden');
+                
+                // Mostrar botão hambúrguer, ocultar X, mostrar espaçador
+                if (openBtn) openBtn.classList.remove('hidden');
+                if (closeBtn) closeBtn.classList.add('hidden');
+                if (spacer) spacer.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
+

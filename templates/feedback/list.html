@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Meus Feedbacks - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Header - Compacto no mobile -->
+    <div class="mb-4 md:mb-6">
+        <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1 md:mb-2">
+            {% if user.is_superuser %}Todos os Feedbacks{% else %}Meus Feedbacks{% endif %}
+        </h1>
+        <p class="text-sm md:text-base text-slate-600 dark:text-gray-400">
+            {% if user.is_superuser %}Visualize feedbacks de todas as lojas.{% else %}Acompanhe o status dos seus feedbacks enviados.{% endif %}
+        </p>
+    </div>
+    
+    <!-- Lista de Feedbacks -->
+    <div class="space-y-2 md:space-y-4" id="feedbacks-list">
+        {% for feedback in feedbacks %}
+        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-3 md:p-4 transition-all duration-200"
+             id="feedback-{{ feedback.pk }}">
+            <div class="flex items-start gap-3 md:gap-4">
+                <!-- Emoji - Menor no mobile -->
+                <div class="text-2xl md:text-3xl flex-shrink-0">{{ feedback.sentiment_emoji }}</div>
+                
+                <!-- Conteúdo Principal -->
+                <div class="flex-1 min-w-0">
+                    <!-- Info da empresa (apenas admin, desktop) -->
+                    {% if user.is_superuser and not current_company %}
+                    <p class="hidden md:block text-xs text-brand-600 dark:text-brand-400 mb-1">
+                        🏢 {{ feedback.company.name }} • {{ feedback.user.get_full_name }}
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Assunto e Status -->
+                    <div class="flex items-start justify-between gap-2 mb-1 md:mb-2">
+                        <h3 class="font-semibold text-slate-900 dark:text-white text-sm md:text-base truncate flex-1">
+                            {{ feedback.subject }}
+                        </h3>
+                        
+                        <!-- Status Badge - Compacto -->
+                        {% if feedback.status == 'pending' %}
+                        <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
+                            Pendente
+                        </span>
+                        {% elif feedback.status == 'in_progress' %}
+                        <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
+                            Em Andamento
+                        </span>
+                        {% elif feedback.status == 'resolved' %}
+                        <span class="px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
+                            Resolvido
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
+                            Fechado
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Mensagem - Truncada no mobile -->
+                    <p class="text-xs md:text-sm text-slate-600 dark:text-gray-400 line-clamp-2 mb-2">
+                        {{ feedback.message|truncatewords:25 }}
+                    </p>
+                    
+                    <!-- Metadados - Responsivo -->
+                    <div class="flex items-center flex-wrap gap-2 md:gap-4 text-xs text-slate-500 dark:text-gray-500">
+                        <!-- Categoria - Oculto no mobile -->
+                        <span class="hidden md:inline-block px-2 py-0.5 bg-slate-100 dark:bg-dark-700 text-slate-700 dark:text-gray-300 rounded-full">
+                            {{ feedback.get_category_display }}
+                        </span>
+                        <!-- Data -->
+                        <span>{{ feedback.created_at|date:"d/m/Y" }} <span class="hidden md:inline">{{ feedback.created_at|date:"H:i" }}</span></span>
+                        <!-- Resposta - Badge visual -->
+                        {% if feedback.response %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-full font-medium">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Respondido
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Botão Excluir - Apenas se for o dono do feedback -->
+                {% if feedback.user == user or user.is_superuser %}
+                <button onclick="deleteFeedback({{ feedback.pk }})" 
+                        class="p-2 text-slate-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        title="Excluir feedback">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <!-- Estado Vazio -->
+        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl text-center py-12 md:py-16 px-4">
+            <svg class="w-16 h-16 md:w-20 md:h-20 text-slate-300 dark:text-gray-600 mx-auto mb-4 md:mb-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <h3 class="text-lg md:text-xl font-semibold text-slate-900 dark:text-white mb-2">Nenhum feedback enviado</h3>
+            <p class="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-6">Compartilhe sua opinião com a gestão.</p>
+            <a href="{% url 'feedback:create' %}" 
+               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-brand-500/25">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Enviar Feedback
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- FAB (Floating Action Button) para Mobile -->
+{% if not user.is_superuser %}
+<a href="{% url 'feedback:create' %}" 
+   class="fixed bottom-6 right-6 md:hidden w-14 h-14 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white rounded-full shadow-lg shadow-brand-500/50 flex items-center justify-center z-50 transition-all duration-200 hover:scale-110">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+    </svg>
+</a>
+{% endif %}
+
+<!-- Botão Fixo no Desktop (dentro da área de conteúdo) -->
+{% if not user.is_superuser %}
+<div class="hidden md:block fixed bottom-8 right-8 z-40">
+    <a href="{% url 'feedback:create' %}" 
+       class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-brand-500/25">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+        Novo Feedback
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function deleteFeedback(feedbackId) {
+    if (!confirm('Tem certeza que deseja excluir este feedback?')) {
+        return;
+    }
+    
+    const feedbackElement = document.getElementById(`feedback-${feedbackId}`);
+    if (!feedbackElement) return;
+    
+    // Desabilita o botão durante o processamento
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+    
+    fetch(`/feedback/${feedbackId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: ''
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    throw new Error(`Erro ${response.status}: ${response.statusText}`);
+                }
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Animação de remoção
+            feedbackElement.style.opacity = '0';
+            feedbackElement.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                feedbackElement.remove();
+                
+                // Se não há mais feedbacks, recarrega a página para mostrar estado vazio
+                const remainingFeedbacks = document.querySelectorAll('[id^="feedback-"]');
+                if (remainingFeedbacks.length === 0) {
+                    location.reload();
+                }
+            }, 200);
+        } else {
+            alert(data.error || 'Erro ao excluir feedback');
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir feedback. Tente novamente.');
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ training.title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Header Slim -->
+    <div class="mb-4 md:mb-6">
+        <div class="flex items-center gap-3 mb-3 md:mb-4">
+            <a href="{% url 'trainings:list' %}" 
+               class="p-2 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <h1 class="text-lg md:text-3xl font-bold text-slate-900 dark:text-white flex-1 min-w-0 truncate">{{ training.title }}</h1>
+            {% if progress >= 100 %}
+            <span class="px-2 md:px-3 py-1 md:py-1.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-lg text-xs md:text-sm font-medium flex items-center gap-1.5 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="hidden sm:inline">Concluído</span>
+            </span>
+            {% endif %}
+        </div>
+        
+        <!-- Meta Info Compacta -->
+        <div class="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-slate-600 dark:text-gray-400 mb-3 md:mb-4">
+            <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                {{ training.total_videos }} vídeos
+            </span>
+            {% if training.reward_points %}
+            <span class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                +{{ training.reward_points }} pts
+            </span>
+            {% endif %}
+        </div>
+        
+        <!-- Progress Bar Slim -->
+        <div class="mb-4 md:mb-6">
+            <div class="flex items-center justify-between text-xs md:text-sm mb-1.5">
+                <span class="text-slate-600 dark:text-gray-400">Progresso</span>
+                <span class="text-slate-900 dark:text-white font-semibold" id="progressText">{{ progress }}%</span>
+            </div>
+            <div class="h-2 bg-slate-200 dark:bg-dark-700 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full rounded-full transition-all duration-500 {% if progress >= 100 %}bg-green-500{% else %}bg-gradient-to-r from-brand-500 to-brand-400{% endif %}"
+                     style="width: {{ progress }}%"></div>
+            </div>
+        </div>
+        
+        <!-- Botão Iniciar/Continuar -->
+        {% if content_items %}
+        {% with first_item=content_items|first %}
+        <a href="{% url 'trainings:content_player' training.slug first_item.type first_item.item.id %}" 
+           class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#F83531] hover:bg-[#E02E2A] text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-red-500/25 min-h-[44px] mb-4 md:mb-6">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {% if progress == 0 %}Iniciar Treinamento{% elif progress >= 100 %}Revisar Treinamento{% else %}Continuar Treinamento{% endif %}
+        </a>
+        {% endwith %}
+        {% endif %}
+    </div>
+    
+    <!-- Playlist Style - Lista de Conteúdo -->
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm">
+        <h2 class="text-base md:text-lg font-semibold text-slate-900 dark:text-white mb-3 md:mb-4">Conteúdo do Treinamento</h2>
+        
+        <div class="space-y-1.5 md:space-y-2">
+            {% for item in content_items %}
+            <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
+               class="flex items-center gap-3 p-2.5 md:p-3 rounded-lg border border-slate-200 dark:border-dark-700 hover:border-brand-500 dark:hover:border-brand-500 transition-all duration-200 group"
+               data-content-id="{{ item.item.id }}"
+               data-content-type="{{ item.type }}">
+                <!-- Status de Conclusão (Círculo Pequeno) -->
+                <div class="flex-shrink-0">
+                    {% if item.completed %}
+                    <div class="w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg class="w-2.5 h-2.5 md:w-3 md:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    {% else %}
+                    <div class="w-4 h-4 md:w-5 md:h-5 border-2 border-slate-300 dark:border-gray-600 rounded-full"></div>
+                    {% endif %}
+                </div>
+                
+                <!-- Ícone Pequeno (w-5 h-5) -->
+                <div class="flex-shrink-0">
+                    {% if item.type == 'video' %}
+                    <svg class="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    {% endif %}
+                </div>
+                
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm md:text-base font-medium text-slate-900 dark:text-white truncate group-hover:text-brand-500 dark:group-hover:text-brand-400 transition-colors">
+                        {{ item.item.title }}
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-gray-400 mt-0.5">
+                        {% if item.type == 'video' %}
+                            {{ item.item.duration_formatted|default:"--:--" }}
+                        {% else %}
+                            {{ item.item.questions.count }} pergunta{{ item.item.questions.count|pluralize }} • Mín: {{ item.item.passing_score }}%
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Play Icon (Pequeno) -->
+                <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg class="w-5 h-5 text-slate-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
+            </a>
+            {% empty %}
+            <div class="text-center py-12 text-slate-600 dark:text-gray-400">
+                <svg class="w-16 h-16 mx-auto mb-4 opacity-50 text-slate-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-sm md:text-base">Nenhum conteúdo disponível neste treinamento.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trainingId = {{ training.id }};
+    
+    // Verifica se precisa atualizar (vindo do quiz_result)
+    if (sessionStorage.getItem('refresh_training_detail') === 'true') {
+        sessionStorage.removeItem('refresh_training_detail');
+        location.reload();
+        return;
+    }
+    
+    // Atualiza status em tempo real se houver mudanças
+    function updateTrainingStatus() {
+        fetch(`/trainings/api/training/${trainingId}/status/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Atualiza barra de progresso
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                if (progressBar && progressText) {
+                    const newProgress = data.training.total_progress || 0;
+                    progressBar.style.width = newProgress + '%';
+                    progressText.textContent = Math.round(newProgress) + '%';
+                    
+                    // Atualiza cor se completou
+                    if (data.training.is_completed || newProgress >= 100) {
+                        progressBar.classList.remove('bg-gradient-to-r', 'from-brand-500', 'to-brand-400');
+                        progressBar.classList.add('bg-green-500');
+                    } else {
+                        progressBar.classList.remove('bg-green-500');
+                        progressBar.classList.add('bg-gradient-to-r', 'from-brand-500', 'to-brand-400');
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao atualizar status:', error);
+        });
+    }
+    
+    // Escuta eventos de atualização
+    window.addEventListener('trainingUpdated', function(event) {
+        if (event.detail.trainingId === trainingId) {
+            updateTrainingStatus();
+        }
+    });
+    
+    // Verifica localStorage periodicamente
+    setInterval(function() {
+        if (localStorage.getItem(`training_${trainingId}_updated`) === 'true') {
+            localStorage.removeItem(`training_${trainingId}_updated`);
+            updateTrainingStatus();
+        }
+    }, 1000);
+    
+    // Atualiza ao focar na janela (se voltou de outra aba)
+    window.addEventListener('focus', updateTrainingStatus);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,717 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if content_type == 'video' %}{{ video.title }}{% else %}{{ quiz.title }}{% endif %} - {{ training.title }} - Mindpulse{% endblock %}
+
+{% block extra_css %}
+<style>
+    .video-container {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+        background: #000;
+        width: 100%;
+    }
+    @media (min-width: 768px) {
+        .video-container {
+            border-radius: 1rem;
+        }
+    }
+    .video-container video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+    .quiz-container {
+        min-height: 300px;
+    }
+    @media (min-width: 768px) {
+        .quiz-container {
+            min-height: 400px;
+        }
+    }
+    /* Confete Animation */
+    @keyframes confetti-fall {
+        0% {
+            transform: translateY(-100vh) rotate(0deg);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+        }
+    }
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #F83531;
+        position: absolute;
+        animation: confetti-fall 3s linear forwards;
+        z-index: 9999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-0 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Breadcrumb (Mobile: oculto) -->
+    <div class="hidden md:flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400 mb-6 px-4 md:px-0">
+        <a href="{% url 'trainings:list' %}" class="hover:text-slate-900 dark:hover:text-white transition-colors">Treinamentos</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <a href="{% url 'trainings:detail' training.slug %}" class="hover:text-slate-900 dark:hover:text-white transition-colors">{{ training.title }}</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <span class="text-slate-900 dark:text-white">{% if content_type == 'video' %}{{ video.title }}{% else %}{{ quiz.title }}{% endif %}</span>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-0 md:gap-8">
+        <!-- Player -->
+        <div class="lg:col-span-2">
+            {% if content_type == 'video' %}
+            <!-- VIDEO PLAYER (Mobile: 100vw - Modo Imersivo) -->
+            <div class="video-container mb-3 md:mb-6 rounded-none md:rounded-2xl" id="videoContainer" style="padding-bottom: 56.25%;">
+                <video id="videoPlayer" 
+                       controls 
+                       preload="metadata"
+                       {% if video.thumbnail %}poster="{{ video.thumbnail.url }}"{% endif %}
+                       data-video-id="{{ video.id }}"
+                       data-duration="{{ video.duration_seconds }}"
+                       data-last-position="{{ progress.last_position }}">
+                    <source src="{{ video.video_file.url }}" type="video/mp4">
+                    Seu navegador não suporta vídeo HTML5.
+                </video>
+            </div>
+            
+            <!-- Video Info Slim -->
+            <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-3 md:p-4 shadow-sm mx-4 md:mx-0 mb-3 md:mb-6">
+                <div class="flex items-start justify-between mb-2 md:mb-3">
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-base md:text-xl font-bold text-slate-900 dark:text-white mb-1 line-clamp-2">{{ video.title }}</h1>
+                        <p class="text-xs md:text-sm text-slate-600 dark:text-gray-400">{{ video.duration_formatted }} • {{ training.title }}</p>
+                    </div>
+                    
+                    <div id="completionBadge" class="{% if not progress.completed %}hidden{% endif %} flex-shrink-0 ml-2">
+                        <span class="px-2 md:px-3 py-1 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-medium flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span class="hidden md:inline">Concluído</span>
+                        </span>
+                    </div>
+                </div>
+                
+                {% if video.description %}
+                <p class="text-sm text-slate-600 dark:text-gray-400 line-clamp-2 md:line-clamp-3">{{ video.description }}</p>
+                {% endif %}
+            </div>
+            {% else %}
+            <!-- QUIZ PLAYER -->
+            {% if show_result %}
+            <!-- RESULTADO DO QUIZ -->
+            <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm mb-4 md:mb-6 mx-4 md:mx-0 mt-4 md:mt-0">
+                <div class="text-center mb-4 md:mb-6">
+                    <div class="mb-4">
+                        {% if attempt.is_passed %}
+                        <div class="w-20 h-20 md:w-24 md:h-24 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-10 h-10 md:w-12 md:h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400 mb-2">Aprovado!</h2>
+                        {% else %}
+                        <div class="w-20 h-20 md:w-24 md:h-24 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-10 h-10 md:w-12 md:h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Reprovado</h2>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <p class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">{{ attempt.score }}%</p>
+                        <p class="text-sm md:text-base text-slate-600 dark:text-gray-400">
+                            {{ attempt.correct_answers }} de {{ attempt.total_questions }} respostas corretas
+                        </p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-gray-500">
+                            Nota mínima para aprovação: {{ quiz.passing_score }}%
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Detalhes das Respostas - Apenas se houver erros -->
+                {% if wrong_question_numbers %}
+                <div class="mt-6">
+                    <p class="text-base md:text-lg text-red-400 font-medium">
+                        Você errou a pergunta{% if wrong_question_numbers|length > 1 %}s{% endif %} 
+                        {% for num in wrong_question_numbers %}
+                        {{ num }}{% if not forloop.last %}{% if forloop.revcounter0 == 1 %} e {% else %}, {% endif %}{% endif %}
+                        {% endfor %}.
+                    </p>
+                </div>
+                {% endif %}
+                
+                <!-- Botões de Ação (Anterior + Continuar) -->
+                <div class="flex items-center justify-between gap-2 mt-4 md:mt-6 pt-4 md:pt-6 border-t border-slate-200 dark:border-dark-700">
+                    {% if prev_content %}
+                    <a href="{% url 'trainings:content_player' training.slug prev_content.type prev_content.item.id %}" 
+                       class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 hover:bg-slate-50 dark:hover:bg-dark-600 text-slate-700 dark:text-gray-300 transition-all duration-200 flex-1 md:flex-initial justify-center min-h-[44px]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        <span class="text-sm font-medium hidden sm:inline">Anterior</span>
+                    </a>
+                    {% else %}
+                    <div class="flex-1 md:flex-none"></div>
+                    {% endif %}
+                    
+                    {% if next_content %}
+                    <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}" 
+                       class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#F83531] hover:bg-[#E02E2A] text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium min-h-[44px]">
+                        <span class="text-sm">Continuar</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'trainings:detail' training.slug %}" 
+                       class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#F83531] hover:bg-[#E02E2A] text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium min-h-[44px]">
+                        <span class="text-sm">Finalizar</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Botão Refazer Quiz (Abaixo, Centralizado) -->
+                <div class="mt-3 md:mt-4">
+                    <a href="{% url 'trainings:content_player' training.slug 'quiz' quiz.id %}" 
+                       class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 hover:bg-slate-50 dark:hover:bg-dark-600 text-slate-700 dark:text-gray-300 transition-all duration-200 w-full md:w-auto md:mx-auto min-h-[44px]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span class="text-sm font-medium">Refazer Quiz</span>
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <!-- QUIZ NORMAL (Mobile: Full Width) -->
+            <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm mb-4 md:mb-6 mx-4 md:mx-0 mt-4 md:mt-0">
+                <div class="flex items-start justify-between mb-4 md:mb-6">
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-base md:text-xl font-bold text-slate-900 dark:text-white mb-1 line-clamp-2">{{ quiz.title }}</h1>
+                        <p class="text-xs md:text-sm text-slate-600 dark:text-gray-400">{{ training.title }}</p>
+                    </div>
+                    
+                    <div class="text-xs md:text-sm text-slate-600 dark:text-gray-400 flex-shrink-0 ml-2 px-2 py-1 bg-slate-100 dark:bg-dark-700 rounded-lg">
+                        {{ current_question_index|add:1 }}/{{ total_questions }}
+                    </div>
+                </div>
+                
+                {% if quiz.description %}
+                <p class="text-sm text-slate-600 dark:text-gray-400 mb-4 md:mb-6 line-clamp-2 md:line-clamp-none">{{ quiz.description }}</p>
+                {% endif %}
+                
+                {% if current_question %}
+                <form method="post" action="{% url 'trainings:quiz_take' training.slug quiz.id %}" id="quizForm" onsubmit="return submitQuiz(event)">
+                    {% csrf_token %}
+                    <input type="hidden" name="question_index" value="{{ current_question_index }}">
+                    <input type="hidden" name="answers_json" id="answersJson">
+                    
+                    <div class="mb-4 md:mb-6">
+                        <h3 class="text-base md:text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                            {{ current_question.text }}
+                        </h3>
+                        
+                        <!-- Opções de Resposta (Cards Largos e Touch-Friendly) -->
+                        <div class="space-y-3">
+                            {% for choice in current_question.choices.all %}
+                            <label class="flex items-start gap-3 p-4 bg-slate-50 dark:bg-dark-700 rounded-lg border-2 border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 active:border-brand-500 dark:active:border-brand-500 cursor-pointer transition-all min-h-[60px] md:min-h-[56px]">
+                                <input type="radio" 
+                                       name="question_{{ current_question.id }}" 
+                                       value="{{ choice.id }}" 
+                                       class="mt-1 w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 flex-shrink-0 cursor-pointer" 
+                                       required>
+                                <span class="text-sm md:text-base text-slate-900 dark:text-white flex-1 pt-0.5">{{ choice.text }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-4 md:pt-6 border-t border-slate-200 dark:border-dark-700 gap-2">
+                        {% if current_question_index > 0 %}
+                        <button type="button" 
+                                onclick="goToQuestion({{ current_question_index|add:-1 }})"
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 hover:bg-slate-50 dark:hover:bg-dark-600 text-slate-700 dark:text-gray-300 transition-all duration-200 flex-1 md:flex-initial justify-center min-h-[44px]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                            <span class="text-sm font-medium hidden sm:inline">Anterior</span>
+                        </button>
+                        {% else %}
+                        <div class="flex-1 md:flex-none"></div>
+                        {% endif %}
+                        
+                        {% if current_question_index < total_questions|add:-1 %}
+                        <button type="button" 
+                                onclick="goToQuestion({{ current_question_index|add:1 }})"
+                                class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 hover:bg-slate-50 dark:hover:bg-dark-600 text-slate-700 dark:text-gray-300 transition-all duration-200 flex-1 md:flex-initial justify-center font-medium min-h-[44px]">
+                            <span class="text-sm">Próxima</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                        {% else %}
+                        <button type="submit" class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#F83531] hover:bg-[#E02E2A] text-white transition-all duration-200 flex-1 md:flex-initial justify-center font-medium min-h-[44px]">
+                            <span class="text-sm">Finalizar</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+                {% else %}
+                <div class="text-center py-12 text-slate-600 dark:text-gray-400">
+                    <p>Nenhuma pergunta disponível neste quiz.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            <!-- Navigation (Discreta) - Apenas para vídeo -->
+            {% if content_type == 'video' %}
+            <div class="flex items-center justify-between mt-3 md:mt-6 px-4 md:px-0 gap-2">
+                {% if prev_content %}
+                <a href="{% url 'trainings:content_player' training.slug prev_content.type prev_content.item.id %}" 
+                   class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 hover:bg-slate-50 dark:hover:bg-dark-600 text-slate-700 dark:text-gray-300 transition-all duration-200 flex-1 md:flex-initial min-h-[44px]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span class="text-sm font-medium hidden sm:inline">Anterior</span>
+                </a>
+                {% else %}
+                <div class="flex-1 md:flex-none"></div>
+                {% endif %}
+                
+                {% if progress.completed %}
+                    {% if next_content %}
+                    <a href="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}" 
+                       class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 hover:bg-slate-50 dark:hover:bg-dark-600 text-slate-700 dark:text-gray-300 transition-all duration-200 flex-1 md:flex-initial font-medium min-h-[44px]"
+                       id="nextBtn">
+                        <span class="text-sm">Próximo</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'trainings:detail' training.slug %}" 
+                       class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[#F83531] hover:bg-[#E02E2A] text-white transition-all duration-200 flex-1 md:flex-initial font-medium min-h-[44px]">
+                        <span class="text-sm">Finalizar</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                {% else %}
+                    {% if next_content %}
+                    <button type="button" 
+                            class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 text-slate-400 dark:text-gray-500 cursor-not-allowed opacity-50 flex-1 md:flex-initial min-h-[44px]"
+                            id="nextBtn"
+                            disabled
+                            data-next-url="{% url 'trainings:content_player' training.slug next_content.type next_content.item.id %}"
+                            title="Assista 90% do vídeo para desbloquear o próximo">
+                        <span class="text-sm font-medium">Próximo</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    {% else %}
+                    <div class="flex-1 md:flex-none"></div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar - Lista de Conteúdo (Desktop) -->
+        <div class="hidden lg:block bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 shadow-sm h-fit max-h-[calc(100vh-200px)] overflow-y-auto">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-3 sticky top-0 bg-white dark:bg-dark-800 pb-3 z-10">
+                📚 Conteúdo
+            </h3>
+            
+            <div class="space-y-1.5">
+                {% for item in all_content %}
+                <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
+                   class="flex items-center gap-2 p-2 rounded-lg transition-all duration-200 
+                          {% if item.type == content_type and item.item.id == content.id %}bg-brand-100 dark:bg-brand-500/20 border border-brand-300 dark:border-brand-500/50
+                          {% elif item.completed %}bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30
+                          {% else %}hover:bg-slate-50 dark:hover:bg-dark-700 border border-transparent{% endif %}">
+                    <!-- Status (Círculo Pequeno) -->
+                    <div class="flex-shrink-0">
+                        {% if item.completed %}
+                        <div class="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                            <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-4 h-4 border-2 border-slate-300 dark:border-gray-600 rounded-full"></div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Ícone w-5 h-5 -->
+                    {% if item.type == 'video' %}
+                    <svg class="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    {% endif %}
+                    
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium line-clamp-2 truncate 
+                                  {% if item.type == content_type and item.item.id == content.id %}text-brand-700 dark:text-brand-400
+                                  {% elif item.completed %}text-green-700 dark:text-green-400
+                                  {% else %}text-slate-900 dark:text-white{% endif %}">
+                            {{ item.item.title }}
+                        </p>
+                        <p class="text-[10px] {% if item.completed %}text-green-600 dark:text-green-400/70{% else %}text-slate-500 dark:text-gray-400{% endif %}">
+                            {% if item.type == 'video' %}{{ item.item.duration_formatted }}{% else %}{{ item.item.total_questions }} perg.{% endif %}
+                        </p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Conteúdo (Mobile: Abaixo do Player) -->
+    <div class="lg:hidden mt-4 px-4 pb-6">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white mb-3">Conteúdo</h3>
+        
+        <div class="space-y-1.5">
+            {% for item in all_content %}
+            <a href="{% url 'trainings:content_player' training.slug item.type item.item.id %}" 
+               class="flex items-center gap-2.5 p-2.5 rounded-lg border transition-all active:scale-[0.98]
+                      {% if item.type == content_type and item.item.id == content.id %}bg-brand-100 dark:bg-brand-500/20 border-brand-300 dark:border-brand-500/50
+                      {% elif item.completed %}bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30
+                      {% else %}bg-white dark:bg-dark-800 border-slate-200 dark:border-dark-700 active:border-brand-500 dark:active:border-brand-500{% endif %}">
+                <!-- Status (Círculo Pequeno) -->
+                <div class="flex-shrink-0">
+                    {% if item.completed %}
+                    <div class="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    {% else %}
+                    <div class="w-4 h-4 border-2 border-slate-300 dark:border-gray-600 rounded-full"></div>
+                    {% endif %}
+                </div>
+                
+                <!-- Ícone w-5 h-5 -->
+                {% if item.type == 'video' %}
+                <svg class="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                {% else %}
+                <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                {% endif %}
+                
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-medium transition-colors truncate
+                               {% if item.type == content_type and item.item.id == content.id %}text-brand-700 dark:text-brand-400
+                               {% elif item.completed %}text-green-700 dark:text-green-400
+                               {% else %}text-slate-900 dark:text-white{% endif %}">
+                        {{ item.item.title }}
+                    </h3>
+                    <p class="text-[10px] {% if item.completed %}text-green-600 dark:text-green-400/70{% else %}text-slate-500 dark:text-gray-400{% endif %} mt-0.5">
+                        {% if item.type == 'video' %}{{ item.item.duration_formatted }}{% else %}{{ item.item.total_questions }} perg. • Mín: {{ item.item.passing_score }}%{% endif %}
+                    </p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Recompensa -->
+<div id="rewardModal" class="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-2xl p-6 md:p-8 max-w-[90vw] md:max-w-md w-full text-center shadow-xl">
+        <div class="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+            <span class="text-4xl md:text-5xl">🏆</span>
+        </div>
+        <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">Parabéns!</h2>
+        <p id="rewardMessage" class="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-6">Você completou o treinamento!</p>
+        <button onclick="closeRewardModal()" class="w-full px-6 py-3 bg-[#F83531] hover:bg-[#E02E2A] text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-red-500/25 min-h-[44px]">
+            Continuar
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if content_type == 'video' %}
+<script>
+const video = document.getElementById('videoPlayer');
+const videoId = video.dataset.videoId;
+const duration = parseInt(video.dataset.duration);
+const lastPosition = parseInt(video.dataset.lastPosition) || 0;
+let updateInterval;
+let hasCompleted = {{ progress.completed|yesno:"true,false" }};
+
+// Garante que o vídeo não está mudo
+video.muted = false;
+video.volume = 1.0;
+
+// Resume from last position
+if (lastPosition > 0 && lastPosition < duration * 0.9) {
+    video.currentTime = lastPosition;
+}
+
+// Update progress every 10 seconds
+video.addEventListener('play', function() {
+    updateInterval = setInterval(updateProgress, 10000);
+});
+
+video.addEventListener('pause', function() {
+    clearInterval(updateInterval);
+    updateProgress();
+});
+
+video.addEventListener('ended', function() {
+    clearInterval(updateInterval);
+    updateProgress();
+});
+
+function updateProgress() {
+    const currentTime = Math.floor(video.currentTime);
+    
+    fetch(`{% url 'trainings:video_complete' video.id %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: `current_time=${currentTime}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.completed && !hasCompleted) {
+            hasCompleted = true;
+            document.getElementById('completionBadge').classList.remove('hidden');
+            
+            // Desbloqueia o botão "Próximo" quando completa
+            const nextBtn = document.getElementById('nextBtn');
+            if (nextBtn && nextBtn.disabled) {
+                const nextUrl = nextBtn.getAttribute('data-next-url');
+                if (nextUrl) {
+                    nextBtn.outerHTML = `<a href="${nextUrl}" class="btn-primary flex items-center gap-2" id="nextBtn">
+                        Próximo
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>`;
+                }
+            }
+            
+            if (data.training_completed) {
+                showRewardModal(data.message);
+            }
+        }
+    });
+}
+
+function showRewardModal(message) {
+    document.getElementById('rewardMessage').textContent = message;
+    document.getElementById('rewardModal').classList.remove('hidden');
+}
+
+function closeRewardModal() {
+    document.getElementById('rewardModal').classList.add('hidden');
+}
+</script>
+{% else %}
+<script>
+// Salva respostas no localStorage enquanto navega
+const quizForm = document.getElementById('quizForm');
+if (quizForm) {
+    const quizId = {{ quiz.id }};
+    
+    // Carrega respostas salvas
+    const savedAnswers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
+    Object.keys(savedAnswers).forEach(name => {
+        const input = quizForm.querySelector(`input[name="${name}"][value="${savedAnswers[name]}"]`);
+        if (input) {
+            input.checked = true;
+        }
+    });
+    
+    // Salva ao mudar resposta
+    quizForm.addEventListener('change', function(e) {
+        if (e.target.type === 'radio') {
+            const answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
+            answers[e.target.name] = e.target.value;
+            localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
+            console.log('💾 Resposta salva no localStorage:', e.target.name, '=', e.target.value);
+            console.log('📦 Todas as respostas no localStorage:', answers);
+        }
+    });
+}
+
+function goToQuestion(index) {
+    const form = document.getElementById('quizForm');
+    const quizId = {{ quiz.id }};
+    
+    // IMPORTANTE: Salva resposta atual ANTES de navegar
+    const selected = form.querySelector('input[type="radio"]:checked');
+    if (selected) {
+        const answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
+        // Garante que salva com o nome exato
+        answers[selected.name] = selected.value;
+        localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
+        console.log('💾 Navegando - Resposta salva:', selected.name, '=', selected.value);
+        console.log('📦 Todas as respostas após salvar:', answers);
+    } else {
+        console.warn('⚠️ Navegando sem resposta selecionada para a pergunta atual');
+    }
+    
+    // Pequeno delay para garantir que o localStorage foi salvo
+    setTimeout(function() {
+        // Redireciona para próxima pergunta
+        window.location.href = `{% url 'trainings:content_player' training.slug 'quiz' quiz.id %}?question=${index}`;
+    }, 100);
+}
+
+// Função para criar confete
+function createConfetti() {
+    const colors = ['#F83531', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
+    const confettiCount = 50;
+    
+    for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => {
+            confetti.remove();
+        }, 5000);
+    }
+}
+
+// Som "Ding" (usando Web Audio API)
+function playDingSound() {
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (e) {
+        console.log('Áudio não disponível');
+    }
+}
+
+function submitQuiz(event) {
+    const quizId = {{ quiz.id }};
+    const totalQuestions = {{ total_questions }};
+    const currentIndex = {{ current_question_index }};
+    
+    let answers = JSON.parse(localStorage.getItem(`quiz_${quizId}_answers`) || '{}');
+    
+    // IMPORTANTE: Adiciona resposta da pergunta atual ANTES de submeter
+    const form = document.getElementById('quizForm');
+    const selected = form.querySelector('input[type="radio"]:checked');
+    if (selected) {
+        // Garante que o nome da pergunta está correto (question_ID)
+        const questionName = selected.name;
+        answers[questionName] = selected.value;
+        console.log('✅ Submit - Resposta atual salva:', questionName, '=', selected.value);
+    }
+    
+    // Debug: mostra todas as respostas coletadas do localStorage
+    console.log('📦 Todas as respostas do localStorage:', answers);
+    console.log('📊 Total de respostas coletadas:', Object.keys(answers).length);
+    
+    // Garante que todas as respostas estão no formato correto (question_ID: choice_id)
+    const normalizedAnswers = {};
+    for (const [key, value] of Object.entries(answers)) {
+        // Remove 'question_' do início se existir para normalizar
+        let questionId = key;
+        if (key.startsWith('question_')) {
+            questionId = key.replace('question_', '');
+        }
+        // Garante que o valor é string e não está vazio
+        if (value && String(value).trim() !== '') {
+            normalizedAnswers[questionId] = String(value);
+            console.log(`  ✓ Pergunta ${questionId}: Escolha ${value}`);
+        } else {
+            console.warn(`  ✗ Pergunta ${questionId}: Valor vazio ou inválido (${value})`);
+        }
+    }
+    
+    // Debug: mostra respostas normalizadas
+    console.log('✅ Respostas normalizadas finais:', normalizedAnswers);
+    console.log('📊 Total de respostas normalizadas:', Object.keys(normalizedAnswers).length);
+    
+    // Valida se tem pelo menos uma resposta
+    if (Object.keys(normalizedAnswers).length === 0) {
+        alert('Por favor, responda pelo menos uma pergunta antes de finalizar o quiz.');
+        event.preventDefault();
+        return false;
+    }
+    
+    // Se for a última pergunta, toca som "Ding" e mostra confete
+    if (currentIndex === totalQuestions - 1) {
+        playDingSound();
+        createConfetti();
+    }
+    
+    // Adiciona todas as respostas normalizadas ao form
+    document.getElementById('answersJson').value = JSON.stringify(normalizedAnswers);
+    console.log('📤 Enviando answers_json:', document.getElementById('answersJson').value);
+    
+    // Limpa localStorage após submit
+    localStorage.removeItem(`quiz_${quizId}_answers`);
+    
+    return true; // Permite submit normal
+}
+
+function showRewardModal(message) {
+    document.getElementById('rewardMessage').textContent = message;
+    document.getElementById('rewardModal').classList.remove('hidden');
+}
+
+function closeRewardModal() {
+    document.getElementById('rewardModal').classList.add('hidden');
+}
+</script>
+{% endif %}
+{% endblock %}

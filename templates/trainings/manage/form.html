@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Header Slim -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4 mb-4 md:mb-6">
+        <div class="flex items-center gap-2 sm:gap-4">
+            <a href="{% url 'trainings:manage_list' %}" 
+               class="p-2 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200 flex-shrink-0">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">{{ title }}</h1>
+        </div>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm max-w-3xl mx-auto">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+        <div class="mb-4 md:mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
+            <h3 class="text-red-700 dark:text-red-400 font-semibold mb-2 text-sm md:text-base">Erros no formulário:</h3>
+            <ul class="text-red-600 dark:text-red-300 text-sm space-y-1">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li>• {{ field|title }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if form.non_field_errors %}
+        <div class="mb-4 md:mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
+            <ul class="text-red-600 dark:text-red-300 text-sm space-y-1">
+                {% for error in form.non_field_errors %}
+                <li>• {{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="space-y-4 md:space-y-6">
+            <!-- Título -->
+            <div>
+                <label for="id_title" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Título *</label>
+                <input type="text" name="title" id="id_title" 
+                       value="{{ form.title.value|default:'' }}"
+                       class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                       placeholder="Nome do treinamento"
+                       required>
+                {% if form.title.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Descrição -->
+            <div>
+                <label for="id_description" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Descrição</label>
+                <textarea name="description" id="id_description" 
+                          class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                          rows="3"
+                          placeholder="Descrição breve do treinamento">{{ form.description.value|default:'' }}</textarea>
+            </div>
+            
+            <!-- Objetivo -->
+            <div>
+                <label for="id_objective" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Objetivo</label>
+                <textarea name="objective" id="id_objective" 
+                          class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                          rows="3"
+                          placeholder="O que o colaborador aprenderá com este treinamento">{{ form.objective.value|default:'' }}</textarea>
+            </div>
+            
+            <!-- Usuários Atribuídos -->
+            {% if 'assigned_users' in form.fields %}
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                    Usuários Atribuídos
+                    <span class="text-xs text-slate-500 dark:text-gray-400 font-normal">(opcional)</span>
+                </label>
+                
+                <!-- Multi-Select Dropdown Component -->
+                <div class="multi-select-dropdown" id="assigned_users_dropdown">
+                    <!-- Hidden input para Django form -->
+                    <input type="hidden" name="assigned_users" id="id_assigned_users_hidden" value="[]">
+                    
+                    <!-- Trigger Button -->
+                    <div class="multi-select-dropdown__trigger">
+                        <span class="multi-select-dropdown__trigger-text" data-placeholder="Selecione os colaboradores">
+                            Selecione os colaboradores
+                        </span>
+                        <svg class="multi-select-dropdown__trigger-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="multi-select-dropdown__dropdown">
+                        <!-- Search Input -->
+                        <div class="multi-select-dropdown__search">
+                            <input type="text" 
+                                   class="multi-select-dropdown__search-input" 
+                                   placeholder="Buscar colaborador..."
+                                   autocomplete="off">
+                        </div>
+                        
+                        <!-- Select All -->
+                        <div class="multi-select-dropdown__select-all">
+                            <input type="checkbox" 
+                                   class="multi-select-dropdown__select-all-checkbox"
+                                   id="select_all_assigned_users">
+                            <label for="select_all_assigned_users" class="multi-select-dropdown__select-all-label">
+                                Selecionar todos
+                            </label>
+                        </div>
+                        
+                        <!-- Options List -->
+                        <div class="multi-select-dropdown__options">
+                            {% for user in form.assigned_users.field.queryset %}
+                            <div class="multi-select-dropdown__option">
+                                <input type="checkbox" 
+                                       class="multi-select-dropdown__option-checkbox"
+                                       value="{{ user.id }}"
+                                       id="user_{{ user.id }}"
+                                       {% if user.id in form.assigned_users.value or user.id|stringformat:"s" in form.assigned_users.value %}checked{% endif %}>
+                                <label for="user_{{ user.id }}" class="multi-select-dropdown__option-label">
+                                    {{ user.get_full_name }} ({{ user.email }})
+                                </label>
+                            </div>
+                            {% empty %}
+                            <div class="multi-select-dropdown__empty">
+                                {% if user.is_superuser %}
+                                Selecione uma empresa para ver os usuários disponíveis
+                                {% else %}
+                                Nenhum usuário disponível nesta empresa
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="mt-2 text-xs text-slate-600 dark:text-gray-400">
+                    Deixe vazio para tornar o treinamento <strong class="text-brand-500">global</strong> (todos os colaboradores da empresa).
+                </p>
+                
+                {% if form.assigned_users.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.assigned_users.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Imagem de Capa -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Imagem de Capa</label>
+                {% if training.cover_image %}
+                <div class="mb-3">
+                    <img src="{{ training.cover_image.url }}" alt="Capa atual" class="max-w-full sm:max-w-xs h-auto rounded-xl border border-slate-200 dark:border-dark-700">
+                </div>
+                {% endif %}
+                <input type="file" name="cover_image" accept="image/*"
+                       class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer min-h-[44px]">
+            </div>
+            
+            <!-- Grid Adaptativo (1 coluna no mobile) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <!-- Pontos de Recompensa -->
+                <div>
+                    <label for="id_reward_points" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Pontos de Recompensa</label>
+                    <input type="number" name="reward_points" id="id_reward_points" 
+                           value="{{ form.reward_points.value|default:100 }}"
+                           class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]"
+                           min="0">
+                </div>
+                
+                <!-- Badge -->
+                <div>
+                    <label for="id_reward_badge" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Badge/Medalha</label>
+                    <input type="text" name="reward_badge" id="id_reward_badge" 
+                           value="{{ form.reward_badge.value|default:'' }}"
+                           class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                           placeholder="Nome do badge">
+                </div>
+            </div>
+            
+            <!-- Grid Adaptativo (1 coluna no mobile) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <!-- Disponível a partir de -->
+                <div>
+                    <label for="id_available_from" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Disponível a partir de</label>
+                    <input type="date" name="available_from" id="id_available_from" 
+                           value="{{ form.available_from.value|default:'' }}"
+                           class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]">
+                </div>
+                
+                <!-- Disponível até -->
+                <div>
+                    <label for="id_available_until" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Disponível até</label>
+                    <input type="date" name="available_until" id="id_available_until" 
+                           value="{{ form.available_until.value|default:'' }}"
+                           class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]">
+                </div>
+            </div>
+            
+            <!-- Checkboxes -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                <label class="flex items-center gap-2 cursor-pointer min-h-[44px]">
+                    <input type="checkbox" name="is_active" 
+                           {% if form.is_active.value %}checked{% endif %}
+                           class="w-5 h-5 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-dark-700 border-slate-300 dark:border-dark-600 cursor-pointer">
+                    <span class="text-sm text-slate-700 dark:text-gray-300">Ativo</span>
+                </label>
+                
+                <label class="flex items-center gap-2 cursor-pointer min-h-[44px]">
+                    <input type="checkbox" name="is_mandatory" 
+                           {% if form.is_mandatory.value %}checked{% endif %}
+                           class="w-5 h-5 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-dark-700 border-slate-300 dark:border-dark-600 cursor-pointer">
+                    <span class="text-sm text-slate-700 dark:text-gray-300">Obrigatório</span>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 sm:gap-4 mt-6 sm:mt-8 pt-6 border-t border-slate-200 dark:border-dark-700">
+            <a href="{% url 'trainings:manage_list' %}" 
+               class="w-full sm:w-auto px-6 py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 text-center font-medium min-h-[44px] flex items-center justify-center">
+                Cancelar
+            </a>
+            <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-brand-500/25 min-h-[44px] flex items-center justify-center">
+                {% if training %}Salvar Alterações{% else %}Criar Treinamento{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if 'assigned_users' in form.fields %}
+<link rel="stylesheet" href="{% static 'css/multi-select-dropdown.css' %}">
+<script src="{% static 'js/multi-select-dropdown.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdownElement = document.getElementById('assigned_users_dropdown');
+    if (!dropdownElement) return;
+    
+    // Inicializar o dropdown
+    const dropdown = new MultiSelectDropdown(dropdownElement);
+    
+    // Antes de submeter o form, criar inputs hidden individuais para Django
+    const form = dropdownElement.closest('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selectedValues = dropdown.getSelectedValues();
+            const hiddenInput = document.getElementById('id_assigned_users_hidden');
+            
+            // Remover inputs hidden antigos com name="assigned_users"
+            document.querySelectorAll('input[name="assigned_users"]').forEach(input => {
+                if (input.type === 'hidden') input.remove();
+            });
+            
+            // Criar inputs hidden individuais para cada valor selecionado
+            // (Django espera múltiplos inputs com o mesmo name)
+            selectedValues.forEach(value => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'assigned_users';
+                input.value = value;
+                form.appendChild(input);
+            });
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

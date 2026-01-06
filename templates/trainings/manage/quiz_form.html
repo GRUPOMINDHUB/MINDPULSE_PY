@@ -1,0 +1,1055 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if quiz %}Editar{% else %}Novo{% endif %} Quiz - {{ training.title }} - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen pb-24 md:pb-8">
+    <!-- Header Slim -->
+    <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mb-4 md:mb-6">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <a href="{% url 'trainings:manage_detail' training.pk %}" 
+               class="p-2 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200 flex-shrink-0">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="flex-1 min-w-0">
+                <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white truncate">
+                    {% if quiz %}Editar{% else %}Novo{% endif %} Quiz
+                </h1>
+                <p class="hidden md:block text-sm text-slate-600 dark:text-gray-400 mt-1">{{ training.title }}</p>
+            </div>
+        </div>
+    </div>
+    
+    {% if messages %}
+    <div class="mb-4 md:mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="p-3 md:p-4 rounded-xl text-sm md:text-base
+                    {% if message.tags == 'error' %}bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400
+                    {% elif message.tags == 'success' %}bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400
+                    {% else %}bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 text-brand-700 dark:text-brand-400{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <form method="post" id="quizForm" class="max-w-5xl mx-auto">
+        {% csrf_token %}
+        
+        <!-- Informações do Quiz -->
+        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm mb-4 md:mb-6">
+            <h2 class="text-lg md:text-xl font-semibold text-slate-900 dark:text-white mb-4 md:mb-6">Informações do Quiz</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="{{ quiz_form.title.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Título *</label>
+                    <input type="text" name="{{ quiz_form.title.name }}" id="{{ quiz_form.title.id_for_label }}" 
+                           value="{{ quiz_form.title.value|default:'' }}"
+                           class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]"
+                           placeholder="Título do quiz"
+                           required>
+                    {% if quiz_form.title.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ quiz_form.title.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ quiz_form.description.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Descrição</label>
+                    <textarea name="{{ quiz_form.description.name }}" id="{{ quiz_form.description.id_for_label }}" 
+                              class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                              rows="3"
+                              placeholder="Descrição opcional do quiz">{{ quiz_form.description.value|default:'' }}</textarea>
+                    {% if quiz_form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ quiz_form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ quiz_form.passing_score.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Nota Mínima (%)</label>
+                        <input type="number" name="{{ quiz_form.passing_score.name }}" id="{{ quiz_form.passing_score.id_for_label }}" 
+                               value="{{ quiz_form.passing_score.value|default:70 }}"
+                               min="0" max="100"
+                               class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]">
+                        {% if quiz_form.passing_score.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ quiz_form.passing_score.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <label class="flex items-center gap-2 cursor-pointer min-h-[44px]">
+                            <input type="checkbox" name="{{ quiz_form.is_active.name }}" id="{{ quiz_form.is_active.id_for_label }}" 
+                                   {% if quiz_form.is_active.value %}checked{% endif %}
+                                   class="w-5 h-5 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-dark-700 border-slate-300 dark:border-dark-600 cursor-pointer">
+                            <span class="text-sm text-slate-700 dark:text-gray-300">Ativo</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Campo de ordem oculto -->
+                <div class="hidden">{{ quiz_form.order }}</div>
+                
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer min-h-[44px]">
+                        <input type="checkbox" name="{{ quiz_form.allow_multiple_attempts.name }}" id="{{ quiz_form.allow_multiple_attempts.id_for_label }}" 
+                               {% if quiz_form.allow_multiple_attempts.value %}checked{% endif %}
+                               class="w-5 h-5 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-dark-700 border-slate-300 dark:border-dark-600 cursor-pointer">
+                        <span class="text-sm text-slate-700 dark:text-gray-300">Permitir múltiplas tentativas</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Perguntas -->
+        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm">
+            <h2 class="text-lg md:text-xl font-semibold text-slate-900 dark:text-white mb-4 md:mb-6">Perguntas</h2>
+            
+            <!-- Instruções -->
+            <div class="mb-4 md:mb-6 p-3 md:p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg">
+                <p class="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>📋 Regras:</strong> Cada pergunta deve ter de 2 a 5 opções de resposta, com <strong>apenas UMA opção correta</strong>.
+                </p>
+            </div>
+            
+            <div id="questionsContainer" class="space-y-6">
+                {{ question_formset.management_form }}
+                {% for question_form in question_formset %}
+                <div class="question-item bg-slate-50 dark:bg-dark-900/50 rounded-lg border border-slate-200 dark:border-dark-700 mb-3 md:mb-4 overflow-hidden transition-all duration-200" 
+                     data-question-index="{{ forloop.counter0 }}" 
+                     data-question-id="{{ question_form.instance.id|default:'' }}">
+                    <!-- Header da Pergunta (Expansível no Mobile) -->
+                    <div class="flex items-center justify-between p-3 md:p-4 cursor-pointer question-header" onclick="toggleQuestionExpansion(this)">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <svg class="w-5 h-5 text-slate-400 dark:text-gray-500 question-chevron transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            <h3 class="text-base md:text-lg font-semibold text-slate-900 dark:text-white question-title flex-1 min-w-0">
+                                <span class="truncate">Pergunta {{ forloop.counter }}</span>
+                                {% if question_form.text.value %}
+                                <span class="block text-xs text-slate-600 dark:text-gray-400 font-normal mt-0.5 truncate">{{ question_form.text.value|truncatewords:8 }}</span>
+                                {% endif %}
+                            </h3>
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); removeQuestion(this)" 
+                                class="p-2.5 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Conteúdo da Pergunta (Colapsável no Mobile) -->
+                    <div class="question-content hidden md:block p-3 md:p-4 pt-0 md:pt-0">
+                    <div class="space-y-4">
+                        <!-- Texto da Pergunta -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Pergunta *</label>
+                            <textarea name="{{ question_form.text.name }}" id="{{ question_form.text.id_for_label }}" 
+                                      class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                                      rows="2"
+                                      placeholder="Digite a pergunta..."
+                                      required>{{ question_form.text.value|default:'' }}</textarea>
+                            {{ question_form.id }}
+                            <div class="hidden">{{ question_form.DELETE }}</div>
+                            <div class="hidden">{{ question_form.order }}</div>
+                            {% if question_form.text.errors %}
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ question_form.text.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Opções de Resposta -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-3">
+                                Opções de Resposta * 
+                                <span class="text-xs text-slate-600 dark:text-gray-400 font-normal">(mín. 2, máx. 5 - selecione a correta)</span>
+                            </label>
+                            
+                            <div class="choices-container space-y-3" 
+                                 data-question-id="{{ question_form.instance.id|default:'' }}" 
+                                 data-question-index="{{ forloop.counter0 }}"
+                                 data-question-identifier="{% if question_form.instance.id %}{{ question_form.instance.id }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                                
+                                {% if question_form.instance.pk and choice_formsets %}
+                                    {% for q_id, choice_formset in choice_formsets.items %}
+                                        {% if q_id == question_form.instance.id %}
+                                            {{ choice_formset.management_form }}
+                                            {% for choice_form in choice_formset %}
+                                            <div class="choice-item flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white dark:bg-dark-700 rounded-lg border border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors" data-choice-index="{{ forloop.counter0 }}">
+                                                <span class="choice-number text-xs md:text-sm text-slate-600 dark:text-gray-400 font-medium min-w-[1.5rem] md:min-w-[2rem]">{{ forloop.counter }}</span>
+                                                <div class="flex-1 min-w-0">
+                                                    <input type="text" name="{{ choice_formset.prefix }}-{{ forloop.counter0 }}-text" 
+                                                           value="{{ choice_form.text.value|default:'' }}"
+                                                           class="w-full px-3 py-2 md:px-4 md:py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]"
+                                                           placeholder="Digite a opção de resposta..."
+                                                           required>
+                                                </div>
+                                                <label class="flex items-center gap-1.5 md:gap-2 cursor-pointer px-2 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center choice-correct-label">
+                                                    <input type="radio" 
+                                                           name="correct_{{ question_form.instance.id }}" 
+                                                           value="{{ forloop.counter0 }}"
+                                                           {% if choice_form.instance.is_correct %}checked{% endif %}
+                                                           class="w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 cursor-pointer choice-radio"
+                                                           onchange="updateCorrectChoice(this)">
+                                                    <svg class="w-5 h-5 hidden choice-check-icon text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                </label>
+                                                <!-- Hidden field para is_correct -->
+                                                <input type="hidden" 
+                                                       name="{{ choice_formset.prefix }}-{{ forloop.counter0 }}-is_correct" 
+                                                       value="{% if choice_form.instance.is_correct %}on{% endif %}"
+                                                       class="is-correct-hidden">
+                                                {{ choice_form.id }}
+                                                <div class="hidden">{{ choice_form.DELETE }}</div>
+                                                <div class="hidden">{{ choice_form.order }}</div>
+                                                <button type="button" onclick="removeChoice(this)" class="p-2 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- Placeholder para novas perguntas -->
+                                    <div class="placeholder-text text-sm text-slate-600 dark:text-gray-400 italic text-center py-4">Adicione opções de resposta abaixo</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Botão Adicionar Opção -->
+                            <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-2 py-3 border border-slate-300 dark:border-brand-500/30 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10 min-h-[44px]">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Adicionar Opção <span class="choice-count-label">(0/5)</span>
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state text-center py-12 text-slate-600 dark:text-gray-400">
+                    <p>Nenhuma pergunta adicionada ainda.</p>
+                    <p class="text-sm mt-1 text-slate-500 dark:text-gray-500">Clique em "Adicionar Pergunta" para começar.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Botão Adicionar Pergunta -->
+            <button type="button" onclick="addQuestion()" class="mt-4 md:mt-6 w-full text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-2 py-3 border border-slate-300 dark:border-brand-500/30 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10 min-h-[44px]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Adicionar Pergunta
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Sticky Footer com Botão Salvar (Mobile) -->
+<div class="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-dark-800 border-t border-slate-200 dark:border-dark-700 shadow-lg z-40 p-4">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'trainings:manage_detail' training.pk %}" 
+           class="flex-1 px-4 py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium text-center min-h-[44px] flex items-center justify-center">
+            Cancelar
+        </a>
+        <button type="submit" form="quizForm" id="saveBtn" onclick="return validateAndPrepareForm(event)"
+                class="flex-1 px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-brand-500/25 min-h-[44px] flex items-center justify-center gap-2">
+            <span>Salvar</span>
+            <svg id="saveSpinner" class="hidden w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- Botões Desktop (Não Sticky) -->
+<div class="hidden md:flex items-center justify-end gap-4 mt-6 max-w-5xl mx-auto pb-8">
+    <a href="{% url 'trainings:manage_detail' training.pk %}" 
+       class="px-6 py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium min-h-[44px] flex items-center justify-center">
+        Cancelar
+    </a>
+    <button type="submit" form="quizForm" id="saveBtnDesktop" onclick="return validateAndPrepareForm(event)"
+            class="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-brand-500/25 min-h-[44px] flex items-center justify-center gap-2">
+        <span>{% if quiz %}Salvar Alterações{% else %}Criar Quiz{% endif %}</span>
+        <svg id="saveSpinnerDesktop" class="hidden w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+    </button>
+</div>
+
+<script>
+/**
+ * QUIZ FORM JAVASCRIPT
+ * 
+ * REGRAS:
+ * 1. Cada pergunta tem de 2 a 5 opções
+ * 2. APENAS 1 resposta correta por pergunta (radio button)
+ * 3. Opções dinâmicas usam: choice_{identifier}_{index}_text e choice_{identifier}_{index}_is_correct
+ */
+
+const MAX_CHOICES = 5;
+const MIN_CHOICES = 2;
+
+let questionFormsetIndex = {{ question_formset.total_form_count|default:1 }};
+
+// Inicializa primeira pergunta com 2 opções se for criação nova
+{% if not quiz %}
+document.addEventListener('DOMContentLoaded', function() {
+    // Se não tem perguntas, adiciona uma com 2 opções
+    const questions = document.querySelectorAll('.question-item:not(.empty-state)');
+    if (questions.length === 0) {
+        addQuestionWithOptions();
+    } else {
+        // Se tem pergunta mas sem opções, adiciona 2 opções
+        questions.forEach(q => {
+            const choicesContainer = q.querySelector('.choices-container');
+            const choices = choicesContainer.querySelectorAll('.choice-item');
+            if (choices.length === 0) {
+                const btn = q.querySelector('.add-choice-btn');
+                if (btn) {
+                    addChoice(btn);
+                    addChoice(btn);
+                }
+            }
+        });
+    }
+});
+
+function addQuestionWithOptions() {
+    const container = document.getElementById('questionsContainer');
+    const totalForms = document.getElementById('id_questions-TOTAL_FORMS');
+    
+    // Remove empty state se existir
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const newIndex = 0;
+    
+    const questionHtml = `
+        <div class="question-item bg-slate-50 dark:bg-dark-900/50 rounded-lg border border-slate-200 dark:border-dark-700 mb-3 md:mb-4 overflow-hidden transition-all duration-200" 
+             data-question-index="${newIndex}" 
+             data-question-id=""
+             data-is-new="true">
+            <div class="flex items-center justify-between p-3 md:p-4 cursor-pointer question-header" onclick="toggleQuestionExpansion(this)">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <svg class="w-5 h-5 text-slate-400 dark:text-gray-500 question-chevron transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    <h3 class="text-base md:text-lg font-semibold text-slate-900 dark:text-white question-title">Pergunta 1</h3>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); removeQuestion(this)" 
+                        class="p-2.5 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="question-content hidden md:block p-3 md:p-4 pt-0 md:pt-0">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Pergunta *</label>
+                    <textarea name="questions-${newIndex}-text" 
+                              class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none" 
+                              rows="2" 
+                              placeholder="Digite a pergunta..."
+                              required></textarea>
+                    <input type="hidden" name="questions-${newIndex}-id" value="">
+                    <input type="hidden" name="questions-${newIndex}-DELETE" value="false">
+                    <input type="hidden" name="questions-${newIndex}-order" value="1">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-3">
+                        Opções de Resposta * 
+                        <span class="text-xs text-slate-600 dark:text-gray-400 font-normal">(mín. 2, máx. 5 - selecione a correta)</span>
+                    </label>
+                    
+                    <div class="choices-container space-y-3" 
+                         data-question-index="${newIndex}"
+                         data-question-id=""
+                         data-question-identifier="${newIndex}">
+                        <!-- Opção 1 -->
+                        <div class="choice-item flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white dark:bg-dark-700 rounded-lg border border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors" 
+                             data-choice-index="0"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-xs md:text-sm text-slate-600 dark:text-gray-400 font-medium min-w-[1.5rem] md:min-w-[2rem]">1</span>
+                            <div class="flex-1 min-w-0">
+                                <input type="text" 
+                                       name="choice_${newIndex}_0_text" 
+                                       class="w-full px-3 py-2 md:px-4 md:py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-1.5 md:gap-2 cursor-pointer px-2 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center choice-correct-label">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="0"
+                                       class="w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 cursor-pointer choice-radio"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <svg class="w-5 h-5 hidden choice-check-icon text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_0_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-2 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Opção 2 -->
+                        <div class="choice-item flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white dark:bg-dark-700 rounded-lg border border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors" 
+                             data-choice-index="1"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-xs md:text-sm text-slate-600 dark:text-gray-400 font-medium min-w-[1.5rem] md:min-w-[2rem]">2</span>
+                            <div class="flex-1 min-w-0">
+                                <input type="text" 
+                                       name="choice_${newIndex}_1_text" 
+                                       class="w-full px-3 py-2 md:px-4 md:py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-1.5 md:gap-2 cursor-pointer px-2 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center choice-correct-label">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="1"
+                                       class="w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 cursor-pointer choice-radio"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <svg class="w-5 h-5 hidden choice-check-icon text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_1_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-2 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-2 py-3 border border-slate-300 dark:border-brand-500/30 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10 min-h-[44px]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Adicionar Opção <span class="choice-count-label">(2/5)</span>
+                    </button>
+                </div>
+            </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    totalForms.value = 1;
+    questionFormsetIndex = 1;
+}
+{% endif %}
+
+/**
+ * Adiciona uma nova pergunta com 2 opções padrão
+ */
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const totalForms = document.getElementById('id_questions-TOTAL_FORMS');
+    
+    // Remove empty state se existir
+    const emptyState = container.querySelector('.empty-state');
+    if (emptyState) {
+        emptyState.remove();
+    }
+    
+    const newIndex = questionFormsetIndex;
+    const questionNumber = getVisibleQuestionCount() + 1;
+    
+    const questionHtml = `
+        <div class="question-item bg-slate-50 dark:bg-dark-900/50 rounded-lg border border-slate-200 dark:border-dark-700 mb-3 md:mb-4 overflow-hidden transition-all duration-200" 
+             data-question-index="${newIndex}" 
+             data-question-id=""
+             data-is-new="true">
+            <div class="flex items-center justify-between p-3 md:p-4 cursor-pointer question-header" onclick="toggleQuestionExpansion(this)">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <svg class="w-5 h-5 text-slate-400 dark:text-gray-500 question-chevron transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    <h3 class="text-base md:text-lg font-semibold text-slate-900 dark:text-white question-title">Pergunta ${questionNumber}</h3>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); removeQuestion(this)" 
+                        class="p-2.5 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="question-content hidden md:block p-3 md:p-4 pt-0 md:pt-0">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Pergunta *</label>
+                    <textarea name="questions-${newIndex}-text" 
+                              class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none" 
+                              rows="2" 
+                              placeholder="Digite a pergunta..."
+                              required></textarea>
+                    <input type="hidden" name="questions-${newIndex}-id" value="">
+                    <input type="hidden" name="questions-${newIndex}-DELETE" value="false">
+                    <input type="hidden" name="questions-${newIndex}-order" value="${newIndex + 1}">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-3">
+                        Opções de Resposta * 
+                        <span class="text-xs text-slate-600 dark:text-gray-400 font-normal">(mín. 2, máx. 5 - selecione a correta)</span>
+                    </label>
+                    
+                    <div class="choices-container space-y-3" 
+                         data-question-index="${newIndex}"
+                         data-question-id=""
+                         data-question-identifier="${newIndex}">
+                        <!-- Opção 1 -->
+                        <div class="choice-item flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white dark:bg-dark-700 rounded-lg border border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors" 
+                             data-choice-index="0"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-xs md:text-sm text-slate-600 dark:text-gray-400 font-medium min-w-[1.5rem] md:min-w-[2rem]">1</span>
+                            <div class="flex-1 min-w-0">
+                                <input type="text" 
+                                       name="choice_${newIndex}_0_text" 
+                                       class="w-full px-3 py-2 md:px-4 md:py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-1.5 md:gap-2 cursor-pointer px-2 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center choice-correct-label">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="0"
+                                       class="w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 cursor-pointer choice-radio"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <svg class="w-5 h-5 hidden choice-check-icon text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_0_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-2 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Opção 2 -->
+                        <div class="choice-item flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white dark:bg-dark-700 rounded-lg border border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors" 
+                             data-choice-index="1"
+                             data-is-dynamic="true">
+                            <span class="choice-number text-xs md:text-sm text-slate-600 dark:text-gray-400 font-medium min-w-[1.5rem] md:min-w-[2rem]">2</span>
+                            <div class="flex-1 min-w-0">
+                                <input type="text" 
+                                       name="choice_${newIndex}_1_text" 
+                                       class="w-full px-3 py-2 md:px-4 md:py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                                       placeholder="Digite a opção de resposta..."
+                                       required>
+                            </div>
+                            <label class="flex items-center gap-1.5 md:gap-2 cursor-pointer px-2 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center choice-correct-label">
+                                <input type="radio" 
+                                       name="correct_dynamic_${newIndex}" 
+                                       value="1"
+                                       class="w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 cursor-pointer choice-radio"
+                                       onchange="updateDynamicCorrectChoice(this, '${newIndex}')">
+                                <svg class="w-5 h-5 hidden choice-check-icon text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </label>
+                            <input type="hidden" 
+                                   name="choice_${newIndex}_1_is_correct" 
+                                   value=""
+                                   class="is-correct-hidden">
+                            <button type="button" onclick="removeChoice(this)" class="p-2 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="addChoice(this)" class="add-choice-btn mt-3 w-full text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors flex items-center justify-center gap-2 py-3 border border-slate-300 dark:border-brand-500/30 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-500/10 min-h-[44px]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Adicionar Opção <span class="choice-count-label">(2/5)</span>
+                    </button>
+                </div>
+            </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    
+    totalForms.value = parseInt(totalForms.value) + 1;
+    questionFormsetIndex++;
+    
+    updateQuestionNumbers();
+}
+
+/**
+ * Remove uma pergunta
+ */
+function removeQuestion(button) {
+    const questionItem = button.closest('.question-item');
+    const deleteInput = questionItem.querySelector('input[name*="-DELETE"]');
+    
+    if (deleteInput && questionItem.dataset.questionId) {
+        deleteInput.value = 'on';
+        questionItem.style.display = 'none';
+    } else {
+        questionItem.remove();
+    }
+    
+    updateQuestionNumbers();
+}
+
+/**
+ * Adiciona uma nova opção de resposta
+ */
+function addChoice(button) {
+    const questionItem = button.closest('.question-item');
+    const choicesContainer = questionItem.querySelector('.choices-container');
+    
+    if (!choicesContainer) {
+        console.error('Container de opções não encontrado');
+        return;
+    }
+    
+    // Verifica limite de 5 opções
+    const existingChoices = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])');
+    if (existingChoices.length >= MAX_CHOICES) {
+        alert(`Máximo de ${MAX_CHOICES} opções por pergunta.`);
+        return;
+    }
+    
+    // Remove placeholder se existir
+    const placeholder = choicesContainer.querySelector('.placeholder-text');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    // Determina identificador da pergunta
+    let questionIdentifier = choicesContainer.dataset.questionId;
+    if (!questionIdentifier || questionIdentifier === '') {
+        questionIdentifier = choicesContainer.dataset.questionIndex;
+    }
+    
+    const choiceIndex = existingChoices.length;
+    
+    console.log(`Adicionando opção: questionIdentifier=${questionIdentifier}, choiceIndex=${choiceIndex}`);
+    
+    const choiceHtml = `
+        <div class="choice-item flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-white dark:bg-dark-700 rounded-lg border border-slate-200 dark:border-dark-600 hover:border-brand-500 dark:hover:border-brand-500 transition-colors" 
+             data-choice-index="${choiceIndex}"
+             data-is-dynamic="true">
+            <span class="choice-number text-xs md:text-sm text-slate-600 dark:text-gray-400 font-medium min-w-[1.5rem] md:min-w-[2rem]">${choiceIndex + 1}</span>
+            <div class="flex-1 min-w-0">
+                <input type="text" 
+                       name="choice_${questionIdentifier}_${choiceIndex}_text" 
+                       class="w-full px-3 py-2 md:px-4 md:py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]" 
+                       placeholder="Digite a opção de resposta..."
+                       required>
+            </div>
+            <label class="flex items-center gap-1.5 md:gap-2 cursor-pointer px-2 md:px-3 py-2 md:py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center choice-correct-label">
+                <input type="radio" 
+                       name="correct_dynamic_${questionIdentifier}" 
+                       value="${choiceIndex}"
+                       class="w-5 h-5 text-brand-500 focus:ring-brand-500 border-slate-300 dark:border-dark-600 cursor-pointer choice-radio"
+                       onchange="updateDynamicCorrectChoice(this, '${questionIdentifier}')">
+                <svg class="w-5 h-5 hidden choice-check-icon text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </label>
+            <!-- Hidden field para is_correct -->
+            <input type="hidden" 
+                   name="choice_${questionIdentifier}_${choiceIndex}_is_correct" 
+                   value=""
+                   class="is-correct-hidden">
+            <button type="button" onclick="removeChoice(this)" class="p-2 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    choicesContainer.insertAdjacentHTML('beforeend', choiceHtml);
+    
+    // Foca no novo input
+    const newInput = choicesContainer.querySelector('.choice-item:last-child input[type="text"]');
+    if (newInput) {
+        newInput.focus();
+    }
+    
+    updateChoiceNumbers(choicesContainer);
+    updateChoiceCountLabel(questionItem);
+}
+
+/**
+ * Atualiza o hidden field quando radio é selecionado (opções dinâmicas)
+ */
+function updateDynamicCorrectChoice(radio, questionIdentifier) {
+    const choicesContainer = radio.closest('.choices-container');
+    
+    // Limpa todos os hidden fields de is_correct
+    choicesContainer.querySelectorAll('.is-correct-hidden').forEach(hidden => {
+        hidden.value = '';
+    });
+    
+    // Marca o selecionado
+    const choiceItem = radio.closest('.choice-item');
+    const hiddenField = choiceItem.querySelector('.is-correct-hidden');
+    if (hiddenField) {
+        hiddenField.value = 'on';
+    }
+    
+    console.log(`Opção correta selecionada: questionIdentifier=${questionIdentifier}, choiceIndex=${radio.value}`);
+}
+
+/**
+ * Atualiza o hidden field quando radio é selecionado (opções do formset)
+ */
+function updateCorrectChoice(radio) {
+    const choicesContainer = radio.closest('.choices-container');
+    
+    // Limpa todos os hidden fields de is_correct
+    choicesContainer.querySelectorAll('.is-correct-hidden').forEach(hidden => {
+        hidden.value = '';
+    });
+    
+    // Marca o selecionado
+    const choiceItem = radio.closest('.choice-item');
+    const hiddenField = choiceItem.querySelector('.is-correct-hidden');
+    if (hiddenField) {
+        hiddenField.value = 'on';
+    }
+}
+
+/**
+ * Remove uma opção de resposta
+ */
+function removeChoice(button) {
+    const choiceItem = button.closest('.choice-item');
+    const choicesContainer = choiceItem.closest('.choices-container');
+    const questionItem = choiceItem.closest('.question-item');
+    
+    // Se é uma opção do formset Django, marca para deletar
+    const deleteInput = choiceItem.querySelector('input[name*="-DELETE"]');
+    if (deleteInput) {
+        deleteInput.value = 'on';
+        choiceItem.style.display = 'none';
+    } else {
+        choiceItem.remove();
+    }
+    
+    updateChoiceNumbers(choicesContainer);
+    updateChoiceCountLabel(questionItem);
+}
+
+/**
+ * Atualiza a numeração das opções
+ */
+function updateChoiceNumbers(container) {
+    const choices = container.querySelectorAll('.choice-item:not([style*="display: none"])');
+    choices.forEach((choice, index) => {
+        const numberSpan = choice.querySelector('.choice-number');
+        if (numberSpan) {
+            numberSpan.textContent = index + 1;
+        }
+    });
+    
+    // Se não sobrou nenhuma opção visível, mostra placeholder
+    if (choices.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'placeholder-text text-sm text-slate-600 dark:text-gray-400 italic text-center py-4';
+        placeholder.textContent = 'Adicione opções de resposta abaixo';
+        container.appendChild(placeholder);
+    }
+}
+
+/**
+ * Atualiza o contador de opções no botão
+ */
+function updateChoiceCountLabel(questionItem) {
+    const choicesContainer = questionItem.querySelector('.choices-container');
+    const addBtn = questionItem.querySelector('.add-choice-btn');
+    
+    if (choicesContainer && addBtn) {
+        const count = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])').length;
+        const label = addBtn.querySelector('.choice-count-label');
+        if (label) {
+            label.textContent = `(${count}/${MAX_CHOICES})`;
+        }
+        
+        // Desabilita botão se atingiu o limite
+        if (count >= MAX_CHOICES) {
+            addBtn.disabled = true;
+            addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            addBtn.disabled = false;
+            addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+}
+
+/**
+ * Atualiza a numeração das perguntas
+ */
+function updateQuestionNumbers() {
+    const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
+    questions.forEach((question, index) => {
+        const title = question.querySelector('.question-title');
+        if (title) {
+            title.textContent = `Pergunta ${index + 1}`;
+        }
+    });
+}
+
+/**
+ * Retorna quantidade de perguntas visíveis
+ */
+function getVisibleQuestionCount() {
+    return document.querySelectorAll('.question-item:not([style*="display: none"])').length;
+}
+
+/**
+ * Valida o formulário antes de enviar
+ */
+function validateAndPrepareForm(event) {
+    const questions = document.querySelectorAll('.question-item:not([style*="display: none"])');
+    
+    if (questions.length === 0) {
+        event.preventDefault();
+        alert('Adicione pelo menos uma pergunta ao quiz.');
+        return false;
+    }
+    
+    let hasErrors = false;
+    let errorMessages = [];
+    
+    questions.forEach((question, qIndex) => {
+        const questionNumber = qIndex + 1;
+        
+        // Valida texto da pergunta
+        const questionText = question.querySelector('textarea[name*="-text"], input[name*="-text"]');
+        if (!questionText || !questionText.value.trim()) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: O texto da pergunta é obrigatório.`);
+            return;
+        }
+        
+        // Valida opções de resposta
+        const choicesContainer = question.querySelector('.choices-container');
+        if (!choicesContainer) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: Adicione opções de resposta.`);
+            return;
+        }
+        
+        const visibleChoices = choicesContainer.querySelectorAll('.choice-item:not([style*="display: none"])');
+        
+        if (visibleChoices.length < MIN_CHOICES) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: Adicione pelo menos ${MIN_CHOICES} opções de resposta.`);
+            return;
+        }
+        
+        if (visibleChoices.length > MAX_CHOICES) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: Máximo de ${MAX_CHOICES} opções permitido.`);
+            return;
+        }
+        
+        let hasCorrect = false;
+        let emptyChoices = [];
+        
+        visibleChoices.forEach((choice, cIndex) => {
+            const choiceInput = choice.querySelector('input[type="text"]');
+            const radioBtn = choice.querySelector('input[type="radio"]');
+            
+            if (!choiceInput || !choiceInput.value.trim()) {
+                emptyChoices.push(cIndex + 1);
+            }
+            
+            if (radioBtn && radioBtn.checked) {
+                hasCorrect = true;
+            }
+        });
+        
+        if (emptyChoices.length > 0) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: Preencha todas as opções. Vazias: ${emptyChoices.join(', ')}`);
+        }
+        
+        if (!hasCorrect) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: Selecione uma opção como correta.`);
+        }
+    });
+    
+    if (hasErrors) {
+        event.preventDefault();
+        alert('Corrija os seguintes erros:\n\n' + errorMessages.join('\n'));
+        return false;
+    }
+    
+    console.log('Formulário validado com sucesso. Enviando...');
+    return true;
+}
+
+// Toggle expansão de pergunta no mobile
+function toggleQuestionExpansion(header) {
+    const questionItem = header.closest('.question-item');
+    const content = questionItem.querySelector('.question-content');
+    const chevron = header.querySelector('.question-chevron');
+    
+    if (content) {
+        content.classList.toggle('hidden');
+        if (chevron) {
+            chevron.classList.toggle('rotate-180');
+        }
+    }
+}
+
+// Mostra check verde quando resposta correta é selecionada
+function updateCorrectChoice(radio) {
+    const choicesContainer = radio.closest('.choices-container');
+    
+    // Limpa todos os hidden fields e checks visuais
+    choicesContainer.querySelectorAll('.is-correct-hidden').forEach(hidden => {
+        hidden.value = '';
+    });
+    choicesContainer.querySelectorAll('.choice-check-icon').forEach(icon => {
+        icon.classList.add('hidden');
+    });
+    choicesContainer.querySelectorAll('.choice-radio').forEach(r => {
+        r.style.display = 'block';
+    });
+    
+    // Marca o selecionado
+    const choiceItem = radio.closest('.choice-item');
+    const hiddenField = choiceItem.querySelector('.is-correct-hidden');
+    const checkIcon = choiceItem.querySelector('.choice-check-icon');
+    
+    if (hiddenField) {
+        hiddenField.value = 'on';
+    }
+    
+    // Mostra check verde e esconde radio
+    if (checkIcon) {
+        checkIcon.classList.remove('hidden');
+    }
+    if (radio) {
+        radio.style.display = 'none';
+    }
+}
+
+// Atualiza check verde para opções dinâmicas também
+function updateDynamicCorrectChoice(radio, questionIdentifier) {
+    const choicesContainer = radio.closest('.choices-container');
+    
+    // Limpa todos os hidden fields e checks visuais
+    choicesContainer.querySelectorAll('.is-correct-hidden').forEach(hidden => {
+        hidden.value = '';
+    });
+    choicesContainer.querySelectorAll('.choice-check-icon').forEach(icon => {
+        icon.classList.add('hidden');
+    });
+    choicesContainer.querySelectorAll('.choice-radio').forEach(r => {
+        r.style.display = 'block';
+    });
+    
+    // Marca o selecionado
+    const choiceItem = radio.closest('.choice-item');
+    const hiddenField = choiceItem.querySelector('.is-correct-hidden');
+    const checkIcon = choiceItem.querySelector('.choice-check-icon');
+    
+    if (hiddenField) {
+        hiddenField.value = 'on';
+    }
+    
+    // Mostra check verde e esconde radio
+    if (checkIcon) {
+        checkIcon.classList.remove('hidden');
+    }
+    if (radio) {
+        radio.style.display = 'none';
+    }
+    
+    console.log(`Opção correta selecionada: questionIdentifier=${questionIdentifier}, choiceIndex=${radio.value}`);
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    updateQuestionNumbers();
+    
+    // Atualiza contadores de opções
+    document.querySelectorAll('.question-item').forEach(questionItem => {
+        updateChoiceCountLabel(questionItem);
+    });
+    
+    // Atualiza numeração de opções em cada pergunta
+    document.querySelectorAll('.choices-container').forEach(container => {
+        updateChoiceNumbers(container);
+    });
+    
+    // Inicializa checks visuais para opções já marcadas como corretas
+    document.querySelectorAll('.choice-radio:checked').forEach(radio => {
+        updateCorrectChoice(radio);
+        // Se for dinâmico, chama a função correta
+        const choiceItem = radio.closest('.choice-item');
+        if (choiceItem && choiceItem.dataset.isDynamic === 'true') {
+            const choicesContainer = radio.closest('.choices-container');
+            const questionIdentifier = choicesContainer.dataset.questionIdentifier;
+            updateDynamicCorrectChoice(radio, questionIdentifier);
+        }
+    });
+    
+    // No desktop, expande todas as perguntas automaticamente
+    if (window.innerWidth >= 768) {
+        document.querySelectorAll('.question-content').forEach(content => {
+            content.classList.remove('hidden');
+        });
+    }
+});
+
+// Feedback visual ao salvar
+document.getElementById('quizForm')?.addEventListener('submit', function(e) {
+    const saveBtn = document.getElementById('saveBtn');
+    const saveBtnDesktop = document.getElementById('saveBtnDesktop');
+    const spinner = document.getElementById('saveSpinner');
+    const spinnerDesktop = document.getElementById('saveSpinnerDesktop');
+    
+    if (saveBtn && validateAndPrepareForm(e)) {
+        saveBtn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        saveBtn.innerHTML = '<span>Salvando...</span><svg class="w-5 h-5 animate-spin ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+    }
+    
+    if (saveBtnDesktop && validateAndPrepareForm(e)) {
+        saveBtnDesktop.disabled = true;
+        if (spinnerDesktop) spinnerDesktop.classList.remove('hidden');
+        saveBtnDesktop.innerHTML = '<span>Salvando...</span><svg class="w-5 h-5 animate-spin ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+    }
+});
+</script>
+{% endblock %}

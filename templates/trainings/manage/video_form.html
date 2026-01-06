@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if video %}Editar{% else %}Novo{% endif %} Vídeo - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen pb-24 md:pb-8">
+    <!-- Header Slim -->
+    <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 mb-4 md:mb-6">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <a href="{% url 'trainings:manage_detail' training.pk %}" 
+               class="p-2 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-all duration-200 flex-shrink-0">
+                <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div class="flex-1 min-w-0">
+                <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white truncate">
+                    {% if video %}Editar Vídeo{% else %}Novo Vídeo{% endif %}
+                </h1>
+                <p class="hidden md:block text-sm text-slate-600 dark:text-gray-400 mt-1">{{ training.title }}</p>
+            </div>
+        </div>
+    </div>
+    
+    {% if messages %}
+    <div class="mb-4 md:mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="p-3 md:p-4 rounded-xl text-sm md:text-base
+                    {% if message.tags == 'error' %}bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400
+                    {% elif message.tags == 'success' %}bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400
+                    {% else %}bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 text-brand-700 dark:text-brand-400{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Formulário -->
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-4 md:p-6 shadow-sm max-w-3xl mx-auto">
+        {% if form.errors %}
+        <div class="mb-4 md:mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl">
+            <p class="text-red-700 dark:text-red-400 font-medium mb-2 text-sm md:text-base">Erros no formulário:</p>
+            <ul class="list-disc list-inside text-sm text-red-600 dark:text-red-300 space-y-1">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                    <li><strong>{{ field|title }}</strong>: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <form method="POST" enctype="multipart/form-data" id="videoForm" class="space-y-4 md:space-y-6">
+            {% csrf_token %}
+            
+            <!-- Título -->
+            <div>
+                <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                    Título <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="{{ form.title.name }}" id="{{ form.title.id_for_label }}" 
+                       value="{{ form.title.value|default:'' }}"
+                       class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]"
+                       placeholder="Título do vídeo"
+                       required>
+                {% if form.title.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Vídeo Atual (Preview Slim) -->
+            {% if video and video.video_file %}
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Vídeo Atual</label>
+                <div class="p-3 md:p-4 bg-slate-50 dark:bg-dark-900/50 rounded-lg border border-slate-200 dark:border-dark-700">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ video.title }}</p>
+                            <p class="text-xs text-slate-600 dark:text-gray-400">{{ video.duration_formatted|default:"--:--" }}</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-slate-600 dark:text-gray-400">Deixe o campo abaixo vazio para manter o vídeo atual</p>
+            </div>
+            {% endif %}
+            
+            <!-- Novo Arquivo de Vídeo -->
+            <div>
+                <label for="{{ form.video_file.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                    {% if video and video.video_file %}Novo Arquivo de Vídeo{% else %}Arquivo de Vídeo{% endif %}
+                    {% if not video or not video.video_file %}<span class="text-red-500">*</span>{% endif %}
+                </label>
+                <input type="file" name="{{ form.video_file.name }}" id="{{ form.video_file.id_for_label }}" 
+                       accept="video/mp4,video/webm,video/quicktime"
+                       class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-brand-500 file:text-white file:cursor-pointer min-h-[44px]">
+                {% if form.video_file.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.video_file.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-slate-600 dark:text-gray-400">Formatos: MP4, WebM, MOV (máx. 500MB)</p>
+            </div>
+            
+            <!-- Descrição -->
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Descrição</label>
+                <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" 
+                          class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 resize-none"
+                          rows="3"
+                          placeholder="Descrição opcional do vídeo">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Ordem e Status (Grid Adaptativo) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="{{ form.order.id_for_label }}" class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Ordem</label>
+                    <input type="number" name="{{ form.order.name }}" id="{{ form.order.id_for_label }}" 
+                           value="{{ form.order.value|default:'' }}"
+                           min="0"
+                           class="w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200 min-h-[44px]">
+                    {% if form.order.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.order.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-end">
+                    <label class="flex items-center gap-2 cursor-pointer min-h-[44px]">
+                        <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}" 
+                               {% if form.is_active.value %}checked{% endif %}
+                               class="w-5 h-5 rounded text-brand-500 focus:ring-brand-500 bg-white dark:bg-dark-700 border-slate-300 dark:border-dark-600 cursor-pointer">
+                        <span class="text-sm text-slate-700 dark:text-gray-300">Ativo</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Informações do Vídeo (Oculto no mobile se não houver informações) -->
+            {% if video and video.duration_formatted %}
+            <div class="hidden md:block p-4 bg-slate-50 dark:bg-dark-900/50 rounded-lg border border-slate-200 dark:border-dark-700">
+                <h3 class="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Informações do Vídeo</h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-slate-600 dark:text-gray-400">Duração:</span>
+                        <span class="text-slate-900 dark:text-white ml-2 font-medium">{{ video.duration_formatted }}</span>
+                    </div>
+                    {% if video.created_at %}
+                    <div>
+                        <span class="text-slate-600 dark:text-gray-400">Criado em:</span>
+                        <span class="text-slate-900 dark:text-white ml-2 font-medium">{{ video.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Sticky Footer com Botão Salvar -->
+<div class="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-dark-800 border-t border-slate-200 dark:border-dark-700 shadow-lg z-40 p-4">
+    <div class="flex items-center gap-3 max-w-3xl mx-auto">
+        <a href="{% url 'trainings:manage_detail' training.pk %}" 
+           class="flex-1 px-4 py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium text-center min-h-[44px] flex items-center justify-center">
+            Cancelar
+        </a>
+        <button type="submit" form="videoForm" id="saveBtn"
+                class="flex-1 px-4 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-brand-500/25 min-h-[44px] flex items-center justify-center gap-2">
+            <span>Salvar</span>
+            <svg id="saveSpinner" class="hidden w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- Botões Desktop (Não Sticky) -->
+<div class="hidden md:flex items-center justify-end gap-4 mt-6 max-w-3xl mx-auto pb-8">
+    <a href="{% url 'trainings:manage_detail' training.pk %}" 
+       class="px-6 py-3 border border-slate-300 dark:border-dark-600 text-slate-700 dark:text-gray-300 rounded-xl hover:bg-slate-50 dark:hover:bg-dark-700 transition-all duration-200 font-medium min-h-[44px] flex items-center justify-center">
+        Cancelar
+    </a>
+    <button type="submit" form="videoForm" id="saveBtnDesktop"
+            class="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl transition-all duration-200 font-semibold shadow-lg shadow-brand-500/25 min-h-[44px] flex items-center justify-center gap-2">
+        <span>Salvar Alterações</span>
+        <svg id="saveSpinnerDesktop" class="hidden w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Feedback visual ao salvar
+document.getElementById('videoForm')?.addEventListener('submit', function(e) {
+    const saveBtn = document.getElementById('saveBtn');
+    const saveBtnDesktop = document.getElementById('saveBtnDesktop');
+    const spinner = document.getElementById('saveSpinner');
+    const spinnerDesktop = document.getElementById('saveSpinnerDesktop');
+    
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        saveBtn.innerHTML = '<span>Salvando...</span><svg class="w-5 h-5 animate-spin ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+    }
+    
+    if (saveBtnDesktop) {
+        saveBtnDesktop.disabled = true;
+        if (spinnerDesktop) spinnerDesktop.classList.remove('hidden');
+        saveBtnDesktop.innerHTML = '<span>Salvando...</span><svg class="w-5 h-5 animate-spin ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>';
+    }
+});
+</script>
+{% endblock %}
