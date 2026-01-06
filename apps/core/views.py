@@ -9,6 +9,7 @@ from django.db.models import Count, Q
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
+from django.conf import settings
 from datetime import timedelta, datetime
 import calendar
 
@@ -570,6 +571,18 @@ def company_list(request):
     
     companies = Company.objects.all().select_related().order_by(sort_param)
     
+    # Blindagem: garantir que todos os valores numéricos sejam seguros
+    for company in companies:
+        # Garantir que max_users e active_users_count nunca sejam None
+        if company.max_users is None:
+            company.max_users = 50
+        if not hasattr(company, '_active_users_count_cached'):
+            try:
+                count = company.active_users_count
+                company._active_users_count_cached = int(count) if count is not None else 0
+            except Exception:
+                company._active_users_count_cached = 0
+    
     return render(request, 'core/companies/list.html', {
         'companies': companies,
         'current_sort': sort_param,
@@ -589,6 +602,9 @@ def company_create(request):
             company = form.save(commit=False)
             if not company.slug:
                 company.slug = slugify(company.name)
+            # Blindagem: garantir que max_users seja sempre um inteiro válido
+            max_users = form.cleaned_data.get('max_users')
+            company.max_users = int(max_users) if max_users is not None else 50
             company.save()
             
             # Criar cargos padrão
@@ -656,7 +672,11 @@ def company_edit(request, pk):
     if request.method == 'POST':
         form = CompanyForm(request.POST, request.FILES, instance=company)
         if form.is_valid():
-            form.save()
+            # Blindagem: garantir que max_users seja sempre um inteiro válido
+            company_instance = form.save(commit=False)
+            max_users = form.cleaned_data.get('max_users')
+            company_instance.max_users = int(max_users) if max_users is not None else 50
+            company_instance.save()
             messages.success(request, 'Empresa atualizada!')
             return redirect('core:company_detail', pk=pk)
     else:
@@ -914,11 +934,107 @@ def _generate_pdf(request, company, start_date, end_date, user=None):
         messages.error(request, 'Biblioteca xhtml2pdf não está instalada.')
         return redirect('core:report_management')
     
-    # Extrair dados do relatório
-    report_data = get_report_data(company, start_date, end_date, user)
+    # Segurança multi-tenant
+    if user:
+        if not UserCompany.objects.filter(
+            user=user,
+            company=company,
+            is_active=True
+        ).exists():
+            messages.error(request, 'Usuário não pertence à empresa selecionada.')
+            return redirect('core:report_management')
+        
+        # Relatório Individual
+        try:
+            report_data = get_report_data(company, start_date, end_date, user)
+            
+            # Sanitizar todos os dados antes de enviar ao template
+            if 'profile' in report_data:
+                profile = report_data['profile']
+                profile['name'] = str(profile.get('name', '---') or '---')
+                profile['email'] = str(profile.get('email', '---') or '---')
+                profile['phone'] = str(profile.get('phone', '---') or '---')
+                profile['city'] = str(profile.get('city', '---') or '---')
+                profile['neighborhood'] = str(profile.get('neighborhood', '---') or '---')
+                profile['age'] = int(profile.get('age', 0) or 0)
+                profile['birth_date'] = str(profile.get('birth_date', '---') or '---')
+            
+            if 'ranking' in report_data:
+                ranking = report_data['ranking']
+                ranking['position'] = int(ranking.get('position', 0) or 0)
+                ranking['total_users'] = int(ranking.get('total_users', 0) or 0)
+                ranking['total_points'] = int(ranking.get('total_points', 0) or 0)
+            
+            if 'checklists' in report_data:
+                checklists = report_data['checklists']
+                checklists['total_completed_period'] = int(checklists.get('total_completed_period', 0) or 0)
+                checklists['total_tasks_completed_period'] = int(checklists.get('total_tasks_completed_period', 0) or 0)
+                checklists['total_completed_all'] = int(checklists.get('total_completed_all', 0) or 0)
+                checklists['total_tasks_completed_all'] = int(checklists.get('total_tasks_completed_all', 0) or 0)
+                checklists['overdue_count'] = int(checklists.get('overdue_count', 0) or 0)
+                checklists['total_overdue_days'] = int(checklists.get('total_overdue_days', 0) or 0)
+                if 'completions' in checklists:
+                    for comp in checklists['completions']:
+                        comp['checklist'] = str(comp.get('checklist', '---') or '---')
+                        comp['date'] = str(comp.get('date', '---') or '---')
+                        comp['points'] = int(comp.get('points', 0) or 0)
+            
+            if 'trainings' in report_data:
+                trainings = report_data['trainings']
+                trainings['total_trainings'] = int(trainings.get('total_trainings', 0) or 0)
+                trainings['avg_progress'] = int(trainings.get('avg_progress', 0) or 0)
+                if 'trainings' in trainings:
+                    for training in trainings['trainings']:
+                        training['title'] = str(training.get('title', '---') or '---')
+                        training['progress'] = int(training.get('progress', 0) or 0)
+                        training['total_videos'] = int(training.get('total_videos', 0) or 0)
+                        training['completed_videos'] = int(training.get('completed_videos', 0) or 0)
+                        training['total_quizzes'] = int(training.get('total_quizzes', 0) or 0)
+                        training['passed_quizzes'] = int(training.get('passed_quizzes', 0) or 0)
+            
+            if 'quizzes' in report_data:
+                quizzes = report_data['quizzes']
+                quizzes['avg_score'] = float(quizzes.get('avg_score', 0) or 0.0)
+                quizzes['avg_score_period'] = float(quizzes.get('avg_score_period', 0) or 0.0)
+                quizzes['total_attempts'] = int(quizzes.get('total_attempts', 0) or 0)
+                quizzes['total_attempts_period'] = int(quizzes.get('total_attempts_period', 0) or 0)
+                quizzes['total_passed'] = int(quizzes.get('total_passed', 0) or 0)
+                quizzes['total_passed_period'] = int(quizzes.get('total_passed_period', 0) or 0)
+                if 'attempts' in quizzes:
+                    for attempt in quizzes['attempts']:
+                        attempt['quiz_title'] = str(attempt.get('quiz_title', '---') or '---')
+                        attempt['training_title'] = str(attempt.get('training_title', '---') or '---')
+                        attempt['score'] = float(attempt.get('score', 0) or 0.0)
+                        attempt['total_questions'] = int(attempt.get('total_questions', 0) or 0)
+                        attempt['correct_answers'] = int(attempt.get('correct_answers', 0) or 0)
+                        attempt['date'] = str(attempt.get('date', '---') or '---')
+            
+            if 'warnings' in report_data:
+                warnings = report_data['warnings']
+                warnings['total'] = int(warnings.get('total', 0) or 0)
+                if 'warnings' in warnings:
+                    for warning in warnings['warnings']:
+                        warning['date'] = str(warning.get('date', '---') or '---')
+                        warning['type'] = str(warning.get('type', '---') or '---')
+                        warning['reason'] = str(warning.get('reason', '---') or '---')
+                        warning['issuer'] = str(warning.get('issuer', 'Sistema') or 'Sistema')
+        
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            messages.error(request, f'Erro ao extrair dados do relatório individual: {str(e)}')
+            if settings.DEBUG:
+                messages.error(request, f'Detalhes: {error_details}')
+            return redirect('core:report_management')
+        
+        template_name = 'core/reports/pdf_template.html'
+    else:
+        # Relatório Coletivo
+        report_data = get_company_report_data(company, start_date, end_date)
+        template_name = 'core/reports/pdf_collective.html'
     
     # Renderizar template HTML
-    template = get_template('core/reports/pdf_template.html')
+    template = get_template(template_name)
     html = template.render({'report_data': report_data, 'request': request})
     
     # Gerar PDF
@@ -949,7 +1065,64 @@ def _generate_collective_pdf(request, company, start_date, end_date):
         return redirect('core:report_management')
     
     # Extrair dados do relatório coletivo
-    report_data = get_company_report_data(company, start_date, end_date)
+    try:
+        report_data = get_company_report_data(company, start_date, end_date)
+        
+        # BLINDAGEM TOTAL: Garantir que TODOS os valores sejam seguros
+        # Valores principais
+        report_data['checklist_average'] = float(report_data.get('checklist_average', 0) or 0.0)
+        report_data['training_average'] = float(report_data.get('training_average', 0) or 0.0)
+        report_data['quiz_average_all'] = float(report_data.get('quiz_average_all', 0) or 0.0)
+        report_data['total_warnings'] = int(report_data.get('total_warnings', 0) or 0)
+        report_data['total_completions'] = int(report_data.get('total_completions', 0) or 0)
+        report_data['total_tasks_completed'] = int(report_data.get('total_tasks_completed', 0) or 0)
+        report_data['total_users'] = int(report_data.get('total_users', 0) or 0)
+        
+        # Warnings by type
+        if 'warnings_by_type' in report_data:
+            wbt = report_data['warnings_by_type']
+            report_data['warnings_by_type'] = {
+                'oral': int(wbt.get('oral', 0) or 0),
+                'escrita': int(wbt.get('escrita', 0) or 0),
+                'suspensao': int(wbt.get('suspensao', 0) or 0),
+            }
+        
+        # Performance data - sanitizar TODOS os itens
+        if 'performance_data' in report_data:
+            for item in report_data['performance_data']:
+                item['name'] = str(item.get('name', '-') or '-')
+                item['email'] = str(item.get('email', '-') or '-')
+                item['checklist_percentage'] = float(item.get('checklist_percentage', 0) or 0.0)
+                item['training_percentage'] = float(item.get('training_percentage', 0) or 0.0)
+                item['quiz_average'] = float(item.get('quiz_average', 0) or 0.0)
+                item['points_earned'] = int(item.get('points_earned', 0) or 0)
+                item['warnings_count'] = int(item.get('warnings_count', 0) or 0)
+                item['checklist_overdue'] = int(item.get('checklist_overdue', 0) or 0)
+                item['attention_score'] = int(item.get('attention_score', 0) or 0)
+        
+        # Top 3 - sanitizar TODOS os itens
+        if 'top_3' in report_data:
+            for item in report_data['top_3']:
+                item['name'] = str(item.get('name', '-') or '-')
+                item['points_earned'] = int(item.get('points_earned', 0) or 0)
+                item['checklist_percentage'] = float(item.get('checklist_percentage', 0) or 0.0)
+                item['training_percentage'] = float(item.get('training_percentage', 0) or 0.0)
+                item['quiz_average'] = float(item.get('quiz_average', 0) or 0.0)
+        
+        # Attention list - sanitizar TODOS os itens
+        if 'attention_list' in report_data:
+            for item in report_data['attention_list']:
+                item['name'] = str(item.get('name', '-') or '-')
+                item['attention_score'] = int(item.get('attention_score', 0) or 0)
+                item['checklist_overdue'] = int(item.get('checklist_overdue', 0) or 0)
+                item['warnings_count'] = int(item.get('warnings_count', 0) or 0)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        messages.error(request, f'Erro ao extrair dados do relatório: {str(e)}')
+        if settings.DEBUG:
+            messages.error(request, f'Detalhes: {error_details}')
+        return redirect('core:report_management')
     
     # Renderizar template HTML
     template = get_template('core/reports/pdf_collective.html')
@@ -957,21 +1130,32 @@ def _generate_collective_pdf(request, company, start_date, end_date):
     
     # Gerar PDF
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
     
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        # Formatar data para o nome do arquivo
-        month_names = {
-            1: 'Janeiro', 2: 'Fevereiro', 3: 'Marco', 4: 'Abril',
-            5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
-            9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
-        }
-        month_name = month_names.get(start_date.month, str(start_date.month))
-        filename = f'relatorio_coletivo_{company.slug}_{month_name}_{start_date.year}.pdf'
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-    else:
-        messages.error(request, 'Erro ao gerar PDF coletivo. Tente novamente.')
+    try:
+        # Configurar pisaDocument com encoding e opções para garantir landscape
+        pdf = pisa.pisaDocument(
+            BytesIO(html.encode('UTF-8')),
+            result,
+            encoding='UTF-8',
+            link_callback=None
+        )
+        
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            # Nome do arquivo formatado
+            filename = f'relatorio_coletivo_{company.slug}_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.pdf'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        else:
+            error_msg = str(pdf.err) if pdf.err else 'Erro desconhecido'
+            messages.error(request, f'Erro ao gerar PDF coletivo: {error_msg}')
+            return redirect('core:report_management')
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        messages.error(request, f'Erro ao gerar PDF: {str(e)}')
+        # Em desenvolvimento, podemos logar o erro completo
+        if settings.DEBUG:
+            print(f"Erro detalhado no PDF: {error_details}")
         return redirect('core:report_management')
 

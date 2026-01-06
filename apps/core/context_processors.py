@@ -48,10 +48,26 @@ def company_context(request):
                 context['checklist_alerts_count'] = alerts_count
             except Exception:
                 context['checklist_alerts_count'] = 0
+            
+            # Contagem de feedbacks pendentes há mais de 24h (urgentes)
+            try:
+                from apps.feedback.models import FeedbackTicket
+                urgent_threshold = timezone.now() - timedelta(hours=24)
+                urgent_feedbacks_count = FeedbackTicket.objects.filter(
+                    company=company,
+                    status='pending',
+                    created_at__lt=urgent_threshold
+                ).count()
+                
+                context['urgent_feedbacks_count'] = urgent_feedbacks_count
+            except Exception:
+                context['urgent_feedbacks_count'] = 0
         else:
             context['checklist_alerts_count'] = 0
+            context['urgent_feedbacks_count'] = 0
     else:
         context['checklist_alerts_count'] = 0
+        context['urgent_feedbacks_count'] = 0
     
     return context
 

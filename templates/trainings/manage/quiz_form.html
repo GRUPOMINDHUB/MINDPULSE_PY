@@ -849,13 +849,43 @@ function validateAndPrepareForm(event) {
     questions.forEach((question, qIndex) => {
         const questionNumber = qIndex + 1;
         
-        // Valida texto da pergunta
-        const questionText = question.querySelector('textarea[name*="-text"], input[name*="-text"]');
-        if (!questionText || !questionText.value.trim()) {
+        // Valida texto da pergunta - busca em todo o question-item, mesmo se estiver oculto
+        const questionText = question.querySelector('textarea[name*="-text"]') || 
+                            question.querySelector('textarea[name*="text"]') ||
+                            question.querySelector('input[name*="-text"]') ||
+                            question.querySelector('input[name*="text"]');
+        
+        if (!questionText) {
             hasErrors = true;
-            errorMessages.push(`Pergunta ${questionNumber}: O texto da pergunta é obrigatório.`);
+            errorMessages.push(`Pergunta ${questionNumber}: Campo de pergunta não encontrado.`);
             return;
         }
+        
+        // Lê o valor do campo, mesmo se estiver oculto
+        const questionValue = questionText.value ? String(questionText.value).trim() : '';
+        
+        // Debug: mostra o que foi encontrado
+        console.log(`Pergunta ${questionNumber}: Campo encontrado:`, questionText.name, 'Valor:', questionValue);
+        
+        if (!questionValue) {
+            hasErrors = true;
+            errorMessages.push(`Pergunta ${questionNumber}: O texto da pergunta é obrigatório.`);
+            // Destaca o campo com erro e expande se estiver oculto
+            questionText.classList.add('border-red-500');
+            const questionContent = question.querySelector('.question-content');
+            if (questionContent && questionContent.classList.contains('hidden')) {
+                questionContent.classList.remove('hidden');
+                const header = question.querySelector('.question-header');
+                if (header) {
+                    const chevron = header.querySelector('.question-chevron');
+                    if (chevron) chevron.classList.add('rotate-180');
+                }
+            }
+            return;
+        }
+        
+        // Remove destaque de erro se estava presente
+        questionText.classList.remove('border-red-500');
         
         // Valida opções de resposta
         const choicesContainer = question.querySelector('.choices-container');

@@ -1,376 +1,510 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório Coletivo - {{ report_data.company.name }}</title>
-    <style>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Relatorio de Performance Operacional</title>
+    <style type="text/css">
         @page {
             size: A4 landscape;
-            margin: 1.5cm;
+            margin: 1cm;
         }
         
         body {
-            font-family: 'Arial', sans-serif;
-            font-size: 10pt;
-            color: #1a1a1a;
-            background: #ffffff;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            color: #1E293B;
             margin: 0;
             padding: 0;
-        }
-        
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #F83531;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .header h1 {
-            color: #F83531;
-            font-size: 24pt;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .header p {
-            color: #666;
-            font-size: 12pt;
-            margin: 5px 0;
-        }
-        
-        .kpi-container {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        
-        .kpi-card {
-            display: table-cell;
-            width: 33.33%;
-            padding: 15px;
-            border: 2px solid #F83531;
-            border-radius: 8px;
-            text-align: center;
-            vertical-align: top;
-            margin: 0 10px;
-        }
-        
-        .kpi-card h3 {
-            color: #1a1a1a;
-            font-size: 14pt;
-            margin: 0 0 10px 0;
-        }
-        
-        .kpi-card .value {
-            font-size: 32pt;
-            font-weight: bold;
-            color: #F83531;
-            margin: 10px 0;
-        }
-        
-        .kpi-card .label {
-            font-size: 10pt;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .section {
-            margin: 25px 0;
-            page-break-inside: avoid;
-        }
-        
-        .section h2 {
-            color: #F83531;
-            font-size: 18pt;
-            border-bottom: 2px solid #F83531;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-        }
-        
-        .attention-box {
-            background: #fff5f5;
-            border: 2px solid #F83531;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .attention-box h3 {
-            color: #F83531;
-            font-size: 16pt;
-            margin: 0 0 10px 0;
-        }
-        
-        .attention-item {
-            display: inline-block;
-            width: 30%;
-            padding: 10px;
-            margin: 5px;
-            background: #fff;
-            border: 1px solid #F83531;
-            border-radius: 5px;
-            vertical-align: top;
-        }
-        
-        .podium {
-            display: table;
-            width: 100%;
-            margin: 20px 0;
-        }
-        
-        .podium-item {
-            display: table-cell;
-            width: 33.33%;
-            padding: 20px;
-            text-align: center;
-            vertical-align: bottom;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            margin: 0 10px;
-        }
-        
-        .podium-item.first {
-            border-color: #FFD700;
-            background: #fffef0;
-        }
-        
-        .podium-item.second {
-            border-color: #C0C0C0;
-            background: #fafafa;
-        }
-        
-        .podium-item.third {
-            border-color: #CD7F32;
-            background: #fff8f0;
-        }
-        
-        .podium-item .medal {
-            font-size: 40pt;
-            margin-bottom: 10px;
-        }
-        
-        .podium-item .name {
-            font-size: 14pt;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .podium-item .points {
-            font-size: 24pt;
-            font-weight: bold;
-            color: #F83531;
+            background-color: #FFFFFF;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 9pt;
         }
         
-        table thead {
-            background: #1a1a1a;
-            color: #ffffff;
+        /* Header de Consultoria */
+        .header-table {
+            width: 100%;
+            border-bottom: 3px solid #F83531;
+            padding-bottom: 10px;
+            margin-bottom: 18px;
         }
         
-        table thead th {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #333;
+        .header-table td {
+            padding: 6px 4px;
+            vertical-align: middle;
+        }
+        
+        .logo-cell {
+            font-size: 18pt;
             font-weight: bold;
-        }
-        
-        table tbody tr {
-            border-bottom: 1px solid #ddd;
-        }
-        
-        table tbody tr:nth-child(even) {
-            background: #f5f5f5;
-        }
-        
-        table tbody tr:hover {
-            background: #e8e8e8;
-        }
-        
-        table tbody td {
-            padding: 8px 10px;
-            border: 1px solid #ddd;
-        }
-        
-        table tbody td.highlight {
-            background: #fff5f5;
             color: #F83531;
-            font-weight: bold;
+            width: 18%;
         }
         
-        .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 2px solid #ddd;
-            text-align: center;
+        .divider-cell {
+            width: 2px;
+            background-color: #E2E8F0;
+            padding: 0;
+        }
+        
+        .title-cell {
+            font-size: 14pt;
+            font-weight: 600;
+            color: #1E293B;
+            padding-left: 12px;
+            text-align: left;
+            width: 45%;
+        }
+        
+        .info-cell {
+            font-size: 8pt;
+            color: #64748B;
+            text-align: right;
+            width: 35%;
+        }
+        
+        .company-name {
+            font-weight: 600;
+            color: #1E293B;
             font-size: 9pt;
-            color: #666;
+            margin-bottom: 3px;
         }
         
-        .warning-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            background: #F83531;
-            color: white;
-            border-radius: 3px;
-            font-size: 8pt;
-            font-weight: bold;
+        /* KPI Cards Dashboard */
+        .kpi-table {
+            margin: 18px 0;
         }
         
-        .overdue-badge {
+        .kpi-table td {
+            background-color: #F8FAFC;
+            border-bottom: 3px solid #F83531;
+            padding: 14px 12px;
+            vertical-align: top;
+            width: 25%;
+        }
+        
+        .kpi-label {
+            font-size: 7.5pt;
+            color: #64748B;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+        
+        .kpi-value {
+            font-size: 32pt;
+            font-weight: 700;
+            color: #F83531;
+            line-height: 1;
+            margin: 6px 0 8px 0;
+        }
+        
+        .kpi-detail {
+            font-size: 7pt;
+            color: #94A3B8;
+            line-height: 1.3;
+        }
+        
+        /* Section Title */
+        .section-title {
+            color: #1E293B;
+            font-size: 11pt;
+            font-weight: 600;
+            margin: 20px 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid #F83531;
+            padding-bottom: 5px;
+        }
+        
+        /* Pódio */
+        .podium-table {
+            margin: 15px 0;
+        }
+        
+        .podium-table td {
+            text-align: center;
+            vertical-align: top;
+            padding: 12px 10px;
+            border: 2px solid #DDDDDD;
+            background-color: #FFFFFF;
+            width: 33.33%;
+        }
+        
+        .podium-first {
+            border-color: #FFD700;
+            background-color: #FFFEF0;
+        }
+        
+        .podium-second {
+            border-color: #C0C0C0;
+            background-color: #F8F8F8;
+        }
+        
+        .podium-third {
+            border-color: #CD7F32;
+            background-color: #FFF8F0;
+        }
+        
+        .podium-name {
+            font-size: 10pt;
+            font-weight: 600;
+            color: #1E293B;
+            margin: 6px 0;
+        }
+        
+        .podium-points {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #F83531;
+            margin: 6px 0;
+        }
+        
+        .podium-stats {
+            font-size: 7.5pt;
+            color: #64748B;
+            margin-top: 6px;
+            line-height: 1.3;
+        }
+        
+        /* Attention Box */
+        .attention-box {
+            background-color: #FFF5F5;
+            border: 2px solid #F83531;
+            padding: 12px;
+            margin: 15px 0;
+        }
+        
+        .attention-title {
+            color: #F83531;
+            font-size: 9.5pt;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .attention-table {
+            width: 100%;
+        }
+        
+        .attention-table td {
+            background-color: #FFFFFF;
+            border: 1px solid #FCA5A5;
+            padding: 10px;
+            vertical-align: top;
+            width: 33.33%;
+        }
+        
+        .attention-name {
+            font-weight: 600;
+            font-size: 9pt;
+            color: #1E293B;
+            margin-bottom: 5px;
+        }
+        
+        .attention-score {
+            color: #F83531;
+            font-weight: 700;
+            font-size: 12pt;
+            margin: 5px 0;
+        }
+        
+        .attention-detail {
+            font-size: 7.5pt;
+            color: #64748B;
+            line-height: 1.3;
+        }
+        
+        /* Performance Table */
+        .perf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 8.5pt;
+        }
+        
+        .perf-table thead {
+            background-color: #1E293B;
+            color: #FFFFFF;
+        }
+        
+        .perf-table thead th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            border-bottom: 2px solid #0F172A;
+        }
+        
+        .perf-table tbody tr {
+            border-bottom: 1px solid #E2E8F0;
+        }
+        
+        .perf-table tbody tr:nth-child(even) {
+            background-color: #F9FAFB;
+        }
+        
+        .perf-table tbody tr:nth-child(odd) {
+            background-color: #FFFFFF;
+        }
+        
+        .perf-table tbody td {
+            padding: 10px 8px;
+            border: none;
+            border-bottom: 1px solid #E2E8F0;
+            vertical-align: middle;
+        }
+        
+        .employee-name {
+            font-weight: 600;
+            color: #1E293B;
+            font-size: 9pt;
+        }
+        
+        .employee-email {
+            font-size: 7pt;
+            color: #94A3B8;
+            margin-top: 2px;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background-color: #E2E8F0;
+            height: 8px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: #F83531;
+        }
+        
+        .percent-value {
+            font-weight: 600;
+            font-size: 9pt;
+            color: #1E293B;
+        }
+        
+        .points-value {
+            font-weight: 700;
+            font-size: 10pt;
+            color: #F83531;
+        }
+        
+        .status-badge {
             display: inline-block;
             padding: 3px 8px;
-            background: #dc3545;
-            color: white;
             border-radius: 3px;
-            font-size: 8pt;
-            font-weight: bold;
+            font-size: 7.5pt;
+            font-weight: 600;
+        }
+        
+        .status-critical {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        .status-excellent {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .status-regular {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        /* Footer */
+        .footer {
+            border-top: 1px solid #E2E8F0;
+            padding: 10px 0;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 7.5pt;
+            color: #94A3B8;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <h1>📊 Relatório Coletivo</h1>
-        <p><strong>{{ report_data.company.name }}</strong></p>
-        <p>
-            Período: {{ report_data.start_date|date:"d/m/Y" }} até {{ report_data.end_date|date:"d/m/Y" }}
-        </p>
-        <p style="font-size: 9pt; color: #999;">
-            Gerado em: {{ report_data.generated_at|date:"d/m/Y H:i" }}
-        </p>
-    </div>
+    <!-- Header de Consultoria -->
+    <table class="header-table">
+        <tr>
+            <td class="logo-cell">MINDPULSE</td>
+            <td class="divider-cell"></td>
+            <td class="title-cell">Relatorio de Performance Operacional</td>
+            <td class="info-cell">
+                <div class="company-name">{{ report_data.company.name }}</div>
+                <div>Periodo: {{ report_data.start_date|date:"d/m/Y" }} - {{ report_data.end_date|date:"d/m/Y" }}</div>
+                <div style="margin-top: 3px;">Emitido em: {{ report_data.generated_at|date:"d/m/Y H:i" }}</div>
+            </td>
+        </tr>
+    </table>
     
-    <!-- KPIs Consolidados -->
-    <div class="kpi-container">
-        <div class="kpi-card">
-            <h3>✅ Checklists</h3>
-            <div class="value">{{ report_data.checklist_average }}%</div>
-            <div class="label">
-                {{ report_data.total_tasks_completed }} tarefas concluídas<br>
-                {{ report_data.total_completions }} checklists completos
-            </div>
-        </div>
-        
-        <div class="kpi-card">
-            <h3>🎓 Treinamentos</h3>
-            <div class="value">{{ report_data.training_average }}%</div>
-            <div class="label">
-                Progresso médio da equipe<br>
-                Média de conclusão de vídeos e quizzes
-            </div>
-        </div>
-        
-        <div class="kpi-card">
-            <h3>⚠️ Disciplina</h3>
-            <div class="value">{{ report_data.total_warnings }}</div>
-            <div class="label">
-                Advertências no período<br>
-                Oral: {{ report_data.warnings_by_type.oral }} | 
-                Escrita: {{ report_data.warnings_by_type.escrita }} | 
-                Suspensão: {{ report_data.warnings_by_type.suspensao }}
-            </div>
-        </div>
-    </div>
+    <!-- Dashboard KPI Cards -->
+    <table class="kpi-table">
+        <tr>
+            <td>
+                <div class="kpi-label">Conformidade Checklists</div>
+                <div class="kpi-value">{{ report_data.checklist_average|floatformat:1 }}%</div>
+                <div class="kpi-detail">
+                    {{ report_data.total_tasks_completed }} tarefas concluidas<br>
+                    {{ report_data.total_completions }} checklists completos
+                </div>
+            </td>
+            <td>
+                <div class="kpi-label">Engajamento Treinamentos</div>
+                <div class="kpi-value">{{ report_data.training_average|floatformat:1 }}%</div>
+                <div class="kpi-detail">
+                    Progresso medio da equipe<br>
+                    Conclusao de videos e quizzes
+                </div>
+            </td>
+            <td>
+                <div class="kpi-label">Excelencia em Quizzes</div>
+                <div class="kpi-value">{{ report_data.quiz_average_all|floatformat:1 }}%</div>
+                <div class="kpi-detail">
+                    Media geral de notas<br>
+                    Desempenho em avaliacoes
+                </div>
+            </td>
+            <td>
+                <div class="kpi-label">Alertas Disciplinares</div>
+                <div class="kpi-value">{{ report_data.total_warnings }}</div>
+                <div class="kpi-detail">
+                    Advertencias aplicadas<br>
+                    Oral: {{ report_data.warnings_by_type.oral }} | 
+                    Escrita: {{ report_data.warnings_by_type.escrita }}<br>
+                    Suspensao: {{ report_data.warnings_by_type.suspensao }}
+                </div>
+            </td>
+        </tr>
+    </table>
+    
+    <!-- Top 3 Ranking -->
+    {% if report_data.top_3 %}
+    <div class="section-title">Ranking Geral - Top 3 Colaboradores</div>
+    <table class="podium-table">
+        <tr>
+            {% for item in report_data.top_3 %}
+            <td class="{% if forloop.counter == 1 %}podium-first{% elif forloop.counter == 2 %}podium-second{% else %}podium-third{% endif %}">
+                <div style="font-size: 20pt; margin-bottom: 5px;">{% if forloop.counter == 1 %}1{% elif forloop.counter == 2 %}2{% else %}3{% endif %} LUGAR</div>
+                <div class="podium-name">{{ item.name|default:"-" }}</div>
+                <div class="podium-points">{{ item.points_earned|default:0 }} pts</div>
+                <div class="podium-stats">
+                    Checklists: {{ item.checklist_percentage|default:0|floatformat:1 }}%<br>
+                    Treinamentos: {{ item.training_percentage|default:0|floatformat:1 }}%<br>
+                    Quizzes: {{ item.quiz_average|default:0.0|floatformat:1 }}%
+                </div>
+            </td>
+            {% endfor %}
+        </tr>
+    </table>
+    {% endif %}
     
     <!-- Índice de Atenção -->
     {% if report_data.attention_list %}
-    <div class="section">
-        <div class="attention-box">
-            <h3>🚨 Índice de Atenção</h3>
-            <p style="margin-bottom: 15px; color: #666;">
-                Colaboradores que requerem atenção imediata (atrasos em checklists e advertências)
-            </p>
-            {% for item in report_data.attention_list %}
-            <div class="attention-item">
-                <strong>{{ item.name }}</strong><br>
-                <span style="color: #F83531; font-weight: bold;">{{ item.attention_score }} pts</span><br>
-                Atrasos: {{ item.checklist_overdue }}<br>
-                Advertências: {{ item.warnings_count }}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- O Pódio (Top 3) -->
-    {% if report_data.top_3 %}
-    <div class="section">
-        <h2>🏆 O Pódio (Top 3)</h2>
-        <div class="podium">
-            {% for item in report_data.top_3 %}
-            <div class="podium-item {% if forloop.counter == 1 %}first{% elif forloop.counter == 2 %}second{% else %}third{% endif %}">
-                <div class="medal">
-                    {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}
-                </div>
-                <div class="name">{{ item.name }}</div>
-                <div class="points">{{ item.points_earned }} pts</div>
-                <div style="margin-top: 10px; font-size: 10pt; color: #666;">
-                    Checklists: {{ item.checklist_percentage }}%<br>
-                    Treinamentos: {{ item.training_percentage }}%<br>
-                    Quizzes: {{ item.quiz_average }}%
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Tabela Geral de Performance -->
-    <div class="section">
-        <h2>📋 Tabela de Performance por Colaborador</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Colaborador</th>
-                    <th>Checklists (%)</th>
-                    <th>Treinamentos (%)</th>
-                    <th>Quizzes (%)</th>
-                    <th>Advertências</th>
-                    <th>Pontos</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in report_data.performance_data %}
-                <tr>
-                    <td>
-                        <strong>{{ item.name }}</strong><br>
-                        <span style="font-size: 8pt; color: #666;">{{ item.email }}</span>
-                    </td>
-                    <td>
-                        {{ item.checklist_percentage }}%
-                        {% if item.checklist_overdue > 0 %}
-                        <br><span class="overdue-badge">{{ item.checklist_overdue }} atraso{{ item.checklist_overdue|pluralize }}</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ item.training_percentage }}%</td>
-                    <td>{{ item.quiz_average }}%</td>
-                    <td>
-                        {% if item.warnings_count > 0 %}
-                        <span class="warning-badge">{{ item.warnings_count }}</span>
-                        {% else %}
-                        0
-                        {% endif %}
-                    </td>
-                    <td class="{% if forloop.counter <= 3 %}highlight{% endif %}">{{ item.points_earned }} pts</td>
-                </tr>
+    <div class="attention-box">
+        <div class="attention-title">Indice de Atencao - Colaboradores que Requerem Acao Imediata</div>
+        <table class="attention-table">
+            <tr>
+                {% for item in report_data.attention_list %}
+                <td>
+                    <div class="attention-name">{{ item.name|default:"-" }}</div>
+                    <div class="attention-score">{{ item.attention_score|default:0 }} pontos</div>
+                    <div class="attention-detail">
+                        <strong>Atrasos:</strong> {{ item.checklist_overdue|default:0 }} checklist{% if item.checklist_overdue|default:0 != 1 %}s{% endif %}<br>
+                        <strong>Advertencias:</strong> {{ item.warnings_count|default:0 }} aplicada{% if item.warnings_count|default:0 != 1 %}s{% endif %}
+                    </div>
+                </td>
                 {% endfor %}
-            </tbody>
+            </tr>
         </table>
     </div>
+    {% endif %}
+    
+    <!-- Tabela de Performance da Equipe -->
+    <div class="section-title">Matriz de Performance da Equipe</div>
+    {% if report_data.performance_data %}
+    <table class="perf-table">
+        <thead>
+            <tr>
+                <th style="width: 22%;">Colaborador</th>
+                <th style="width: 18%;">Checklists</th>
+                <th style="width: 18%;">Treinamentos</th>
+                <th style="width: 12%;">Quizzes</th>
+                <th style="width: 10%;">Advertencias</th>
+                <th style="width: 10%;">Pontos</th>
+                <th style="width: 10%;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report_data.performance_data %}
+            <tr>
+                <td>
+                    <div class="employee-name">{% if item.name %}{{ item.name }}{% else %}N/A{% endif %}</div>
+                    <div class="employee-email">{% if item.email %}{{ item.email }}{% else %}-{% endif %}</div>
+                </td>
+                <td>
+                    <div class="percent-value">{{ item.checklist_percentage|default:0|floatformat:1 }}%</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: {% widthratio item.checklist_percentage|default:0 1 1 %}%;"></div>
+                    </div>
+                    {% if item.checklist_overdue|default:0 > 0 %}
+                    <div style="font-size: 7pt; color: #EF4444; margin-top: 3px;">{{ item.checklist_overdue }} atraso{% if item.checklist_overdue != 1 %}s{% endif %}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="percent-value">{{ item.training_percentage|default:0|floatformat:1 }}%</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: {% widthratio item.training_percentage|default:0 1 1 %}%;"></div>
+                    </div>
+                </td>
+                <td>
+                    <div class="percent-value">{{ item.quiz_average|default:0.0|floatformat:1 }}%</div>
+                </td>
+                <td style="text-align: center;">
+                    {% if item.warnings_count|default:0 > 0 %}
+                    <span style="font-weight: 600; color: #EF4444;">{{ item.warnings_count }}</span>
+                    {% else %}
+                    <span style="font-weight: 600; color: #10B981;">0</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="points-value">{{ item.points_earned|default:0 }}</div>
+                </td>
+                <td style="text-align: center;">
+                    {% if item.checklist_overdue|default:0 > 2 or item.warnings_count|default:0 > 2 %}
+                    <span class="status-badge status-critical">Critico</span>
+                    {% elif item.checklist_percentage|default:0 >= 80 and item.training_percentage|default:0 >= 80 %}
+                    <span class="status-badge status-excellent">Excelente</span>
+                    {% else %}
+                    <span class="status-badge status-regular">Regular</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding: 20px; text-align: center; color: #64748B;">Nenhum dado disponivel para este periodo.</div>
+    {% endif %}
     
     <!-- Footer -->
     <div class="footer">
-        <p>Relatório gerado pelo sistema Mindpulse - {{ report_data.company.name }}</p>
-        <p>Período: {{ report_data.start_date|date:"d/m/Y" }} até {{ report_data.end_date|date:"d/m/Y" }} | 
-           Total de colaboradores: {{ report_data.total_users }}</p>
+        <strong>Mindpulse</strong> - Inteligencia Operacional | 
+        {{ report_data.company.name }} | 
+        Total de colaboradores: {{ report_data.total_users }} | 
+        Relatorio gerado em {{ report_data.generated_at|date:"d/m/Y H:i" }}
     </div>
 </body>
 </html>
-

@@ -13,7 +13,45 @@ from django.template.loader import get_template
 
 from apps.accounts.models import User, UserCompany
 from apps.core.decorators import gestor_required
-from apps.core.reports import get_report_data
+from apps.core.reports import get_report_data, get_company_report_data
+
+
+def _generate_collective_pdf(request, company, start_date, end_date):
+    """
+    Gera PDF do relatório coletivo usando xhtml2pdf.
+    """
+    try:
+        from xhtml2pdf import pisa
+    except ImportError:
+        messages.error(request, 'Biblioteca xhtml2pdf não está instalada.')
+        return redirect('core:report_management')
+    
+    # Extrair dados do relatório coletivo
+    report_data = get_company_report_data(company, start_date, end_date)
+    
+    # Renderizar template HTML CORRETO para coletivo
+    template = get_template('core/reports/pdf_collective.html')
+    html = template.render({'report_data': report_data, 'request': request})
+    
+    # Gerar PDF
+    result = BytesIO()
+    
+    # Configurar pisaDocument com encoding correto
+    pdf = pisa.pisaDocument(
+        BytesIO(html.encode('UTF-8')),
+        result,
+        encoding='UTF-8'
+    )
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        # Nome do arquivo formatado
+        filename = f'relatorio_coletivo_{company.slug}_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    else:
+        messages.error(request, f'Erro ao gerar PDF coletivo: {pdf.err}')
+        return redirect('core:report_management')
 
 
 @login_required
@@ -100,17 +138,31 @@ def report_management(request):
         
         if action == 'download':
             # Gerar PDF
-            return _generate_pdf(request, company, start_date, end_date, user)
+            if user:
+                # Relatório Individual
+                return _generate_pdf(request, company, start_date, end_date, user)
+            else:
+                # Relatório Coletivo
+                return _generate_collective_pdf(request, company, start_date, end_date)
         else:
             # Visualizar na tela
-            report_data = get_report_data(company, start_date, end_date, user)
-            return render(request, 'core/reports/view.html', {
+            if user:
+                # Relatório Individual
+                report_data = get_report_data(company, start_date, end_date, user)
+                template_name = 'core/reports/view.html'
+            else:
+                # Relatório Coletivo
+                report_data = get_company_report_data(company, start_date, end_date)
+                template_name = 'core/reports/view_collective.html'
+            
+            return render(request, template_name, {
                 'report_data': report_data,
                 'users': users,
                 'selected_user_id': user_id if user else '',
                 'start_date': start_date.strftime('%Y-%m-%d'),
                 'end_date': end_date.strftime('%Y-%m-%d'),
                 'selected_period': period,
+                'company': company,  # Para navegação
             })
     
     # GET sem parâmetros: mostrar formulário
@@ -124,6 +176,7 @@ def report_management(request):
 def _generate_pdf(request, company, start_date, end_date, user=None):
     """
     Gera PDF do relatório usando xhtml2pdf.
+    Segurança multi-tenant: garante que apenas colaboradores da empresa possam ter relatórios gerados.
     """
     try:
         from xhtml2pdf import pisa
@@ -131,8 +184,21 @@ def _generate_pdf(request, company, start_date, end_date, user=None):
         messages.error(request, 'Biblioteca xhtml2pdf não está instalada.')
         return redirect('core:report_management')
     
-    # Extrair dados do relatório
-    report_data = get_report_data(company, start_date, end_date, user)
+    # Segurança multi-tenant: verificar se user pertence à company
+    if user:
+        if not UserCompany.objects.filter(
+            user=user,
+            company=company,
+            is_active=True
+        ).exists():
+            messages.error(request, 'Usuário não pertence à empresa selecionada.')
+            return redirect('core:report_management')
+        
+        # Extrair dados do relatório individual
+        report_data = get_report_data(company, start_date, end_date, user)
+    else:
+        # Relatório coletivo da empresa
+        report_data = get_company_report_data(company, start_date, end_date)
     
     # Renderizar template HTML
     template = get_template('core/reports/pdf_template.html')
@@ -144,10 +210,15 @@ def _generate_pdf(request, company, start_date, end_date, user=None):
     
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        
+        # Nome do arquivo: relatorio_[colaborador]_[periodo].pdf
         filename = f'relatorio_{company.slug}'
         if user:
-            filename += f'_{user.get_full_name().replace(" ", "_")}'
-        filename += f'_{start_date}_{end_date}.pdf'
+            # Remove caracteres especiais do nome
+            user_name = user.get_full_name().replace(" ", "_").replace("/", "-").replace("\\", "-")
+            filename += f'_{user_name}'
+        filename += f'_{start_date.strftime("%Y%m%d")}_{end_date.strftime("%Y%m%d")}.pdf'
+        
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
     else:

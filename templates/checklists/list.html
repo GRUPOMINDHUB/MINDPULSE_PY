@@ -6,7 +6,7 @@
 <div class="p-4 md:p-8">
     <div class="flex items-center justify-between mb-4 md:mb-8">
         <div>
-            <h1 class="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1 md:mb-2">Checklists</h1>
+            <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1 md:mb-2">Checklists</h1>
             <p class="hidden md:block text-gray-600 dark:text-gray-400">Complete suas tarefas diárias e ganhe pontos.</p>
         </div>
     </div>
@@ -38,39 +38,28 @@
                 </div>
                 
                 <div class="flex-1 min-w-0">
-                    <!-- Mobile: Visual Slim - Apenas Título, 2 Tags (Periodicidade + Status) e Progresso -->
+                    <!-- Mobile: Visual Ultra-Slim - Apenas Título e Progresso -->
                     <div class="md:hidden">
-                        <div class="flex items-center gap-2 mb-2 flex-wrap">
-                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white truncate w-full">{{ checklist.title }}</h3>
-                            <div class="flex items-center gap-2">
-                                <!-- Tag 1: Periodicidade -->
-                                <span class="px-2 py-0.5 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full whitespace-nowrap">
-                                    {{ checklist.get_frequency_display }}
-                                </span>
-                                <!-- Tag 2: Status (Atrasado ou Concluído) -->
-                                {% if item.is_completed %}
-                                <span class="px-2 py-0.5 bg-green-500/20 border border-green-500/50 text-green-400 text-xs font-medium rounded-full whitespace-nowrap flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    Concluído
-                                </span>
-                                {% elif item.is_overdue %}
-                                <span class="px-2 py-0.5 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full whitespace-nowrap flex items-center gap-1">
+                        <div class="mb-2">
+                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white truncate mb-2">{{ checklist.title }}</h3>
+                            <!-- Status apenas se NÃO estiver 100% concluído E houver atraso -->
+                            {% if not item.is_completed and item.is_overdue %}
+                            <div class="mb-2">
+                                <span class="px-2 py-0.5 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full whitespace-nowrap inline-flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                     </svg>
                                     Atrasado
                                 </span>
-                                {% endif %}
                             </div>
+                            {% endif %}
                         </div>
                     </div>
                     
                     <!-- Desktop: Visual Completo -->
                     <div class="hidden md:block">
                         <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ checklist.title }}</h3>
+                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white truncate">{{ checklist.title }}</h3>
                             
                             {% if checklist.is_active %}
                             <span class="px-2.5 py-1 bg-green-500/20 border border-green-500/50 text-green-400 text-xs font-medium rounded-full flex items-center gap-1.5">
@@ -94,8 +83,8 @@
                                 {{ checklist.get_frequency_display }}
                             </span>
                             
-                            <!-- Badge de Atraso: apenas se não estiver completo -->
-                            {% if item.is_overdue and not item.is_completed %}
+                            <!-- Badge de Atraso: apenas se não estiver 100% completo E houver atraso -->
+                            {% if item.progress < 100 and item.is_overdue and not item.is_completed %}
                             <span class="px-2.5 py-1 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full flex items-center gap-1.5">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
@@ -165,7 +154,7 @@
             <svg class="w-20 h-20 text-gray-400 dark:text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
             </svg>
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum checklist disponível</h3>
+            <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">Nenhum checklist disponível</h3>
             <p class="text-gray-500">Os checklists serão exibidos aqui quando estiverem disponíveis.</p>
         </div>
         {% endfor %}

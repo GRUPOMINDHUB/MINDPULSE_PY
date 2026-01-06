@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from datetime import timedelta
 
 from .models import FeedbackTicket, FeedbackComment
 from .forms import FeedbackForm, FeedbackResponseForm, FeedbackCommentForm
@@ -182,6 +183,11 @@ def feedback_manage_list(request):
         feedbacks = feedbacks.filter(category=category_filter)
     
     feedbacks = feedbacks.select_related('user', 'company').order_by('-created_at')
+    
+    # Marca feedbacks pendentes há mais de 24h como urgentes
+    urgent_threshold = timezone.now() - timedelta(hours=24)
+    for feedback in feedbacks:
+        feedback.is_urgent = (feedback.status == 'pending' and feedback.created_at < urgent_threshold)
     
     stats = {
         'total': stats_base.count(),

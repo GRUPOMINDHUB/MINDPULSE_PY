@@ -1,87 +1,141 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block title %}Advertências - Mindpulse{% endblock %}
 
 {% block content %}
-<div class="p-8 max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
+<div class="p-4 md:p-8 bg-slate-50 dark:bg-dark-900 min-h-screen">
+    <!-- Header Slim -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 mb-4 md:mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">⚠️ Advertências Disciplinares</h1>
-            <p class="text-gray-600 dark:text-gray-400">Histórico de advertências aplicadas aos colaboradores</p>
+            <h1 class="text-xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1 md:mb-2">⚠️ Advertências Disciplinares</h1>
+            <p class="text-sm md:text-base text-slate-600 dark:text-gray-400">Histórico de advertências aplicadas aos colaboradores</p>
         </div>
-        <a href="{% url 'accounts:warning_create' %}" class="btn-primary">
-            ➕ Nova Advertência
+        {% if is_admin_master or request.is_gestor %}
+        <a href="{% url 'accounts:warning_create' %}" 
+           class="px-4 py-2.5 md:px-6 md:py-3 bg-[#F83531] hover:bg-[#E02521] text-white rounded-lg text-sm md:text-base font-medium transition-all duration-200 min-h-[44px] flex items-center justify-center gap-2 whitespace-nowrap">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nova Advertência
         </a>
+        {% endif %}
     </div>
     
     {% if messages %}
-    <div class="mb-6 space-y-2">
+    <div class="mb-4 md:mb-6 space-y-2">
         {% for message in messages %}
-        <div class="p-4 rounded-xl {% if message.tags == 'error' %}bg-red-500/20 border border-red-500/50 text-red-400{% elif message.tags == 'success' %}bg-green-500/20 border border-green-500/50 text-green-400{% else %}bg-brand-500/20 border border-brand-500/50 text-brand-400{% endif %}">
+        <div class="p-3 md:p-4 rounded-xl text-sm md:text-base
+                    {% if message.tags == 'error' %}bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400
+                    {% elif message.tags == 'success' %}bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400
+                    {% else %}bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/30 text-brand-700 dark:text-brand-400{% endif %}">
             {{ message }}
         </div>
         {% endfor %}
     </div>
     {% endif %}
     
-    <!-- Lista de Advertências -->
-    <div class="card">
-        {% if warnings %}
+    <!-- Lista de Advertências - Cards Slim Mobile -->
+    {% if warnings %}
+    <!-- Mobile: Cards Compactos Slim -->
+    <div class="block md:hidden space-y-2">
+        {% for warning in warnings %}
+        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-lg p-3 hover:shadow-sm transition-shadow duration-200">
+            <!-- Linha 1: Colaborador + Tipo + Data (Tudo na mesma linha) -->
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex-1 min-w-0">
+                    {% if is_admin_master or request.is_gestor %}
+                    <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ warning.user.get_full_name }}</p>
+                    {% else %}
+                    <p class="text-sm font-medium text-slate-900 dark:text-white">Advertência</p>
+                    {% endif %}
+                    <p class="text-xs text-slate-500 dark:text-gray-500 mt-0.5">{{ warning.created_at|date:"d/m/Y" }}</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0
+                    {% if warning.warning_type == 'oral' %}bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400
+                    {% elif warning.warning_type == 'escrita' %}bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400
+                    {% elif warning.warning_type == 'suspensao' %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400
+                    {% else %}bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-400{% endif %}">
+                    {{ warning.get_warning_type_display }}
+                </span>
+            </div>
+            
+            <!-- Linha 2: Motivo Truncado (Colapsável) -->
+            <div>
+                <button onclick="toggleWarningReason(this)" 
+                        class="w-full flex items-center justify-between text-left gap-2 min-h-[44px]">
+                    <p class="text-xs text-slate-600 dark:text-gray-400 line-clamp-1 flex-1 min-w-0">{{ warning.reason }}</p>
+                    <svg class="w-5 h-5 flex-shrink-0 text-slate-400 dark:text-gray-500 transition-transform duration-200 warning-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div class="hidden warning-reason mt-2 pt-2 border-t border-slate-200 dark:border-dark-700">
+                    <p class="text-sm text-slate-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">{{ warning.reason }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Desktop: Tabela -->
+    <div class="hidden md:block bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b border-gray-200 dark:border-dark-600">
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Data</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Colaborador</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Tipo</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Aplicado por</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Motivo</th>
+                    <tr class="border-b border-slate-200 dark:border-dark-700 bg-slate-50 dark:bg-dark-900">
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Colaborador</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Aplicado por</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Motivo</th>
                         {% if is_admin_master %}
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Empresa</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-gray-400 uppercase tracking-wider">Empresa</th>
                         {% endif %}
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-dark-600">
+                <tbody class="divide-y divide-slate-200 dark:divide-dark-700">
                     {% for warning in warnings %}
-                    <tr class="hover:bg-dark-700 transition-colors">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-dark-700 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm text-white">{{ warning.created_at|date:"d/m/Y H:i" }}</span>
+                            <span class="text-sm text-slate-900 dark:text-white">{{ warning.created_at|date:"d/m/Y H:i" }}</span>
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold">
-                                    {{ warning.user.first_name.0 }}{{ warning.user.last_name.0 }}
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white font-bold text-sm">
+                                    {{ warning.user.first_name.0 }}{{ warning.user.last_name.0|default:"" }}
                                 </div>
                                 <div>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{ warning.user.get_full_name }}</p>
-                                    <p class="text-xs text-gray-500">{{ warning.user.email }}</p>
+                                    <p class="text-sm font-medium text-slate-900 dark:text-white">{{ warning.user.get_full_name }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-gray-500">{{ warning.user.email }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <span class="px-3 py-1 rounded-full text-xs font-medium border {{ warning.get_warning_type_display_class }}">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium
+                                {% if warning.warning_type == 'oral' %}bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400
+                                {% elif warning.warning_type == 'escrita' %}bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400
+                                {% elif warning.warning_type == 'suspensao' %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400
+                                {% else %}bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-400{% endif %}">
                                 {{ warning.get_warning_type_display }}
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            <span class="text-sm text-gray-300">
-                                {% if warning.issuer %}
-                                {{ warning.issuer.get_full_name }}
-                                {% else %}
-                                <span class="text-gray-500">N/A</span>
-                                {% endif %}
+                            <span class="text-sm text-slate-600 dark:text-gray-400">
+                                {{ warning.issuer.get_full_name|default:"N/A" }}
                             </span>
                         </td>
                         <td class="px-6 py-4">
                             <button onclick="showWarningModal('{{ warning.get_warning_type_display }}', '{{ warning.reason|escapejs }}', '{{ warning.created_at|date:"d/m/Y H:i" }}', '{{ warning.issuer.get_full_name|default:"N/A" }}', '{{ warning.user.get_full_name }}')" 
-                                    class="text-sm text-brand-400 hover:text-brand-300 transition-colors">
-                                Ver motivo →
+                                    class="text-sm text-[#F83531] hover:text-[#E02521] dark:text-brand-400 dark:hover:text-brand-300 transition-colors flex items-center gap-1">
+                                Ver motivo
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
                             </button>
                         </td>
                         {% if is_admin_master %}
                         <td class="px-6 py-4">
-                            <span class="text-sm text-gray-300">{{ warning.company.name }}</span>
+                            <span class="text-sm text-slate-600 dark:text-gray-400">{{ warning.company.name }}</span>
                         </td>
                         {% endif %}
                     </tr>
@@ -89,27 +143,35 @@
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="text-center py-16">
-            <svg class="w-24 h-24 text-gray-600 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </div>
+    {% else %}
+    <!-- Estado Vazio -->
+    <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-lg p-12 text-center">
+        <svg class="w-16 h-16 md:w-24 md:h-24 text-slate-400 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-lg md:text-xl font-semibold text-slate-900 dark:text-white mb-2">Nenhuma advertência registrada</h3>
+        <p class="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-6">Comece registrando uma nova advertência disciplinar</p>
+        {% if is_admin_master or request.is_gestor %}
+        <a href="{% url 'accounts:warning_create' %}" 
+           class="inline-block px-6 py-3 bg-[#F83531] hover:bg-[#E02521] text-white rounded-lg font-medium transition-all duration-200 min-h-[44px] flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            <h3 class="text-lg font-semibold text-white mb-2">Nenhuma advertência registrada</h3>
-            <p class="text-gray-500 mb-6">Comece registrando uma nova advertência disciplinar</p>
-            <a href="{% url 'accounts:warning_create' %}" class="btn-primary inline-block">
-                ➕ Nova Advertência
-            </a>
-        </div>
+            Nova Advertência
+        </a>
         {% endif %}
     </div>
+    {% endif %}
 </div>
 
-<!-- Modal de Detalhes da Advertência -->
-<div id="warningModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-dark-800 rounded-xl border border-dark-600 max-w-[90vw] md:max-w-2xl w-full p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+<!-- Modal de Detalhes (Desktop) -->
+<div id="warningModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-3 md:p-4">
+    <div class="bg-white dark:bg-dark-800 rounded-xl border border-slate-200 dark:border-dark-700 max-w-[95vw] md:max-w-2xl w-full p-4 md:p-6 max-h-[95vh] md:max-h-[90vh] overflow-y-auto shadow-xl">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-white">Detalhes da Advertência</h3>
-            <button onclick="closeWarningModal()" class="text-gray-400 hover:text-white transition-colors">
+            <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Detalhes da Advertência</h3>
+            <button onclick="closeWarningModal()" 
+                    class="p-2 text-slate-400 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -118,43 +180,58 @@
         
         <div class="space-y-4">
             <div>
-                <label class="text-sm font-medium text-gray-400">Colaborador</label>
-                <p id="modalUser" class="mt-1 text-white font-medium"></p>
+                <label class="text-sm font-medium text-slate-600 dark:text-gray-400">Colaborador</label>
+                <p id="modalUser" class="mt-1 text-base text-slate-900 dark:text-white font-medium"></p>
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-400">Tipo</label>
-                <p id="modalType" class="mt-1 text-white"></p>
+                <label class="text-sm font-medium text-slate-600 dark:text-gray-400">Tipo</label>
+                <p id="modalType" class="mt-1 text-base text-slate-900 dark:text-white"></p>
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-400">Data</label>
-                <p id="modalDate" class="mt-1 text-white"></p>
+                <label class="text-sm font-medium text-slate-600 dark:text-gray-400">Data</label>
+                <p id="modalDate" class="mt-1 text-base text-slate-900 dark:text-white"></p>
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-400">Aplicado por</label>
-                <p id="modalIssuer" class="mt-1 text-white"></p>
+                <label class="text-sm font-medium text-slate-600 dark:text-gray-400">Aplicado por</label>
+                <p id="modalIssuer" class="mt-1 text-base text-slate-900 dark:text-white"></p>
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-400">Motivo</label>
-                <p id="modalReason" class="mt-1 text-white whitespace-pre-wrap bg-dark-700 p-4 rounded-lg border border-dark-600"></p>
+                <label class="text-sm font-medium text-slate-600 dark:text-gray-400">Motivo</label>
+                <p id="modalReason" class="mt-2 text-sm md:text-base text-slate-600 dark:text-gray-400 whitespace-pre-wrap bg-slate-50 dark:bg-dark-900 p-3 md:p-4 rounded-lg border border-slate-200 dark:border-dark-700 leading-relaxed"></p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+// Toggle motivo no mobile (accordion)
+function toggleWarningReason(button) {
+    const reasonDiv = button.nextElementSibling;
+    const chevron = button.querySelector('.warning-chevron');
+    
+    reasonDiv.classList.toggle('hidden');
+    if (chevron) {
+        chevron.classList.toggle('rotate-180');
+    }
+}
+
+// Modal de detalhes (desktop)
 function showWarningModal(type, reason, date, issuer, user) {
     document.getElementById('modalUser').textContent = user || 'N/A';
     document.getElementById('modalType').textContent = type;
     document.getElementById('modalDate').textContent = date;
     document.getElementById('modalIssuer').textContent = issuer;
     document.getElementById('modalReason').textContent = reason;
-    document.getElementById('warningModal').classList.remove('hidden');
-    document.getElementById('warningModal').classList.add('flex');
+    
+    const modal = document.getElementById('warningModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
 
 function closeWarningModal() {
-    document.getElementById('warningModal').classList.add('hidden');
-    document.getElementById('warningModal').classList.remove('flex');
+    const modal = document.getElementById('warningModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
 // Fechar modal ao clicar fora
@@ -165,4 +242,3 @@ document.getElementById('warningModal').addEventListener('click', function(e) {
 });
 </script>
 {% endblock %}
-
