@@ -11,6 +11,7 @@ urlpatterns = [
     # Colaborador
     path('', views.feedback_list, name='list'),
     path('create/', views.feedback_create, name='create'),
+    path('<int:pk>/', views.feedback_detail, name='detail'),
     path('<int:pk>/delete/', views.feedback_delete, name='delete'),
     path('<int:pk>/comment/', views.add_comment, name='add_comment'),
     

@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.core.middleware.CompanyMiddleware',
+    'apps.core.middleware.SubscriptionGateMiddleware',
 ]
 
 ROOT_URLCONF = 'mindpulse.urls'
@@ -192,6 +193,60 @@ MINDPULSE_SETTINGS = {
     'ALLOWED_VIDEO_FORMATS': ['mp4', 'webm', 'mov'],
     'DEFAULT_AVATAR': 'avatars/default.png',
 }
+
+# =============================================================================
+# EMAIL CONFIGURATION (SMTP)
+# =============================================================================
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.smtp.EmailBackend'
+)
+
+# Configurações básicas SMTP
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+
+# Configuração TLS/SSL baseada na porta
+EMAIL_PORT_INT = int(EMAIL_PORT)
+if EMAIL_PORT_INT == 465:
+    # Porta 465 requer SSL
+    EMAIL_USE_SSL = True
+    EMAIL_USE_TLS = False
+elif EMAIL_PORT_INT == 587:
+    # Porta 587 requer TLS
+    EMAIL_USE_TLS = True
+    EMAIL_USE_SSL = False
+else:
+    # Para outras portas, tentar TLS por padrão
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+    EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+
+# IMPORTANTE: DEFAULT_FROM_EMAIL deve ser igual ou usar o mesmo domínio do EMAIL_HOST_USER
+# Muitos provedores (especialmente Gmail) exigem isso para autenticação
+if EMAIL_HOST_USER:
+    # Se EMAIL_HOST_USER está configurado, usar ele como DEFAULT_FROM_EMAIL
+    DEFAULT_FROM_EMAIL = config(
+        'DEFAULT_FROM_EMAIL',
+        default=f'Mindpulse <{EMAIL_HOST_USER}>'
+    )
+else:
+    DEFAULT_FROM_EMAIL = config(
+        'DEFAULT_FROM_EMAIL',
+        default='Mindpulse <noreply@mindpulse.com.br>'
+    )
+
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Configurações de timeout para envio de e-mail
+EMAIL_TIMEOUT = 30
+
+# URL base do site (para links em e-mails)
+SITE_URL = config('SITE_URL', default='http://localhost:8000')
+
+# Token de reset de senha expira em 24 horas (padrão Django é 3 dias)
+PASSWORD_RESET_TIMEOUT = 86400  # 24 horas em segundos
 
 # =============================================================================
 # SECURITY SETTINGS (Production)

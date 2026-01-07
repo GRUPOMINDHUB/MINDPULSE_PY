@@ -29,5 +29,13 @@ urlpatterns = [
     
     # Relatórios (Gestor | Admin Master)
     path('relatorios/', views.report_management, name='report_management'),
+    
+    # Gestão de Assinaturas
+    path('assinatura/suspensa/', views.subscription_suspended, name='subscription_suspended'),
+    path('assinatura/pagamento/', views.subscription_payment, name='subscription_payment'),
+    
+    # Gestão de Pagamentos (Admin Master)
+    path('pagamentos/', views.payments_admin, name='payments_admin'),
+    path('pagamentos/<int:company_id>/editar/', views.update_subscription, name='update_subscription'),
 ]
 

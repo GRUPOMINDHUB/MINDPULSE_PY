@@ -14,6 +14,36 @@
         <p class="text-gray-600 dark:text-gray-400">Gestão da equipe: {{ request.current_company.name|default:"Nenhuma empresa" }}</p>
     </div>
     
+    <!-- Banner de Alerta de Assinatura (Sticky) -->
+    {% if subscription_alert %}
+    <div class="mb-6 {% if subscription_alert.type == 'danger' %}bg-red-500/10 border-l-4 border-red-500{% else %}bg-yellow-500/10 border-l-4 border-yellow-500{% endif %} rounded-lg p-4 animate-fade-in sticky top-4 z-10 shadow-lg">
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start gap-3 flex-1">
+                <div class="{% if subscription_alert.type == 'danger' %}text-red-400{% else %}text-yellow-400{% endif %} mt-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="{% if subscription_alert.type == 'danger' %}text-red-400{% else %}text-yellow-400{% endif %} font-bold text-lg mb-1">
+                        ⚠️ Atenção: Assinatura
+                    </h3>
+                    <p class="text-gray-700 dark:text-gray-300 mb-3">
+                        {{ subscription_alert.message }}
+                    </p>
+                    <a href="{{ subscription_alert.action_url }}" 
+                       class="inline-flex items-center gap-2 px-4 py-2 {% if subscription_alert.type == 'danger' %}bg-red-500 hover:bg-red-600{% else %}bg-yellow-500 hover:bg-yellow-600{% endif %} text-white rounded-lg font-medium transition-colors duration-200">
+                        {{ subscription_alert.action_text }}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- KPIs Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Total Colaboradores -->
@@ -40,7 +70,7 @@
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ avg_training_progress }}%</span>
             </div>
             <p class="text-gray-600 dark:text-gray-400 text-sm">Progresso Médio Treinamentos</p>
-            <div class="mt-3 h-2 bg-dark-600 rounded-full overflow-hidden">
+            <div class="mt-3 h-2 bg-gray-300 dark:bg-gray-600/30 rounded-full overflow-hidden">
                 <div class="h-full bg-blue-500 rounded-full transition-all duration-500" style="width: {{ avg_training_progress }}%"></div>
             </div>
         </div>
@@ -56,7 +86,7 @@
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ checklist_completion_rate }}%</span>
             </div>
             <p class="text-gray-600 dark:text-gray-400 text-sm">Checklists de Hoje</p>
-            <div class="mt-3 h-2 bg-dark-600 rounded-full overflow-hidden">
+            <div class="mt-3 h-2 bg-gray-300 dark:bg-gray-600/30 rounded-full overflow-hidden">
                 <div class="h-full bg-green-500 rounded-full transition-all duration-500" style="width: {{ checklist_completion_rate }}%"></div>
             </div>
         </div>
@@ -92,8 +122,8 @@
                     </p>
                     <div class="space-y-2">
                         {% for alert in checklist_alerts %}
-                        <div class="bg-dark-700 rounded-lg p-3">
-                            <p class="text-sm text-white">
+                        <div class="bg-gray-600/30 dark:bg-gray-600/30 rounded-lg p-3">
+                            <p class="text-sm text-gray-900 dark:text-white">
                                 <span class="font-semibold">{{ alert.user.get_full_name }}</span> reportou falta de: 
                                 <span class="text-red-300">{{ alert.task.title }}</span>
                                 <span class="text-gray-400 text-xs"> ({{ alert.checklist.title }})</span>
@@ -141,7 +171,7 @@
         {% if birthdays_month %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {% for user in birthdays_month %}
-            <div class="p-4 bg-dark-700 rounded-xl hover:bg-dark-600 transition-all duration-200 {% if user.is_birthday_today %}border-2 border-[#F83531]{% endif %}">
+            <div class="p-4 bg-gray-600/30 dark:bg-gray-600/30 rounded-lg hover:bg-gray-600/40 dark:hover:bg-gray-600/40 transition-all duration-200 {% if user.is_birthday_today %}border-2 border-[#F83531]{% endif %}">
                 <div class="flex items-center gap-3 mb-3">
                     {% if user.avatar %}
                     <img src="{{ user.avatar.url }}" alt="{{ user.get_full_name }}" class="w-12 h-12 rounded-full object-cover">
@@ -151,8 +181,8 @@
                     </div>
                     {% endif %}
                     <div class="flex-1 min-w-0">
-                        <h3 class="font-medium text-white truncate">{{ user.get_full_name|default:user.email }}</h3>
-                        <p class="text-xs text-gray-500">
+                        <h3 class="font-medium text-gray-900 dark:text-white truncate">{{ user.get_full_name|default:user.email }}</h3>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">
                             {% if user.birth_date %}
                             Dia {{ user.birth_date.day }}
                             {% endif %}
@@ -187,7 +217,7 @@
             
             <div class="space-y-4 max-h-[400px] overflow-y-auto">
                 {% for user in ranking_users %}
-                <div class="flex items-center gap-4 p-4 bg-dark-700 rounded-xl">
+                <div class="flex items-center gap-4 p-4 bg-gray-600/30 dark:bg-gray-600/30 rounded-lg">
                     <div class="w-10 h-10 flex items-center justify-center rounded-full 
                                 {% if forloop.counter == 1 %}bg-yellow-500/20 text-yellow-500
                                 {% elif forloop.counter == 2 %}bg-gray-400/20 text-gray-600 dark:text-gray-400
@@ -203,8 +233,8 @@
                         {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h3 class="font-medium text-white truncate">{{ user.first_name }} {{ user.last_name }}</h3>
-                        <p class="text-xs text-gray-500">{{ user.total_videos }} vídeos assistidos</p>
+                        <h3 class="font-medium text-gray-900 dark:text-white truncate">{{ user.first_name }} {{ user.last_name }}</h3>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ user.total_videos }} vídeos assistidos</p>
                     </div>
                     <div class="text-right">
                         <p class="text-lg font-semibold text-brand-500">{{ user.total_medalhas }}</p>
@@ -235,8 +265,8 @@
                             {{ alert.user.first_name|slice:":1"|upper }}{{ alert.user.last_name|slice:":1"|upper }}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-medium text-white truncate">{{ alert.user.get_full_name|default:alert.user.email }}</h3>
-                            <p class="text-xs text-gray-500">{{ alert.overdue_count }} checklist{{ alert.overdue_count|pluralize }} atrasado{{ alert.overdue_count|pluralize }}</p>
+                            <h3 class="font-medium text-gray-900 dark:text-white truncate">{{ alert.user.get_full_name|default:alert.user.email }}</h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">{{ alert.overdue_count }} checklist{{ alert.overdue_count|pluralize }} atrasado{{ alert.overdue_count|pluralize }}</p>
                         </div>
                         <span class="px-2.5 py-1 bg-[#F83531]/20 border border-[#F83531]/50 text-[#F83531] text-xs font-medium rounded-full">
                             {{ alert.overdue_count }}
@@ -272,12 +302,12 @@
         
         <div class="space-y-4 max-h-[400px] overflow-y-auto">
             {% for item in training_chart_data %}
-            <div class="p-4 bg-dark-700 dark:bg-dark-700 rounded-xl">
+                <div class="p-4 bg-gray-600/30 dark:bg-gray-600/30 rounded-lg">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-medium text-white truncate">{{ item.name }}</h3>
+                    <h3 class="font-medium text-gray-900 dark:text-white truncate">{{ item.name }}</h3>
                     <span class="text-sm font-semibold text-brand-500 ml-2 flex-shrink-0">{{ item.progress }}%</span>
                 </div>
-                <div class="h-2 bg-dark-500 dark:bg-dark-500 rounded-full overflow-hidden">
+                <div class="h-2 bg-gray-600/20 dark:bg-gray-600/20 rounded-full overflow-hidden">
                     <div class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: {{ item.progress }}%"></div>
                 </div>
             </div>

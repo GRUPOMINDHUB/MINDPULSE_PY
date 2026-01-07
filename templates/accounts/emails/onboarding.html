@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo ao Mindpulse</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1E293B;
+            background-color: #F8FAFC;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            padding: 0;
+        }
+        .header {
+            background: linear-gradient(135deg, #F83531 0%, #E02521 100%);
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #FFFFFF;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+        .credentials-box {
+            background-color: #F8FAFC;
+            border-left: 4px solid #F83531;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .credential-item {
+            margin-bottom: 15px;
+        }
+        .credential-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .credential-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1E293B;
+            font-family: 'Courier New', monospace;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #F83531;
+            color: #FFFFFF !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 30px 0;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #E02521;
+        }
+        .security-note {
+            background-color: #FEF3C7;
+            border: 1px solid #FCD34D;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 30px 0;
+            font-size: 14px;
+            color: #92400E;
+        }
+        .footer {
+            background-color: #F8FAFC;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #64748B;
+            border-top: 1px solid #E2E8F0;
+        }
+        .footer a {
+            color: #F83531;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+            }
+            .content {
+                padding: 30px 20px !important;
+            }
+            .header {
+                padding: 30px 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Mindpulse</h1>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Olá, {{ user_full_name }}!
+            </div>
+            
+            <div class="message">
+                Bem-vindo(a) à <strong>{{ company.name }}</strong>! Estamos muito felizes em tê-lo(a) como parte da nossa equipe.
+            </div>
+            
+            <div class="message">
+                Suas credenciais de acesso já estão prontas. Use os dados abaixo para fazer login na plataforma Mindpulse:
+            </div>
+            
+            <!-- Credenciais -->
+            <div class="credentials-box">
+                <div class="credential-item">
+                    <div class="credential-label">E-mail de Login</div>
+                    <div class="credential-value">{{ user.email }}</div>
+                </div>
+                <div class="credential-item">
+                    <div class="credential-label">Senha Provisória</div>
+                    <div class="credential-value">{{ password }}</div>
+                </div>
+            </div>
+            
+            <!-- Botão de Acesso -->
+            <div style="text-align: center;">
+                <a href="{{ login_url }}" class="button">
+                    Acessar Plataforma
+                </a>
+            </div>
+            
+            <!-- Nota de Segurança -->
+            <div class="security-note">
+                <strong>⚠️ Importante:</strong> Por questões de segurança, recomendamos que você altere sua senha no primeiro acesso. Mantenha suas credenciais em local seguro.
+            </div>
+            
+            <div class="message" style="margin-top: 30px; font-size: 14px; color: #64748B;">
+                Se você tiver dúvidas ou precisar de ajuda, entre em contato com o gestor da sua equipe.
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Este é um e-mail automático, por favor não responda.</p>
+            <p>
+                <a href="{{ login_url }}">Mindpulse</a> - Inteligência Operacional
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

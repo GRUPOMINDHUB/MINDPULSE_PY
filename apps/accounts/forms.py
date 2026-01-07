@@ -3,6 +3,7 @@ Forms para autenticação e gestão de usuários.
 """
 
 from django import forms
+from django.contrib.auth.forms import PasswordResetForm as BasePasswordResetForm
 from django.contrib.auth import authenticate
 
 from .models import User, UserCompany, Warning
@@ -273,6 +274,8 @@ class CollaboratorForm(forms.ModelForm):
         if created:
             # Define a senha provisória informada pelo criador
             password = self.cleaned_data.get('password')
+            # Armazena temporariamente para o signal enviar por e-mail
+            user._temp_password = password
             user.set_password(password)
             user.save()
         
@@ -285,8 +288,13 @@ class CollaboratorForm(forms.ModelForm):
         count = UserCompany.objects.filter(company=self.company).count() + 1
         employee_id = f"{company_prefix}-{year}-{count:04d}"
         
+        # Armazena senha temporária para o signal (se o usuário foi criado)
+        temp_password = None
+        if created:
+            temp_password = self.cleaned_data.get('password')
+        
         # Cria o vínculo com a empresa
-        user_company, _ = UserCompany.objects.update_or_create(
+        user_company, user_company_created = UserCompany.objects.update_or_create(
             user=user,
             company=self.company,
             defaults={
@@ -295,6 +303,10 @@ class CollaboratorForm(forms.ModelForm):
                 'is_active': True,
             }
         )
+        
+        # Se o UserCompany foi criado E o usuário foi criado, armazena a senha temporária
+        if user_company_created and created and temp_password:
+            user_company._temp_password = temp_password
         
         return user_company
 
@@ -521,4 +533,17 @@ class WarningForm(forms.ModelForm):
                 id__in=company_user_ids,
                 is_active=True
             ).order_by('first_name', 'last_name')
+
+
+class PasswordResetForm(BasePasswordResetForm):
+    """Form customizado para reset de senha."""
+    email = forms.EmailField(
+        label='Email',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-input w-full px-4 py-3 bg-white dark:bg-dark-700 border border-slate-300 dark:border-dark-600 rounded-lg text-sm md:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all duration-200',
+            'placeholder': 'Digite seu e-mail cadastrado',
+            'autocomplete': 'email',
+        }),
+        required=True,
+    )
 

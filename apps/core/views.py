@@ -5,6 +5,7 @@ Core Views - Dashboard e páginas principais
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.views.decorators.http import require_POST
 from django.db.models import Count, Q
 from django.db import transaction
 from django.utils import timezone
@@ -19,7 +20,7 @@ from apps.feedback.models import FeedbackTicket
 from apps.accounts.models import User, UserCompany, Warning
 from .models import Company, Role
 from .forms import CompanyForm, RoleForm
-from .utils import PeriodKeyHelper
+from .utils import PeriodKeyHelper, safe_int, safe_float, safe_division
 from .decorators import admin_master_required, gestor_required
 from .reports import get_report_data, get_company_report_data
 
@@ -257,7 +258,8 @@ def gestor_dashboard(request):
     # ===========================================
     # STATUS DOS CHECKLISTS DE HOJE
     # ===========================================
-    today_key = PeriodKeyHelper.get_period_key(PeriodKeyHelper.FREQUENCY_DAILY)
+    # Gerar chave de período atual (diário) para checklists de hoje
+    today_key = PeriodKeyHelper.get_current_period_key('daily')
     
     # Total de tarefas ativas únicas da empresa (para referência)
     total_tasks_active = Task.objects.filter(
@@ -354,6 +356,33 @@ def gestor_dashboard(request):
     team_alerts = team_alerts[:5]
     
     # ===========================================
+    # ALERTA DE ASSINATURA (Status e Vencimento)
+    # ===========================================
+    subscription_info = company.get_subscription_display_info()
+    subscription_alert = None
+    days_until = company.days_until_expiration()
+    
+    # Alertar se:
+    # - Está vencendo em 7 dias ou menos
+    # - Está em período de carência (past_due)
+    # - Está suspensa (mas não deve aparecer porque middleware bloqueia)
+    if days_until is not None:
+        if days_until <= 7 and days_until >= 0 and company.subscription_status in ['trial', 'active']:
+            subscription_alert = {
+                'type': 'warning',
+                'message': f'Sua assinatura vence em {days_until} dia{"s" if days_until != 1 else ""}.',
+                'action_url': '/assinatura/pagamento/',
+                'action_text': 'Renovar Agora',
+            }
+        elif company.subscription_status == 'past_due' or (days_until < 0 and days_until >= -3):
+            subscription_alert = {
+                'type': 'danger',
+                'message': f'Sua assinatura está vencida. Você tem {3 + days_until} dia{"s" if (3 + days_until) != 1 else ""} para regularizar antes do bloqueio.',
+                'action_url': '/assinatura/pagamento/',
+                'action_text': 'Regularizar Agora',
+            }
+    
+    # ===========================================
     # ANIVERSARIANTES DO MÊS
     # ===========================================
     current_month = timezone.now().month
@@ -442,6 +471,8 @@ def gestor_dashboard(request):
         'current_month_name': current_month_name,
         'checklist_alerts': checklist_alerts,
         'checklist_alerts_count': checklist_alerts_count,
+        'subscription_alert': subscription_alert,  # Banner de alerta de assinatura
+        'subscription_info': subscription_info,  # Informações completas da assinatura
     }
     
     return render(request, 'core/gestor_dashboard.html', context)
@@ -473,39 +504,44 @@ def admin_dashboard(request):
     companies_data = []
     sentiment_scores = {'great': 5, 'good': 4, 'neutral': 3, 'bad': 2, 'sad': 1}
     
-    for company in companies_qs:
-        # Total de colaboradores
-        total_users = company.user_companies.filter(is_active=True).count()
+    # Queries otimizadas: usar agregações para evitar N+1
+    from django.db.models import Count, Q, Avg, Case, When, IntegerField
+    
+    # Anotar empresas com contagens (1 query ao invés de N queries)
+    # Nota: UserTrainingReward tem related_name='user_rewards' no modelo Training
+    companies_annotated = companies_qs.annotate(
+        total_users_count=Count('user_companies', filter=Q(user_companies__is_active=True)),
+        total_checklists_count=Count('checklists', filter=Q(checklists__is_active=True)),
+        checklists_done_count=Count('checklists__completions'),
+        total_trainings_count=Count('trainings', filter=Q(trainings__is_active=True)),
+        trainings_done_count=Count('trainings__user_rewards'),  # Corrigido: era 'rewards', deve ser 'user_rewards'
+        # CompanyBaseModel usa related_name='%(class)ss', então gera 'feedbacktickets' (sem underscore)
+        total_feedbacks_count=Count('feedbacktickets'),
+        feedbacks_resolved_count=Count('feedbacktickets', filter=Q(feedbacktickets__status__in=['resolved', 'closed'])),
+    ).prefetch_related('feedbacktickets')
+    
+    for company in companies_annotated:
+        # Usar valores já agregados (sem queries adicionais)
+        total_users = safe_int(company.total_users_count, 0)
+        company_checklists = safe_int(company.total_checklists_count, 0)
+        checklists_done = safe_int(company.checklists_done_count, 0)
+        company_trainings = safe_int(company.total_trainings_count, 0)
+        trainings_done = safe_int(company.trainings_done_count, 0)
+        total_feedbacks = safe_int(company.total_feedbacks_count, 0)
+        feedbacks_resolved = safe_int(company.feedbacks_resolved_count, 0)
         
-        # Checklists: total aplicados vs concluídos
-        company_checklists = Checklist.objects.filter(company=company, is_active=True).count()
-        checklists_done = ChecklistCompletion.objects.filter(
-            checklist__company=company
-        ).count()
+        # Performance de Checklists (%) - divisão segura
+        checklist_performance = safe_division(checklists_done, company_checklists, 0.0) * 100.0
+        checklist_performance = round(checklist_performance, 1)
         
-        # Performance de Checklists (%)
-        checklist_performance = round((checklists_done / company_checklists * 100) if company_checklists > 0 else 0, 1)
-        
-        # Treinamentos: total aplicados vs concluídos
-        company_trainings = Training.objects.filter(company=company, is_active=True).count()
-        trainings_done = UserTrainingReward.objects.filter(
-            training__company=company
-        ).count()
-        
-        # Feedbacks: total recebidos vs resolvidos
-        total_feedbacks = FeedbackTicket.objects.filter(company=company).count()
-        feedbacks_resolved = FeedbackTicket.objects.filter(
-            company=company,
-            status__in=['resolved', 'closed']
-        ).count()
-        
-        # NPS: Média aritmética dos sentimentos
-        feedbacks = FeedbackTicket.objects.filter(company=company)
-        if feedbacks.exists():
-            total_score = sum(sentiment_scores.get(f.sentiment, 3) for f in feedbacks)
-            nps_score = round(total_score / feedbacks.count(), 2)
+        # NPS: Média aritmética dos sentimentos (usar prefetch já carregado)
+        # CompanyBaseModel usa related_name='%(class)ss', então gera 'feedbacktickets'
+        feedbacks_list = list(company.feedbacktickets.all())
+        if feedbacks_list:
+            total_score = sum(sentiment_scores.get(f.sentiment, 3) for f in feedbacks_list)
+            nps_score = round(safe_division(total_score, len(feedbacks_list), 0.0), 2)
         else:
-            nps_score = 0
+            nps_score = 0.0
         
         companies_data.append({
             'id': company.id,
@@ -737,6 +773,8 @@ def company_add_user(request, pk):
                     user.city = form.cleaned_data.get('city', '')
                     user.birth_date = form.cleaned_data.get('birth_date')
                     
+                    # Armazena senha temporária para o signal enviar por e-mail
+                    user._temp_password = password
                     user.set_password(password)
                     user.save()
                     
@@ -765,13 +803,16 @@ def company_add_user(request, pk):
                     
                     employee_id = f'{company_prefix}-{year}-{new_seq:04d}'
                     
-                    UserCompany.objects.create(
+                    # Cria UserCompany e armazena senha temporária para o signal
+                    user_company = UserCompany.objects.create(
                         user=user,
                         company=company,
                         role=role,
                         employee_id=employee_id,
                         is_active=True
                     )
+                    # Armazena senha temporária para o signal
+                    user_company._temp_password = password
                 
                 messages.success(request, f'Usuário "{user.get_full_name()}" criado e vinculado à empresa!')
                 return redirect('core:company_users', pk=pk)
@@ -1158,4 +1199,166 @@ def _generate_collective_pdf(request, company, start_date, end_date):
         if settings.DEBUG:
             print(f"Erro detalhado no PDF: {error_details}")
         return redirect('core:report_management')
+
+
+@login_required
+def subscription_suspended(request):
+    """
+    Página de acesso suspenso por inadimplência.
+    
+    Exibe mensagem de suspensão e botão para regularização.
+    ACCESS: Todos os usuários autenticados (bloqueado pelo middleware)
+    """
+    company = request.current_company
+    
+    context = {
+        'company': company,
+        'subscription_info': company.get_subscription_display_info() if company else None,
+    }
+    
+    return render(request, 'core/subscription_suspended.html', context)
+
+
+@login_required
+def subscription_payment(request):
+    """
+    Página de pagamento/regularização de assinatura.
+    
+    Exibe informações da assinatura e opções de pagamento.
+    ACCESS: Gestor | Admin Master
+    """
+    if not request.is_gestor:
+        messages.error(request, 'Apenas gestores podem acessar esta página.')
+        return redirect('core:dashboard')
+    
+    company = request.current_company
+    if not company:
+        return render(request, 'core/no_company.html')
+    
+    subscription_info = company.get_subscription_display_info()
+    
+    context = {
+        'company': company,
+        'subscription_info': subscription_info,
+    }
+    
+    return render(request, 'core/subscription_payment.html', context)
+
+
+@login_required
+@admin_master_required
+def payments_admin(request):
+    """
+    Página de gestão de pagamentos e assinaturas (Admin Master).
+    
+    Permite visualizar e gerenciar status de assinaturas de todas as empresas.
+    ACCESS: Admin Master apenas
+    """
+    # Filtros
+    status_filter = request.GET.get('status', 'all')
+    
+    # Buscar todas as empresas ativas
+    companies = Company.objects.filter(is_active=True).select_related().order_by('name')
+    
+    # Aplicar filtro de status
+    if status_filter == 'active':
+        companies = companies.filter(subscription_status__in=['trial', 'active'])
+    elif status_filter == 'past_due':
+        companies = companies.filter(subscription_status='past_due')
+    elif status_filter == 'suspended':
+        companies = companies.filter(subscription_status='suspended')
+    elif status_filter == 'canceled':
+        companies = companies.filter(subscription_status='canceled')
+    
+    # Adicionar informações de assinatura
+    companies_data = []
+    for company in companies:
+        subscription_info = company.get_subscription_display_info()
+        days_until = company.days_until_expiration()
+        
+        # Calcular valor absoluto dos dias (para exibição quando vencido)
+        days_until_abs = abs(days_until) if days_until is not None else None
+        
+        companies_data.append({
+            'id': company.id,
+            'name': company.name,
+            'plan': subscription_info['plan'],
+            'plan_code': company.plan_type,
+            'status': subscription_info['status_code'],
+            'status_display': subscription_info['status'],
+            'next_billing_date': company.next_billing_date,
+            'days_until': days_until,
+            'days_until_abs': days_until_abs,  # Valor absoluto para exibição
+            'last_payment_date': company.last_payment_date,
+            'is_overdue': days_until is not None and days_until < 0,
+        })
+    
+    context = {
+        'companies': companies_data,
+        'status_filter': status_filter,
+        'total_companies': len(companies_data),
+        'active_count': Company.objects.filter(is_active=True, subscription_status__in=['trial', 'active']).count(),
+        'past_due_count': Company.objects.filter(is_active=True, subscription_status='past_due').count(),
+        'suspended_count': Company.objects.filter(is_active=True, subscription_status='suspended').count(),
+    }
+    
+    return render(request, 'core/payments_admin.html', context)
+
+
+@login_required
+@admin_master_required
+@require_POST
+def update_subscription(request, company_id):
+    """
+    Atualiza informações de assinatura de uma empresa.
+    
+    ACCESS: Admin Master apenas
+    """
+    try:
+        company = Company.objects.get(pk=company_id, is_active=True)
+    except Company.DoesNotExist:
+        messages.error(request, 'Empresa não encontrada.')
+        return redirect('core:payments_admin')
+    
+    # Processar dados do formulário
+    next_billing_date = request.POST.get('next_billing_date')
+    subscription_status = request.POST.get('subscription_status')
+    plan_type = request.POST.get('plan_type')
+    internal_note = request.POST.get('internal_note', '')
+    
+    # Validar e atualizar
+    try:
+        if next_billing_date:
+            from datetime import datetime
+            company.next_billing_date = datetime.strptime(next_billing_date, '%Y-%m-%d').date()
+        
+        if subscription_status and subscription_status in dict(Company.SUBSCRIPTION_STATUS_CHOICES):
+            company.subscription_status = subscription_status
+        
+        if plan_type and plan_type in dict(Company.PLAN_TYPE_CHOICES):
+            company.plan_type = plan_type
+        
+        company.save()
+        
+        # Limpar cache de status da assinatura
+        from django.core.cache import cache
+        cache_key = f'company_subscription_status_{company.id}'
+        cache.delete(cache_key)
+        
+        messages.success(
+            request,
+            f'Assinatura de {company.name} atualizada com sucesso! '
+            f'(Status: {company.get_subscription_status_display()}, '
+            f'Vencimento: {company.next_billing_date.strftime("%d/%m/%Y") if company.next_billing_date else "N/A"})'
+        )
+        
+        # TODO: Log da alteração (pode criar um modelo SubscriptionLog no futuro)
+        if internal_note:
+            # Log interno pode ser implementado futuramente
+            pass
+        
+    except Exception as e:
+        messages.error(request, f'Erro ao atualizar assinatura: {str(e)}')
+    
+    return redirect('core:payments_admin')
 

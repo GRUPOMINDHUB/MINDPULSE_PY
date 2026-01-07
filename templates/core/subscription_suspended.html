@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Acesso Suspenso - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-dark-900 flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full space-y-8 text-center">
+        <!-- Ícone de Cadeado -->
+        <div class="flex justify-center">
+            <div class="rounded-full bg-red-100 dark:bg-red-900/30 p-6">
+                <svg class="w-16 h-16 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Título e Mensagem -->
+        <div class="space-y-4">
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
+                Acesso Temporariamente Suspenso
+            </h1>
+            <p class="text-lg text-slate-600 dark:text-gray-400">
+                Sua assinatura está suspensa por inadimplência.
+            </p>
+            <p class="text-sm text-slate-500 dark:text-gray-500">
+                Para retomar o acesso à plataforma, é necessário regularizar o pagamento da sua assinatura.
+            </p>
+        </div>
+
+        <!-- Informações da Assinatura -->
+        {% if subscription_info %}
+        <div class="bg-white dark:bg-dark-800 rounded-lg shadow-sm p-6 space-y-3 text-left">
+            <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Informações da Assinatura</h3>
+            
+            <div class="flex justify-between">
+                <span class="text-slate-600 dark:text-gray-400">Status:</span>
+                <span class="font-medium text-red-600 dark:text-red-400">{{ subscription_info.status }}</span>
+            </div>
+            
+            {% if subscription_info.next_billing_date %}
+            <div class="flex justify-between">
+                <span class="text-slate-600 dark:text-gray-400">Vencimento:</span>
+                <span class="font-medium text-slate-900 dark:text-white">{{ subscription_info.next_billing_date }}</span>
+            </div>
+            {% endif %}
+            
+            {% if subscription_info.plan %}
+            <div class="flex justify-between">
+                <span class="text-slate-600 dark:text-gray-400">Plano:</span>
+                <span class="font-medium text-slate-900 dark:text-white">{{ subscription_info.plan }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Ações -->
+        <div class="space-y-4">
+            <a href="{% url 'core:subscription_payment' %}" 
+               class="block w-full bg-[#F83531] hover:bg-[#E02521] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md">
+                Regularizar Agora
+            </a>
+            
+            <a href="{% url 'accounts:logout' %}" 
+               class="block w-full bg-slate-200 dark:bg-dark-700 hover:bg-slate-300 dark:hover:bg-dark-600 text-slate-900 dark:text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                Sair
+            </a>
+        </div>
+
+        <!-- Suporte -->
+        <div class="pt-6 border-t border-slate-200 dark:border-dark-700">
+            <p class="text-sm text-slate-500 dark:text-gray-500">
+                Precisa de ajuda? 
+                <a href="/suporte" class="text-[#F83531] hover:underline font-medium">
+                    Entre em contato com o suporte
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

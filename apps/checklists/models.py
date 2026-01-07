@@ -68,8 +68,11 @@ class Checklist(CompanyBaseModel):
         """
         Gera a period_key para o período atual baseado na frequência.
         Usa o helper centralizado PeriodKeyHelper.
+        
+        Returns:
+            str: Chave de período no formato 'YYYY-MM-DD'
         """
-        return PeriodKeyHelper.get_period_key(self.frequency)
+        return PeriodKeyHelper.get_current_period_key(self.frequency)
     
     def get_user_completion(self, user, period_key=None):
         """
@@ -96,10 +99,13 @@ class Checklist(CompanyBaseModel):
     
     def get_period_display(self):
         """
-        Retorna descrição legível do período atual.
-        Usa o helper centralizado PeriodKeyHelper.
+        Retorna descrição legível da frequência do checklist.
+        
+        Returns:
+            str: Descrição legível da frequência (ex: 'Diário', 'Semanal', 'Mensal')
         """
-        return PeriodKeyHelper.get_period_display(self.frequency)
+        # Usa o método automático do Django para campos com choices
+        return self.get_frequency_display()
     
     def get_previous_period_key(self):
         """Retorna a period_key do período anterior."""

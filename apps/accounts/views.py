@@ -5,13 +5,22 @@ Views de autenticação e gestão de usuários.
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import (
+    PasswordResetView as BasePasswordResetView,
+    PasswordResetDoneView as BasePasswordResetDoneView,
+    PasswordResetConfirmView as BasePasswordResetConfirmView,
+    PasswordResetCompleteView as BasePasswordResetCompleteView,
+)
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.urls import reverse_lazy
+from django.conf import settings
 
-from .forms import LoginForm, UserProfileForm, CollaboratorForm, ChangePasswordForm, WarningForm
+from .forms import LoginForm, UserProfileForm, CollaboratorForm, ChangePasswordForm, WarningForm, PasswordResetForm
 from .models import User, UserCompany, Warning
+from .services import send_password_reset_email
 from django.http import HttpResponseForbidden
 
 
@@ -292,4 +301,51 @@ def warning_create(request):
     }
     
     return render(request, 'accounts/warning_form.html', context)
+
+
+# =============================================================================
+# Password Reset Views (Customizadas)
+# =============================================================================
+
+class PasswordResetView(BasePasswordResetView):
+    """View para solicitar reset de senha."""
+    template_name = 'accounts/password_reset.html'
+    email_template_name = 'accounts/emails/password_reset.html'
+    subject_template_name = 'accounts/emails/password_reset_subject.txt'
+    form_class = PasswordResetForm
+    success_url = reverse_lazy('accounts:password_reset_done')
+    html_email_template_name = 'accounts/emails/password_reset.html'
+    
+    def form_valid(self, form):
+        # Usa o método padrão do Django, que já gera o link corretamente
+        messages.success(
+            self.request,
+            'Se o e-mail informado estiver cadastrado, você receberá instruções para redefinir sua senha.'
+        )
+        
+        return super().form_valid(form)
+
+
+class PasswordResetDoneView(BasePasswordResetDoneView):
+    """Página de confirmação após solicitar reset."""
+    template_name = 'accounts/password_reset_done.html'
+
+
+class PasswordResetConfirmView(BasePasswordResetConfirmView):
+    """View para definir nova senha."""
+    template_name = 'accounts/password_reset_confirm.html'
+    success_url = reverse_lazy('accounts:password_reset_complete')
+    post_reset_login = False
+    
+    def form_valid(self, form):
+        messages.success(
+            self.request,
+            'Sua senha foi redefinida com sucesso! Você já pode fazer login.'
+        )
+        return super().form_valid(form)
+
+
+class PasswordResetCompleteView(BasePasswordResetCompleteView):
+    """Página de confirmação após redefinir senha."""
+    template_name = 'accounts/password_reset_complete.html'
 

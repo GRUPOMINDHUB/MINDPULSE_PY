@@ -99,7 +99,8 @@ def checklist_list(request):
         checklist_data.append({
             'checklist': checklist,
             'period_key': current_period_key,
-            'period_display': PeriodKeyHelper.get_period_display(checklist.frequency) if not requested_period else requested_period,
+            # Usar get_frequency_display() do modelo que retorna a descrição legível da frequência
+            'period_display': checklist.get_frequency_display() if not requested_period else requested_period,
             'progress': progress,
             'is_completed': progress == 100,
             'is_overdue': is_overdue,

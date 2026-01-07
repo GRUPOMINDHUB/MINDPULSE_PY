@@ -1,30 +1,68 @@
 """
 Serviço de Relatórios - Extração de dados para relatórios consolidados.
+
+Este módulo é responsável por extrair, agregar e sanitizar dados para os relatórios
+individuais e coletivos da plataforma Mindpulse. Todas as funções implementam
+proteção robusta contra NoneType e garantem que valores numéricos sejam sempre
+retornados como int/float, nunca None.
+
+Princípios aplicados:
+- DRY: Funções utilitárias para sanitização reutilizáveis
+- Fail-Safe: Sempre retorna valores padrão seguros (0, 0.0, '---')
+- Type Safety: Type hints para melhor autocomplete e validação
+- Performance: Uso de select_related e prefetch_related onde aplicável
 """
 
-from django.db.models import Count, Q, Avg, Sum, Value, IntegerField, FloatField
+from typing import Dict, List, Optional, Any, Union
+from django.db.models import Count, Q, Avg, Sum, Value, IntegerField, FloatField, QuerySet
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from apps.accounts.models import User, Warning
 from apps.checklists.models import Checklist, TaskDone, ChecklistCompletion
 from apps.trainings.models import Training, UserProgress, UserQuizAttempt, UserTrainingReward
-from apps.core.utils import PeriodKeyHelper
+from apps.core.models import Company
+from apps.core.utils import (
+    PeriodKeyHelper,
+    safe_int,
+    safe_float,
+    safe_str,
+    safe_date_format,
+    safe_division,
+)
 
 
-def get_report_data(company, start_date, end_date, user=None):
+def get_report_data(
+    company: Company,
+    start_date: Union[str, date],
+    end_date: Union[str, date],
+    user: Optional[User] = None
+) -> Dict[str, Any]:
     """
-    Extrai dados consolidados para relatório.
+    Extrai dados consolidados para relatório individual ou coletivo.
+    
+    Esta é a função principal de entrada para geração de relatórios. Ela
+    orquestra a coleta de dados de diferentes módulos (checklists, trainings,
+    quizzes, warnings) e retorna um dicionário estruturado.
     
     Args:
-        company: Empresa para filtrar dados
-        start_date: Data de início do período
-        end_date: Data de fim do período
-        user: Usuário específico (opcional). Se None, retorna dados da empresa inteira
+        company: Instância da Company para filtrar dados
+        start_date: Data de início do período (str 'YYYY-MM-DD' ou date)
+        end_date: Data de fim do período (str 'YYYY-MM-DD' ou date)
+        user: Usuário específico. Se None, retorna dados agregados da empresa
     
     Returns:
-        dict: Dicionário com dados do relatório
+        Dict contendo:
+            - company: Instância da Company
+            - start_date, end_date: Datas do período
+            - generated_at: Timestamp de geração
+            - Se user fornecido: profile, ranking, checklists, trainings, quizzes, warnings
+            - Se user=None: users, summary
+    
+    Example:
+        >>> report_data = get_report_data(company, '2026-01-01', '2026-01-31', user)
+        >>> print(report_data['profile']['name'])
     """
     # Converter para datetime se necessário
     if isinstance(start_date, str):
@@ -60,58 +98,128 @@ def get_report_data(company, start_date, end_date, user=None):
     return data
 
 
-def _get_user_profile(user):
-    """Extrai perfil do usuário."""
+def _get_user_profile(user: User) -> Dict[str, Union[str, int]]:
+    """
+    Extrai e sanitiza dados do perfil do usuário.
+    
+    Calcula idade de forma segura e garante que todos os campos retornem
+    valores válidos (nunca None) para uso em templates e PDFs.
+    
+    Args:
+        user: Instância do User
+    
+    Returns:
+        Dict com dados sanitizados do perfil:
+            - name: Nome completo ou 'Não informado'
+            - email: Email ou 'Não informado'
+            - age: Idade calculada (int, sempre >= 0)
+            - phone, city, neighborhood: Dados de contato ou 'Não informado'
+            - birth_date: Data formatada ou 'Não informado'
+    """
     # Calcular idade de forma segura
     age = 0
     if user.birth_date:
         try:
-            from datetime import date
             today = date.today()
-            age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
-        except:
+            age = today.year - user.birth_date.year - (
+                (today.month, today.day) < (user.birth_date.month, user.birth_date.day)
+            )
+            age = max(0, age)  # Garantir que idade nunca seja negativa
+        except (AttributeError, TypeError):
             age = 0
     
     return {
-        'name': user.get_full_name() or 'Não informado',
-        'email': user.email or 'Não informado',
-        'age': age,
-        'phone': user.phone or 'Não informado',
-        'city': user.city or 'Não informado',
-        'neighborhood': user.neighborhood or 'Não informado',
-        'birth_date': user.birth_date.strftime('%d/%m/%Y') if user.birth_date else 'Não informado',
+        'name': safe_str(user.get_full_name(), 'Não informado'),
+        'email': safe_str(user.email, 'Não informado'),
+        'age': safe_int(age, 0),
+        'phone': safe_str(user.phone, 'Não informado'),
+        'city': safe_str(user.city, 'Não informado'),
+        'neighborhood': safe_str(user.neighborhood, 'Não informado'),
+        'birth_date': safe_date_format(user.birth_date, '%d/%m/%Y', 'Não informado'),
     }
 
 
-def _get_user_ranking(user, company):
-    """Calcula a posição do usuário no ranking da empresa."""
-    # Buscar todos os usuários ativos da empresa ordenados por pontos
-    ranking_users = User.objects.filter(
+def _get_user_ranking(user: User, company: Company) -> Dict[str, int]:
+    """
+    Calcula a posição do usuário no ranking da empresa.
+    
+    O ranking é baseado em: total_points, total_medalhas (training rewards),
+    e total_videos completados. Todos os valores são sanitizados para evitar
+    NoneType errors.
+    
+    Args:
+        user: Instância do User para calcular ranking
+        company: Instância da Company para filtrar ranking
+    
+    Returns:
+        Dict com:
+            - position: Posição no ranking (1-based, int sempre >= 1)
+            - total_users: Total de usuários na empresa (int sempre >= 0)
+            - total_points: Pontos totais do usuário (int sempre >= 0)
+    """
+    # Query otimizada: busca usuários ativos com agregações
+    ranking_users: QuerySet[User] = User.objects.filter(
         user_companies__company=company,
         user_companies__is_active=True
     ).annotate(
-        total_medalhas=Count('training_rewards', filter=Q(training_rewards__training__company=company)),
-        total_videos=Count('training_progress', filter=Q(training_progress__completed=True, training_progress__video__training__company=company))
+        total_medalhas=Count(
+            'training_rewards',
+            filter=Q(training_rewards__training__company=company)
+        ),
+        total_videos=Count(
+            'training_progress',
+            filter=Q(
+                training_progress__completed=True,
+                training_progress__video__training__company=company
+            )
+        )
     ).order_by('-total_points', '-total_medalhas', '-total_videos')
     
-    # Encontrar posição do usuário
+    # Encontrar posição do usuário no ranking
     position = 1
     for rank_user in ranking_users:
         if rank_user.id == user.id:
             break
         position += 1
     
-    total_users = ranking_users.count()
+    total_users_count = ranking_users.count()
     
     return {
-        'position': int(position) if position is not None else 0,
-        'total_users': int(total_users) if total_users is not None else 0,
-        'total_points': int(getattr(user, 'total_points', 0) or 0),
+        'position': safe_int(position, 1),
+        'total_users': safe_int(total_users_count, 0),
+        'total_points': safe_int(getattr(user, 'total_points', None), 0),
     }
 
 
-def _get_user_checklists(user, company, start_datetime, end_datetime):
-    """Extrai dados de checklists do usuário (geral e no período)."""
+def _get_user_checklists(
+    user: User,
+    company: Company,
+    start_datetime: datetime,
+    end_datetime: datetime
+) -> Dict[str, Any]:
+    """
+    Extrai e sanitiza dados de checklists do usuário.
+    
+    Calcula completions no período e totais, conta tarefas completadas,
+    e identifica checklists atrasados (apenas se não foram completados
+    no período atual - lógica anti-false-positive).
+    
+    Args:
+        user: Instância do User
+        company: Instância da Company
+        start_datetime: Início do período (timezone-aware)
+        end_datetime: Fim do período (timezone-aware)
+    
+    Returns:
+        Dict com dados sanitizados de checklists:
+            - total_completed_period: Checklists completados no período (int)
+            - total_tasks_completed_period: Tarefas completadas no período (int)
+            - total_completed_all: Checklists completados (total histórico) (int)
+            - total_tasks_completed_all: Tarefas completadas (total histórico) (int)
+            - overdue_count: Checklists atrasados não completados (int)
+            - total_overdue_days: Dias de atraso acumulados (int)
+            - completions: Lista de últimos 20 completions com detalhes
+    """
     # Completions no período
     completions_period = ChecklistCompletion.objects.filter(
         user=user,
@@ -126,8 +234,8 @@ def _get_user_checklists(user, company, start_datetime, end_datetime):
         checklist__company=company,
     ).select_related('checklist')
     
-    total_completed_period = int(completions_period.count() or 0)
-    total_completed_all = int(completions_all.count() or 0)
+    total_completed_period = safe_int(completions_period.count(), 0)
+    total_completed_all = safe_int(completions_all.count(), 0)
     
     # TaskDones no período
     task_dones_period = TaskDone.objects.filter(
@@ -143,8 +251,8 @@ def _get_user_checklists(user, company, start_datetime, end_datetime):
         task__checklist__company=company,
     ).select_related('task', 'task__checklist')
     
-    total_tasks_completed_period = int(task_dones_period.count() or 0)
-    total_tasks_completed_all = int(task_dones_all.count() or 0)
+    total_tasks_completed_period = safe_int(task_dones_period.count(), 0)
+    total_tasks_completed_all = safe_int(task_dones_all.count(), 0)
     
     # Contador de atrasos e dias de atraso (apenas checklists não finalizados)
     overdue_count = 0
@@ -169,53 +277,76 @@ def _get_user_checklists(user, company, start_datetime, end_datetime):
             # (pode ser refinado no futuro para cálculo mais preciso)
             total_overdue_days += 1
     
-    completions_list = []
+    completions_list: List[Dict[str, Union[str, int]]] = []
     for comp in completions_period[:20]:  # Limitar a 20 mais recentes do período
         completions_list.append({
-            'checklist': str(comp.checklist.title) if comp.checklist.title else '---',
-            'date': comp.completed_at.strftime('%d/%m/%Y') if comp.completed_at else '---',
-            'points': int(comp.points_earned) if comp.points_earned is not None else 0,
+            'checklist': safe_str(comp.checklist.title if comp.checklist else None, '---'),
+            'date': safe_date_format(comp.completed_at, '%d/%m/%Y', '---'),
+            'points': safe_int(comp.points_earned, 0),
         })
     
     return {
-        'total_completed_period': int(total_completed_period),
-        'total_tasks_completed_period': int(total_tasks_completed_period),
-        'total_completed_all': int(total_completed_all),
-        'total_tasks_completed_all': int(total_tasks_completed_all),
-        'overdue_count': int(overdue_count),
-        'total_overdue_days': int(total_overdue_days),
+        'total_completed_period': safe_int(total_completed_period, 0),
+        'total_tasks_completed_period': safe_int(total_tasks_completed_period, 0),
+        'total_completed_all': safe_int(total_completed_all, 0),
+        'total_tasks_completed_all': safe_int(total_tasks_completed_all, 0),
+        'overdue_count': safe_int(overdue_count, 0),
+        'total_overdue_days': safe_int(total_overdue_days, 0),
         'completions': completions_list,
     }
 
 
-def _get_user_trainings(user, company, start_datetime, end_datetime):
+def _get_user_trainings(
+    user: User,
+    company: Company,
+    start_datetime: datetime,
+    end_datetime: datetime
+) -> Dict[str, Any]:
     """
-    Extrai dados de treinamentos do usuário.
-    Mostra TODOS os treinamentos atribuídos ao usuário, com progresso atual.
+    Extrai dados de treinamentos do usuário com progresso atual.
+    
+    Mostra TODOS os treinamentos atribuídos ao usuário (não apenas do período),
+    incluindo progresso em vídeos e quizzes. Todos os valores são sanitizados.
+    
+    Args:
+        user: Instância do User
+        company: Instância da Company
+        start_datetime: Início do período (timezone-aware) - não usado atualmente
+        end_datetime: Fim do período (timezone-aware) - não usado atualmente
+    
+    Returns:
+        Dict com:
+            - trainings: Lista de treinamentos com progresso
+            - total_trainings: Total de treinamentos (int)
+            - avg_progress: Progresso médio em % (int, 0-100)
     """
-    # Treinamentos atribuídos ao usuário ou globais
-    trainings = Training.objects.filter(
+    # Treinamentos atribuídos ao usuário ou globais (query otimizada)
+    trainings: QuerySet[Training] = Training.objects.filter(
         company=company,
         is_active=True
     ).filter(
         Q(assigned_users=user) | Q(assigned_users__isnull=True)
-    ).distinct()
+    ).distinct().prefetch_related('videos', 'quizzes', 'assigned_users')
     
     training_list = []
     total_progress = 0
     
     for training in trainings:
         # Progresso do usuário no treinamento (TODOS os vídeos, não apenas do período)
-        total_videos = int(training.videos.filter(is_active=True).count() or 0)
-        completed_videos = int(UserProgress.objects.filter(
-            user=user,
-            video__training=training,
-            completed=True
-        ).count() or 0)
+        # Query otimizada: usar prefetch_related já carregado
+        total_videos = safe_int(training.videos.filter(is_active=True).count(), 0)
+        completed_videos = safe_int(
+            UserProgress.objects.filter(
+                user=user,
+                video__training=training,
+                completed=True
+            ).count(),
+            0
+        )
         
         # Verificar quizzes (TODOS os quizzes)
         quizzes = training.quizzes.filter(is_active=True)
-        total_quizzes = int(quizzes.count() or 0)
+        total_quizzes = safe_int(quizzes.count(), 0)
         
         # Quizzes aprovados (verificar se o usuário passou em pelo menos uma tentativa de cada quiz)
         passed_quizzes = 0
@@ -226,13 +357,19 @@ def _get_user_trainings(user, company, start_datetime, end_datetime):
                 is_passed=True
             ).exists():
                 passed_quizzes += 1
+        passed_quizzes = safe_int(passed_quizzes, 0)
         
-        # Progresso geral (vídeos + quizzes)
-        if total_videos + total_quizzes > 0:
-            progress = int(((float(completed_videos) + float(passed_quizzes)) / float(total_videos + total_quizzes)) * 100)
+        # Progresso geral (vídeos + quizzes) - divisão segura
+        total_content = total_videos + total_quizzes
+        if total_content > 0:
+            progress = safe_division(
+                completed_videos + passed_quizzes,
+                total_content,
+                0.0
+            ) * 100.0
+            progress = safe_int(round(progress), 0)
         else:
             progress = 0
-        progress = int(progress) if progress is not None else 0
         total_progress += progress
         
         # Verificar se foi iniciado
@@ -245,23 +382,24 @@ def _get_user_trainings(user, company, start_datetime, end_datetime):
         is_completed = progress >= 100
         
         training_list.append({
-            'title': str(training.title) if training.title else '---',
-            'progress': int(progress),
+            'title': safe_str(training.title, '---'),
+            'progress': safe_int(progress, 0),
             'is_completed': bool(is_completed),
             'is_started': bool(is_started),
-            'total_videos': int(total_videos),
-            'completed_videos': int(completed_videos),
-            'total_quizzes': int(total_quizzes),
-            'passed_quizzes': int(passed_quizzes),
+            'total_videos': safe_int(total_videos, 0),
+            'completed_videos': safe_int(completed_videos, 0),
+            'total_quizzes': safe_int(total_quizzes, 0),
+            'passed_quizzes': safe_int(passed_quizzes, 0),
         })
     
-    avg_progress = int(float(total_progress) / float(len(training_list))) if training_list and len(training_list) > 0 else 0
-    avg_progress = int(avg_progress) if avg_progress is not None else 0
+    # Calcular média de progresso (divisão segura)
+    avg_progress = safe_division(total_progress, len(training_list), 0.0) if training_list else 0.0
+    avg_progress = safe_int(round(avg_progress), 0)
     
     return {
         'trainings': training_list,
-        'total_trainings': int(len(training_list)),
-        'avg_progress': int(avg_progress),
+        'total_trainings': safe_int(len(training_list), 0),
+        'avg_progress': safe_int(avg_progress, 0),
     }
 
 
@@ -513,10 +651,15 @@ def get_company_report_data(company, start_date, end_date):
         created_at__lte=end_datetime
     ).select_related('user', 'issuer')
     
+    # Garantir que todas as contagens sejam inteiros seguros
+    oral_count = warnings_period.filter(warning_type='oral').count()
+    escrita_count = warnings_period.filter(warning_type='escrita').count()
+    suspensao_count = warnings_period.filter(warning_type='suspensao').count()
+    
     warnings_by_type = {
-        'oral': int(warnings_period.filter(warning_type='oral').count() or 0),
-        'escrita': int(warnings_period.filter(warning_type='escrita').count() or 0),
-        'suspensao': int(warnings_period.filter(warning_type='suspensao').count() or 0),
+        'oral': int(oral_count or 0) if oral_count is not None else 0,
+        'escrita': int(escrita_count or 0) if escrita_count is not None else 0,
+        'suspensao': int(suspensao_count or 0) if suspensao_count is not None else 0,
     }
     total_warnings = int(sum(warnings_by_type.values()) or 0)
     
@@ -616,7 +759,9 @@ def get_company_report_data(company, start_date, end_date):
         quiz_average = float(quiz_average) if quiz_average is not None else 0.0
         
         # Advertências: Quantidade no período
-        user_warnings_count = int(warnings_period.filter(user=user).count() or 0)
+        user_warnings_query = warnings_period.filter(user=user)
+        user_warnings_count_result = user_warnings_query.count()
+        user_warnings_count = int(user_warnings_count_result or 0) if user_warnings_count_result is not None else 0
         
         # Pontos: Saldo de pontos ganhos no intervalo
         # Calcular pontos ganhos no período (checklist completions + training rewards)

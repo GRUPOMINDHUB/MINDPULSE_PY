@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestão de Pagamentos - Mindpulse{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Gestão de Pagamentos</h1>
+        <p class="text-gray-600 dark:text-gray-400">Controle de assinaturas e status financeiros</p>
+    </div>
+
+    <!-- Filtros Rápidos (Pills) -->
+    <div class="mb-6 flex flex-wrap gap-2">
+        <a href="?status=all" 
+           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 {% if status_filter == 'all' %}bg-[#F83531] text-white{% else %}bg-gray-200 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-dark-600{% endif %}">
+            Todas ({{ total_companies }})
+        </a>
+        <a href="?status=active" 
+           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 {% if status_filter == 'active' %}bg-green-500 text-white{% else %}bg-gray-200 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-dark-600{% endif %}">
+            Ativas ({{ active_count }})
+        </a>
+        <a href="?status=past_due" 
+           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 {% if status_filter == 'past_due' %}bg-yellow-500 text-white{% else %}bg-gray-200 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-dark-600{% endif %}">
+            Em Atraso ({{ past_due_count }})
+        </a>
+        <a href="?status=suspended" 
+           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 {% if status_filter == 'suspended' %}bg-red-500 text-white{% else %}bg-gray-200 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-dark-600{% endif %}">
+            Suspensas ({{ suspended_count }})
+        </a>
+    </div>
+
+    <!-- Empty State -->
+    {% if not companies %}
+    <div class="bg-white dark:bg-dark-800 rounded-lg shadow-sm p-12 text-center">
+        <svg class="w-24 h-24 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nenhum histórico de pagamento encontrado</h3>
+        <p class="text-gray-600 dark:text-gray-400">Não há empresas cadastradas com o filtro selecionado.</p>
+    </div>
+    {% else %}
+    
+    <!-- Tabela Desktop -->
+    <div class="hidden md:block bg-white dark:bg-dark-800 rounded-lg shadow-sm overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-600">
+            <thead class="bg-gray-50 dark:bg-dark-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Empresa</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plano</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Próximo Vencimento</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-dark-800 divide-y divide-gray-200 dark:divide-dark-600">
+                {% for company in companies %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ company.name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">{{ company.plan }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if company.status == 'active' or company.status == 'trial' %}
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-500/20 text-green-700 dark:text-green-400">
+                            {{ company.status_display }}
+                        </span>
+                        {% elif company.status == 'past_due' %}
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
+                            {{ company.status_display }}
+                        </span>
+                        {% elif company.status == 'suspended' %}
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-500/20 text-red-700 dark:text-red-400">
+                            {{ company.status_display }}
+                        </span>
+                        {% else %}
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-500/20 text-gray-700 dark:text-gray-400">
+                            {{ company.status_display }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if company.next_billing_date %}
+                            {% if company.is_overdue %}
+                            <span class="text-sm font-medium text-red-600 dark:text-red-400">
+                                {{ company.next_billing_date|date:"d/m/Y" }}
+                                {% if company.days_until %}
+                                <span class="text-xs text-red-500">(Vencido há {{ company.days_until_abs }} dias)</span>
+                                {% endif %}
+                            </span>
+                            {% else %}
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ company.next_billing_date|date:"d/m/Y" }}
+                                {% if company.days_until %}
+                                <span class="text-xs text-gray-500">({{ company.days_until }} dias)</span>
+                                {% endif %}
+                            </span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-sm text-gray-400 dark:text-gray-600">Não definida</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="openEditModal({{ company.id }}, '{{ company.name|escapejs }}', '{{ company.plan_code }}', '{{ company.status }}', '{% if company.next_billing_date %}{{ company.next_billing_date|date:"Y-m-d" }}{% endif %}')" 
+                                class="text-[#F83531] hover:text-[#E02521] dark:text-brand-400 dark:hover:text-brand-300 transition-colors duration-200">
+                            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            <span class="ml-1">Gerenciar</span>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Cards Mobile -->
+    <div class="block md:hidden space-y-4">
+        {% for company in companies %}
+        <div class="bg-white dark:bg-dark-800 rounded-lg shadow-sm p-4">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ company.name }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ company.plan }}</p>
+                </div>
+                {% if company.status == 'active' or company.status == 'trial' %}
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-700 dark:text-green-400">
+                    {{ company.status_display }}
+                </span>
+                {% elif company.status == 'past_due' %}
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
+                    {{ company.status_display }}
+                </span>
+                {% elif company.status == 'suspended' %}
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-500/20 text-red-700 dark:text-red-400">
+                    {{ company.status_display }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <p class="text-sm text-gray-600 dark:text-gray-400">Próximo Vencimento:</p>
+                {% if company.next_billing_date %}
+                    {% if company.is_overdue %}
+                    <p class="text-sm font-medium text-red-600 dark:text-red-400">
+                        {{ company.next_billing_date|date:"d/m/Y" }}
+                        {% if company.days_until %}
+                        <span class="text-xs">(Vencido há {{ company.days_until_abs }} dias)</span>
+                        {% endif %}
+                    </p>
+                    {% else %}
+                    <p class="text-sm text-gray-900 dark:text-white">
+                        {{ company.next_billing_date|date:"d/m/Y" }}
+                        {% if company.days_until %}
+                        <span class="text-xs text-gray-500">({{ company.days_until }} dias)</span>
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                {% else %}
+                <p class="text-sm text-gray-400 dark:text-gray-600">Não definida</p>
+                {% endif %}
+            </div>
+            
+            <button onclick="openEditModal({{ company.id }}, '{{ company.name|escapejs }}', '{{ company.plan_code }}', '{{ company.status }}', '{% if company.next_billing_date %}{{ company.next_billing_date|date:"Y-m-d" }}{% endif %}')" 
+                    class="w-full mt-3 px-4 py-2 bg-[#F83531] hover:bg-[#E02521] text-white rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Gerenciar Assinatura
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Edição -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-dark-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gerenciar Assinatura</h2>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="editForm" method="POST" action="">
+                {% csrf_token %}
+                <input type="hidden" name="company_id" id="modal_company_id" value="">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Empresa</label>
+                    <p class="text-sm text-gray-900 dark:text-white" id="modal_company_name"></p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="next_billing_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Data de Vencimento
+                    </label>
+                    <input type="date" 
+                           name="next_billing_date" 
+                           id="next_billing_date" 
+                           class="form-input w-full"
+                           required>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                        Defina uma nova data de vencimento para estender o prazo
+                    </p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="subscription_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Status da Assinatura
+                    </label>
+                    <select name="subscription_status" 
+                            id="subscription_status" 
+                            class="form-input w-full"
+                            required>
+                        <option value="trial">Período de Teste</option>
+                        <option value="active">Ativa</option>
+                        <option value="past_due">Pagamento Atrasado</option>
+                        <option value="suspended">Suspensa</option>
+                        <option value="canceled">Cancelada</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="plan_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tipo de Plano
+                    </label>
+                    <select name="plan_type" 
+                            id="plan_type" 
+                            class="form-input w-full"
+                            required>
+                        <option value="bronze">Bronze</option>
+                        <option value="silver">Silver</option>
+                        <option value="gold">Gold</option>
+                        <option value="diamond">Diamond</option>
+                    </select>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="internal_note" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Observação Interna
+                    </label>
+                    <textarea name="internal_note" 
+                              id="internal_note" 
+                              rows="3" 
+                              class="form-input w-full"
+                              placeholder="Justificativa para a alteração (ex: 'Prorrogação de 30 dias conforme solicitação do cliente')"></textarea>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" 
+                            onclick="closeEditModal()" 
+                            class="flex-1 px-4 py-2 bg-gray-200 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-dark-600 transition-colors duration-200">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-[#F83531] hover:bg-[#E02521] text-white rounded-lg transition-colors duration-200">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditModal(companyId, companyName, planType, status, nextBillingDate) {
+    const form = document.getElementById('editForm');
+    const modalCompanyId = document.getElementById('modal_company_id');
+    const modalCompanyName = document.getElementById('modal_company_name');
+    const planTypeSelect = document.getElementById('plan_type');
+    const statusSelect = document.getElementById('subscription_status');
+    const billingDateInput = document.getElementById('next_billing_date');
+    
+    // Preencher campos do formulário
+    modalCompanyId.value = companyId;
+    modalCompanyName.textContent = companyName;
+    planTypeSelect.value = planType;
+    statusSelect.value = status;
+    billingDateInput.value = nextBillingDate || '';
+    
+    // Definir action do formulário
+    form.action = `/pagamentos/${companyId}/editar/`;
+    
+    // Garantir que o token CSRF está presente (pegar do cookie se necessário)
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (!csrfToken) {
+        // Tentar obter do cookie
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        if (cookieValue) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = cookieValue;
+            form.appendChild(csrfInput);
+        }
+    }
+    
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('editModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+</script>
+{% endblock %}
+

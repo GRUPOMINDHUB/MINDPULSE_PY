@@ -17,8 +17,9 @@
     <!-- Lista de Feedbacks -->
     <div class="space-y-2 md:space-y-4" id="feedbacks-list">
         {% for feedback in feedbacks %}
-        <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-3 md:p-4 transition-all duration-200"
-             id="feedback-{{ feedback.pk }}">
+        <a href="{% url 'feedback:detail' feedback.pk %}" 
+           class="block bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl p-3 md:p-4 transition-all duration-200 hover:shadow-lg hover:border-slate-300 dark:hover:border-dark-600 cursor-pointer"
+           id="feedback-{{ feedback.pk }}">
             <div class="flex items-start gap-3 md:gap-4">
                 <!-- Emoji - Menor no mobile -->
                 <div class="text-2xl md:text-3xl flex-shrink-0">{{ feedback.sentiment_emoji }}</div>
@@ -47,6 +48,10 @@
                         <span class="px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
                             Em Andamento
                         </span>
+                        {% elif feedback.status == 'in_dialogue' %}
+                        <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
+                            Em Diálogo
+                        </span>
                         {% elif feedback.status == 'resolved' %}
                         <span class="px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 text-xs font-medium rounded-full whitespace-nowrap flex-shrink-0">
                             Resolvido
@@ -71,13 +76,13 @@
                         </span>
                         <!-- Data -->
                         <span>{{ feedback.created_at|date:"d/m/Y" }} <span class="hidden md:inline">{{ feedback.created_at|date:"H:i" }}</span></span>
-                        <!-- Resposta - Badge visual -->
-                        {% if feedback.response %}
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-full font-medium">
+                        <!-- Badge de conversa -->
+                        {% if feedback.comments.count > 0 %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 rounded-full font-medium">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                             </svg>
-                            Respondido
+                            {{ feedback.comments.count }} mensagem{{ feedback.comments.count|pluralize:"s" }}
                         </span>
                         {% endif %}
                     </div>
@@ -85,7 +90,7 @@
                 
                 <!-- Botão Excluir - Apenas se for o dono do feedback -->
                 {% if feedback.user == user or user.is_superuser %}
-                <button onclick="deleteFeedback({{ feedback.pk }})" 
+                <button onclick="event.preventDefault(); event.stopPropagation(); deleteFeedback({{ feedback.pk }})" 
                         class="p-2 text-slate-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all duration-200 flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
                         title="Excluir feedback">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,7 +99,7 @@
                 </button>
                 {% endif %}
             </div>
-        </div>
+        </a>
         {% empty %}
         <!-- Estado Vazio -->
         <div class="bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 rounded-xl text-center py-12 md:py-16 px-4">

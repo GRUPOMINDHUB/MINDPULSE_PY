@@ -32,6 +32,7 @@ class FeedbackTicket(CompanyBaseModel):
     STATUS_CHOICES = [
         ('pending', 'Pendente'),
         ('in_progress', 'Em Andamento'),
+        ('in_dialogue', 'Em Diálogo'),
         ('resolved', 'Resolvido'),
         ('closed', 'Fechado'),
     ]

@@ -13,14 +13,18 @@
         top: 100%;
         left: 0;
         right: 0;
-        background: #1A1A1A;
-        border: 1px solid #3a3a3a;
+        background: rgb(249 250 251); /* gray-50 */
+        border: 1px solid rgb(229 231 235); /* gray-200 */
         border-radius: 12px;
         margin-top: 8px;
         max-height: 300px;
         overflow-y: auto;
         z-index: 50;
         display: none;
+    }
+    .dark .company-dropdown {
+        background: rgb(55 65 81 / 0.5); /* gray-700/50 */
+        border-color: rgb(75 85 99 / 0.5); /* gray-600/50 */
     }
     .company-dropdown.active {
         display: block;
@@ -34,7 +38,10 @@
         transition: background 0.2s;
     }
     .company-option:hover {
-        background: #242424;
+        background: rgb(229 231 235); /* gray-200 */
+    }
+    .dark .company-option:hover {
+        background: rgb(75 85 99 / 0.3); /* gray-600/30 */
     }
     .company-option input[type="checkbox"] {
         width: 18px;
@@ -133,7 +140,7 @@
         
         <div class="company-selector">
             <button type="button" id="companyToggle" 
-                    class="w-full flex items-center justify-between px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl text-white hover:border-brand-500 transition-all">
+                    class="w-full flex items-center justify-between px-4 py-3 bg-gray-600/30 dark:bg-gray-600/30 border border-gray-300 dark:border-gray-600/50 rounded-xl text-gray-900 dark:text-white hover:border-brand-500 transition-all">
                 <span id="toggleText">Clique para selecionar empresas...</span>
                 <svg class="w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform" id="toggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -141,7 +148,7 @@
             </button>
             
             <div class="company-dropdown" id="companyDropdown">
-                <div class="p-3 border-b border-dark-600">
+                <div class="p-3 border-b border-gray-200 dark:border-gray-600/50">
                     <button type="button" onclick="selectAllCompanies()" class="text-sm text-brand-500 hover:text-brand-400">
                         Selecionar Todas
                     </button>
@@ -164,8 +171,8 @@
                            data-feedbacks-resolved="{{ company.feedbacks_resolved|default:0 }}"
                            onchange="updateSelection()">
                     <div class="flex-1">
-                        <span class="text-white font-medium">{{ company.name }}</span>
-                        <span class="text-gray-500 text-sm ml-2">({{ company.total_users|default:0 }} colaboradores)</span>
+                        <span class="text-gray-900 dark:text-white font-medium">{{ company.name }}</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm ml-2">({{ company.total_users|default:0 }} colaboradores)</span>
                     </div>
                 </label>
                 {% empty %}

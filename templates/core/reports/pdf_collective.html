@@ -355,15 +355,15 @@
         <tr>
             <td>
                 <div class="kpi-label">Conformidade Checklists</div>
-                <div class="kpi-value">{{ report_data.checklist_average|floatformat:1 }}%</div>
+                <div class="kpi-value">{{ report_data.checklist_average|default:0|floatformat:1 }}%</div>
                 <div class="kpi-detail">
-                    {{ report_data.total_tasks_completed }} tarefas concluidas<br>
-                    {{ report_data.total_completions }} checklists completos
+                    {{ report_data.total_tasks_completed|default:0 }} tarefas concluidas<br>
+                    {{ report_data.total_completions|default:0 }} checklists completos
                 </div>
             </td>
             <td>
                 <div class="kpi-label">Engajamento Treinamentos</div>
-                <div class="kpi-value">{{ report_data.training_average|floatformat:1 }}%</div>
+                <div class="kpi-value">{{ report_data.training_average|default:0|floatformat:1 }}%</div>
                 <div class="kpi-detail">
                     Progresso medio da equipe<br>
                     Conclusao de videos e quizzes
@@ -371,7 +371,7 @@
             </td>
             <td>
                 <div class="kpi-label">Excelencia em Quizzes</div>
-                <div class="kpi-value">{{ report_data.quiz_average_all|floatformat:1 }}%</div>
+                <div class="kpi-value">{{ report_data.quiz_average_all|default:0|floatformat:1 }}%</div>
                 <div class="kpi-detail">
                     Media geral de notas<br>
                     Desempenho em avaliacoes
@@ -379,12 +379,12 @@
             </td>
             <td>
                 <div class="kpi-label">Alertas Disciplinares</div>
-                <div class="kpi-value">{{ report_data.total_warnings }}</div>
+                <div class="kpi-value">{{ report_data.total_warnings|default:0 }}</div>
                 <div class="kpi-detail">
                     Advertencias aplicadas<br>
-                    Oral: {{ report_data.warnings_by_type.oral }} | 
-                    Escrita: {{ report_data.warnings_by_type.escrita }}<br>
-                    Suspensao: {{ report_data.warnings_by_type.suspensao }}
+                    Oral: {{ report_data.warnings_by_type.oral|default:0 }} | 
+                    Escrita: {{ report_data.warnings_by_type.escrita|default:0 }}<br>
+                    Suspensao: {{ report_data.warnings_by_type.suspensao|default:0 }}
                 </div>
             </td>
         </tr>
@@ -457,16 +457,20 @@
                 <td>
                     <div class="percent-value">{{ item.checklist_percentage|default:0|floatformat:1 }}%</div>
                     <div class="progress-container">
-                        <div class="progress-bar" style="width: {% widthratio item.checklist_percentage|default:0 1 1 %}%;"></div>
+                        {% with pct=item.checklist_percentage|default:0 %}
+                        <div class="progress-bar" style="width: {% if pct %}{{ pct|floatformat:0 }}{% else %}0{% endif %}%;"></div>
+                        {% endwith %}
                     </div>
                     {% if item.checklist_overdue|default:0 > 0 %}
-                    <div style="font-size: 7pt; color: #EF4444; margin-top: 3px;">{{ item.checklist_overdue }} atraso{% if item.checklist_overdue != 1 %}s{% endif %}</div>
+                    <div style="font-size: 7pt; color: #EF4444; margin-top: 3px;">{{ item.checklist_overdue|default:0 }} atraso{% if item.checklist_overdue|default:0 != 1 %}s{% endif %}</div>
                     {% endif %}
                 </td>
                 <td>
                     <div class="percent-value">{{ item.training_percentage|default:0|floatformat:1 }}%</div>
                     <div class="progress-container">
-                        <div class="progress-bar" style="width: {% widthratio item.training_percentage|default:0 1 1 %}%;"></div>
+                        {% with pct=item.training_percentage|default:0 %}
+                        <div class="progress-bar" style="width: {% if pct %}{{ pct|floatformat:0 }}{% else %}0{% endif %}%;"></div>
+                        {% endwith %}
                     </div>
                 </td>
                 <td>
@@ -502,9 +506,9 @@
     <!-- Footer -->
     <div class="footer">
         <strong>Mindpulse</strong> - Inteligencia Operacional | 
-        {{ report_data.company.name }} | 
-        Total de colaboradores: {{ report_data.total_users }} | 
-        Relatorio gerado em {{ report_data.generated_at|date:"d/m/Y H:i" }}
+        {% if report_data.company %}{{ report_data.company.name }}{% else %}N/A{% endif %} | 
+        Total de colaboradores: {{ report_data.total_users|default:0 }} | 
+        Relatorio gerado em {% if report_data.generated_at %}{{ report_data.generated_at|date:"d/m/Y H:i" }}{% else %}N/A{% endif %}
     </div>
 </body>
 </html>
